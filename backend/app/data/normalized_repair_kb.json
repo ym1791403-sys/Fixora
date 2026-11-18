@@ -1,0 +1,34 @@
+[
+  {
+    "source": "Open Repair Alliance (CC-BY 4.0)",
+    "device_category": "Laptop",
+    "problem_description": "Laptop overheats and cuts off during heavy software load",
+    "repair_outcome": "Fixed",
+    "resolution_notes": "Lack of proper thermal paste and spare fan bearings",
+    "year": 2020
+  },
+  {
+    "source": "Open Repair Alliance (CC-BY 4.0)",
+    "device_category": "Smartphone",
+    "problem_description": "USB-C charging connector loose, only charges at certain angle",
+    "repair_outcome": "Fixed",
+    "resolution_notes": "Pocket lint blockage cleared with non-conductive pick",
+    "year": 2021
+  },
+  {
+    "source": "Open Repair Alliance (CC-BY 4.0)",
+    "device_category": "Desktop Computer",
+    "problem_description": "Continuous beep sequence on power-on with no display output",
+    "repair_outcome": "Fixed",
+    "resolution_notes": "RAM contacts oxidized, cleaned with eraser",
+    "year": 2019
+  },
+  {
+    "source": "Open Repair Alliance (CC-BY 4.0)",
+    "device_category": "Laptop",
+    "problem_description": "Battery percentage drops from 80% to 5% instantly",
+    "repair_outcome": "Partially Fixed",
+    "resolution_notes": "Chemical cell degradation, battery replacement required",
+    "year": 2018
+  }
+]
