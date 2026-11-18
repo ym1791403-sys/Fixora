@@ -2,7 +2,10 @@ import sqlite3
 import os
 from contextlib import contextmanager
 
-DB_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "techrepair.db"))
+if os.environ.get("VERCEL"):
+    DB_PATH = "/tmp/techrepair.db"
+else:
+    DB_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "techrepair.db"))
 
 def get_connection():
     con = sqlite3.connect(DB_PATH, check_same_thread=False)
