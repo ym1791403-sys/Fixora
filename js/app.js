@@ -1,8 +1,8 @@
 /**
- * TechRepair Core Single Page Application (SPA) Controller
+ * Fixora Core Single Page Application (SPA) Controller
  */
 
-class TechRepairApp {
+class FixoraApp {
   constructor() {
     this.currentView = "home";
     this.wizardData = {
@@ -183,11 +183,14 @@ class TechRepairApp {
               ${isAr ? 'اختر جهازك واكتب المشكلة باختصار لمعاينتها فوراً:' : 'Select your device and describe your problem for instant check:'}
             </p>
             
-            <div style="display: flex; gap: 8px; margin-bottom: 14px; overflow-x: auto; padding-bottom: 4px;">
-              <button class="btn btn-sm btn-outline quick-cat-btn active" data-cat="Laptop">Laptop</button>
-              <button class="btn btn-sm btn-outline quick-cat-btn" data-cat="Smartphone">Smartphone</button>
-              <button class="btn btn-sm btn-outline quick-cat-btn" data-cat="Desktop Computer">PC</button>
-              <button class="btn btn-sm btn-outline quick-cat-btn" data-cat="Tablet">Tablet</button>
+            <div style="display: flex; gap: 8px; margin-bottom: 14px; overflow-x: auto; padding-bottom: 4px; flex-wrap: wrap;">
+              <button class="btn btn-sm btn-outline quick-cat-btn active" data-cat="Smartphone"><i class="fas fa-mobile-alt"></i> Smartphone</button>
+              <button class="btn btn-sm btn-outline quick-cat-btn" data-cat="Laptop"><i class="fas fa-laptop"></i> Laptop</button>
+              <button class="btn btn-sm btn-outline quick-cat-btn" data-cat="Desktop Computer"><i class="fas fa-desktop"></i> PC</button>
+              <button class="btn btn-sm btn-outline quick-cat-btn" data-cat="Gaming Console"><i class="fas fa-gamepad"></i> Console</button>
+              <button class="btn btn-sm btn-outline quick-cat-btn" data-cat="Smart TV"><i class="fas fa-tv"></i> TV</button>
+              <button class="btn btn-sm btn-outline quick-cat-btn" data-cat="Storage"><i class="fas fa-hard-drive"></i> Drive/SSD</button>
+              <button class="btn btn-sm btn-outline quick-cat-btn" data-cat="Tablet"><i class="fas fa-tablet-alt"></i> Tablet</button>
             </div>
 
             <div class="form-group" style="margin-bottom: 14px;">
@@ -212,32 +215,28 @@ class TechRepairApp {
             </p>
           </div>
 
-          <div class="device-categories-grid">
-            <div class="device-category-card" onclick="app.startDiagnosisWithCat('Laptop')">
-              <i class="fas fa-laptop"></i>
-              <strong data-i18n="cat_laptop">Laptop</strong>
-              <span style="font-size: 12px; color: var(--color-text-muted);">Fans, Batteries, Motherboards</span>
-            </div>
-            <div class="device-category-card" onclick="app.startDiagnosisWithCat('Desktop Computer')">
-              <i class="fas fa-desktop"></i>
-              <strong data-i18n="cat_computer">Desktop Computer</strong>
-              <span style="font-size: 12px; color: var(--color-text-muted);">Power Supplies, GPUs, RAM</span>
-            </div>
-            <div class="device-category-card" onclick="app.startDiagnosisWithCat('Smartphone')">
-              <i class="fas fa-mobile-alt"></i>
-              <strong data-i18n="cat_smartphone">Smartphone</strong>
-              <span style="font-size: 12px; color: var(--color-text-muted);">Ports, Displays, Batteries</span>
-            </div>
-            <div class="device-category-card" onclick="app.startDiagnosisWithCat('Tablet')">
-              <i class="fas fa-tablet-alt"></i>
-              <strong data-i18n="cat_tablet">Tablet</strong>
-              <span style="font-size: 12px; color: var(--color-text-muted);">Touch Digitizers, Charging</span>
-            </div>
-            <div class="device-category-card" onclick="app.startDiagnosisWithCat('Other')">
-              <i class="fas fa-gamepad"></i>
-              <strong data-i18n="cat_other">Other Electronics</strong>
-              <span style="font-size: 12px; color: var(--color-text-muted);">Consoles, Audio, Drives</span>
-            </div>
+          <div class="device-categories-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px;">
+            ${[
+              { cat: "Smartphone", icon: "fa-mobile-alt", key: "cat_smartphone", sub: "cat_smartphone_sub" },
+              { cat: "Laptop", icon: "fa-laptop", key: "cat_laptop", sub: "cat_laptop_sub" },
+              { cat: "Desktop Computer", icon: "fa-desktop", key: "cat_computer", sub: "cat_computer_sub" },
+              { cat: "Gaming Console", icon: "fa-gamepad", key: "cat_console", sub: "cat_console_sub" },
+              { cat: "Smart TV", icon: "fa-tv", key: "cat_tv", sub: "cat_tv_sub" },
+              { cat: "Storage", icon: "fa-hard-drive", key: "cat_storage", sub: "cat_storage_sub" },
+              { cat: "Tablet", icon: "fa-tablet-alt", key: "cat_tablet", sub: "cat_tablet_sub" },
+              { cat: "Smartwatch", icon: "fa-clock", key: "cat_smartwatch", sub: "cat_smartwatch_sub" },
+              { cat: "Audio", icon: "fa-headphones", key: "cat_audio", sub: "cat_audio_sub" },
+              { cat: "Camera", icon: "fa-camera", key: "cat_camera", sub: "cat_camera_sub" },
+              { cat: "Printer", icon: "fa-print", key: "cat_printer", sub: "cat_printer_sub" },
+              { cat: "Home Appliance", icon: "fa-plug", key: "cat_appliance", sub: "cat_appliance_sub" },
+              { cat: "Other", icon: "fa-microchip", key: "cat_other", sub: "cat_other_sub" }
+            ].map(item => `
+              <div class="device-category-card" onclick="app.startDiagnosisWithCat('${item.cat}')" style="cursor: pointer; padding: 22px 14px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: #FFFFFF; text-align: center; transition: all 0.2s ease;">
+                <i class="fas ${item.icon}" style="font-size: 32px; color: var(--color-primary); margin-bottom: 10px; display: block;"></i>
+                <strong style="display: block; font-size: 14px; margin-bottom: 4px;" data-i18n="${item.key}">${window.i18n.t(item.key)}</strong>
+                <span style="font-size: 11px; color: var(--color-text-muted); line-height: 1.3; display: block;" data-i18n="${item.sub}">${window.i18n.t(item.sub)}</span>
+              </div>
+            `).join('')}
           </div>
         </div>
       </section>
@@ -246,7 +245,7 @@ class TechRepairApp {
       <section style="padding: 70px 0;">
         <div class="container">
           <div style="text-align: center; max-width: 650px; margin: 0 auto 48px;">
-            <h2 style="font-size: 32px; margin-bottom: 12px;" data-i18n="how_title">How TechRepair Works</h2>
+            <h2 style="font-size: 32px; margin-bottom: 12px;" data-i18n="how_title">How Fixora Works</h2>
             <p style="color: var(--color-text-muted); font-size: 16px;" data-i18n="how_desc">
               A reliable four-step diagnostic procedure grounded in real repair datasets.
             </p>
@@ -296,7 +295,7 @@ class TechRepairApp {
               ${isAr ? 'هل أنت فني أو مركز صيانة محترف؟' : 'Are you a professional repair technician or lab?'}
             </h3>
             <p style="color: #94A3B8; font-size: 15px; max-width: 580px;">
-              ${isAr ? 'انضم إلى شبكة TechRepair واستقبل طلبات الصيانة الموثقة من العملاء في مدينتك بعد اعتماد حسابك.' : 'Join TechRepair to receive verified repair requests from customers in your area after administrative verification.'}
+              ${isAr ? 'انضم إلى شبكة Fixora واستقبل طلبات الصيانة الموثقة من العملاء في مدينتك بعد اعتماد حسابك.' : 'Join Fixora to receive verified repair requests from customers in your area after administrative verification.'}
             </p>
           </div>
           <button class="btn btn-accent btn-lg" onclick="app.showAuthModal('register', 'technician')">
@@ -359,11 +358,25 @@ class TechRepairApp {
             <!-- Step 1: Device Category -->
             <div class="form-group">
               <label class="form-label" data-i18n="diag_step1">1. Device Category</label>
-              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px;">
-                ${["Laptop", "Desktop Computer", "Smartphone", "Tablet", "Other"].map(cat => `
-                  <div class="device-category-card ${this.wizardData.device_category === cat ? 'selected' : ''}" onclick="app.setWizardCat('${cat}', this)">
-                    <i class="fas ${cat === 'Laptop' ? 'fa-laptop' : cat === 'Smartphone' ? 'fa-mobile-alt' : cat === 'Tablet' ? 'fa-tablet-alt' : cat === 'Desktop Computer' ? 'fa-desktop' : 'fa-microchip'}"></i>
-                    <span style="font-size: 13px; font-weight: 600;">${window.i18n.t('cat_' + (cat === 'Desktop Computer' ? 'computer' : cat.toLowerCase()))}</span>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: 12px;">
+                ${[
+                  { cat: "Smartphone", icon: "fa-mobile-alt", key: "cat_smartphone" },
+                  { cat: "Laptop", icon: "fa-laptop", key: "cat_laptop" },
+                  { cat: "Desktop Computer", icon: "fa-desktop", key: "cat_computer" },
+                  { cat: "Gaming Console", icon: "fa-gamepad", key: "cat_console" },
+                  { cat: "Smart TV", icon: "fa-tv", key: "cat_tv" },
+                  { cat: "Storage", icon: "fa-hard-drive", key: "cat_storage" },
+                  { cat: "Tablet", icon: "fa-tablet-alt", key: "cat_tablet" },
+                  { cat: "Smartwatch", icon: "fa-clock", key: "cat_smartwatch" },
+                  { cat: "Audio", icon: "fa-headphones", key: "cat_audio" },
+                  { cat: "Camera", icon: "fa-camera", key: "cat_camera" },
+                  { cat: "Printer", icon: "fa-print", key: "cat_printer" },
+                  { cat: "Home Appliance", icon: "fa-plug", key: "cat_appliance" },
+                  { cat: "Other", icon: "fa-microchip", key: "cat_other" }
+                ].map(item => `
+                  <div class="device-category-card ${this.wizardData.device_category === item.cat ? 'selected' : ''}" onclick="app.setWizardCat('${item.cat}', this)" style="cursor: pointer; padding: 14px 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); text-align: center; background: #FFFFFF;">
+                    <i class="fas ${item.icon}" style="font-size: 24px; color: ${this.wizardData.device_category === item.cat ? 'var(--color-secondary)' : 'var(--color-primary)'}; margin-bottom: 6px; display: block;"></i>
+                    <span style="font-size: 12px; font-weight: 600; display: block;" data-i18n="${item.key}">${window.i18n.t(item.key)}</span>
                   </div>
                 `).join('')}
               </div>
@@ -692,10 +705,19 @@ class TechRepairApp {
               <input type="text" id="guideSearchInput" class="form-control" data-i18n-placeholder="guides_search_placeholder" placeholder="Search guides by keyword, device, or symptom...">
               <select id="guideCatFilter" class="form-control">
                 <option value="all">${window.i18n.t('cat_all')}</option>
-                <option value="Laptop">${window.i18n.t('cat_laptop')}</option>
                 <option value="Smartphone">${window.i18n.t('cat_smartphone')}</option>
+                <option value="Laptop">${window.i18n.t('cat_laptop')}</option>
                 <option value="Desktop Computer">${window.i18n.t('cat_computer')}</option>
+                <option value="Gaming Console">${window.i18n.t('cat_console')}</option>
+                <option value="Smart TV">${window.i18n.t('cat_tv')}</option>
+                <option value="Storage">${window.i18n.t('cat_storage')}</option>
                 <option value="Tablet">${window.i18n.t('cat_tablet')}</option>
+                <option value="Smartwatch">${window.i18n.t('cat_smartwatch')}</option>
+                <option value="Audio">${window.i18n.t('cat_audio')}</option>
+                <option value="Camera">${window.i18n.t('cat_camera')}</option>
+                <option value="Printer">${window.i18n.t('cat_printer')}</option>
+                <option value="Home Appliance">${window.i18n.t('cat_appliance')}</option>
+                <option value="Other">${window.i18n.t('cat_other')}</option>
               </select>
               <select id="guideDiffFilter" class="form-control">
                 <option value="all">${window.i18n.t('guides_diff_all')}</option>
@@ -1434,7 +1456,7 @@ class TechRepairApp {
     const isAr = window.i18n.currentLang === "ar";
     const content = mode === "login" ? `
       <div>
-        <h3 style="font-size: 22px; margin-bottom: 6px;" data-i18n="auth_login_title">Sign in to TechRepair</h3>
+        <h3 style="font-size: 22px; margin-bottom: 6px;" data-i18n="auth_login_title">Sign in to Fixora</h3>
         <p style="font-size: 14px; color: var(--color-text-muted); margin-bottom: 20px;">
           ${isAr ? 'أدخل بريدك الإلكتروني وكلمة المرور للمتابعة' : 'Enter your credentials to access your dashboard'}
         </p>
@@ -1445,9 +1467,9 @@ class TechRepairApp {
             Quick Demo Logins:
           </span>
           <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <button class="btn btn-sm btn-outline" style="background: #FFFFFF;" onclick="app.quickFillLogin('admin@techrepair.com', 'Admin123456!')">Admin</button>
-            <button class="btn btn-sm btn-outline" style="background: #FFFFFF;" onclick="app.quickFillLogin('cairo.fix@techrepair.com', 'Tech123456!')">Technician</button>
-            <button class="btn btn-sm btn-outline" style="background: #FFFFFF;" onclick="app.quickFillLogin('user@techrepair.com', 'User123456!')">Customer</button>
+            <button class="btn btn-sm btn-outline" style="background: #FFFFFF;" onclick="app.quickFillLogin('admin@fixora.com', 'Admin123456!')">Admin</button>
+            <button class="btn btn-sm btn-outline" style="background: #FFFFFF;" onclick="app.quickFillLogin('cairo.fix@fixora.com', 'Tech123456!')">Technician</button>
+            <button class="btn btn-sm btn-outline" style="background: #FFFFFF;" onclick="app.quickFillLogin('user@fixora.com', 'User123456!')">Customer</button>
           </div>
         </div>
 
@@ -1473,7 +1495,7 @@ class TechRepairApp {
       <div>
         <h3 style="font-size: 22px; margin-bottom: 6px;" data-i18n="auth_register_title">Create Your Account</h3>
         <p style="font-size: 14px; color: var(--color-text-muted); margin-bottom: 20px;">
-          ${isAr ? 'انضم إلى مجتمع TechRepair لتشخيص الأجهزة والصيانة الذكية' : 'Join TechRepair for intelligent device diagnostics and repair assistance'}
+          ${isAr ? 'انضم إلى مجتمع Fixora لتشخيص الأجهزة والصيانة الذكية' : 'Join Fixora for intelligent device diagnostics and repair assistance'}
         </p>
 
         <form id="registerForm">
@@ -1570,5 +1592,5 @@ class TechRepairApp {
 
 // Instantiate App
 document.addEventListener("DOMContentLoaded", () => {
-  window.app = new TechRepairApp();
+  window.app = new FixoraApp();
 });

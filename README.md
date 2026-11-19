@@ -6,7 +6,7 @@
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![RTL](https://img.shields.io/badge/i18n-English%20%7C%20العربية%20(RTL)-orange.svg)]()
 
-**Fixora** (formerly TechRepair) is an AI-powered device diagnosis and repair platform designed to help users identify technical issues with laptops, computers, and smartphones, understand probable root causes, follow calibrated step-by-step DIY troubleshooting instructions, and connect with certified technicians.
+**Fixora** is a universal AI-powered device diagnosis and repair platform designed to help users identify technical issues with smartphones, laptops, desktop computers, gaming consoles, smart TVs, storage drives, audio equipment, cameras, printers, and smart home appliances, understand probable root causes, follow calibrated step-by-step DIY troubleshooting instructions, and connect with certified technicians.
 
 ---
 

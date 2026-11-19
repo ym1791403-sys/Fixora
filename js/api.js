@@ -1,5 +1,5 @@
 /**
- * TechRepair API Client & Client-Side AI Engine
+ * Fixora API Client & Client-Side AI Engine
  * Full-stack hybrid: Connects to backend if available, or runs 100% in-browser on static platforms (Vercel / GitHub Pages).
  */
 
@@ -75,7 +75,7 @@ class ApiClient {
       const initialUsers = [
         {
           id: 1,
-          email: "admin@techrepair.com",
+          email: "admin@fixora.com",
           full_name: "Platform Administrator",
           role: "admin",
           phone: "+201000000000",
@@ -83,7 +83,7 @@ class ApiClient {
         },
         {
           id: 2,
-          email: "user@techrepair.com",
+          email: "user@fixora.com",
           full_name: "Ahmed Mansour",
           role: "user",
           phone: "+201012345678",
@@ -191,33 +191,121 @@ class ApiClient {
             instruction_ar: "حرك العود الخشبي بمحاذاة الجوانب برفق لإخراج الأتربة المتكتلة مبتعداً عن شريحة الأسنان الوسطى."
           }
         ]
-      },
+      },      },
       {
-        id: 3,
-        device_category: "Desktop Computer",
+        id: 4,
+        device_category: "Gaming Console",
         problem_category: "Hardware",
-        title_en: "Diagnosing RAM Beep Codes and Memory Contact Cleaning",
-        title_ar: "تشخيص صفارات الذاكرة العشوائية RAM وتنظيف نقاط التوصيل النحاسية",
-        summary_en: "Resolve black screen on power-on and continuous motherboard beep codes caused by memory stick oxidation.",
-        summary_ar: "حل مشكلة الشاشة السوداء عند تشغيل الجهاز وسماع صفارات متكررة بسبب أكسدة أطراف رامات الكمبيوتر.",
+        title_en: "PlayStation 5 & Xbox Series X Cooling Fan Cleaning & Overheating Prevention",
+        title_ar: "طريقة تنظيف مروحة تبريد بلايستيشن 5 وإكس بوكس لمنع السخونة وإيقاف التشغيل المفاجئ",
+        summary_en: "Safely remove console side panels, vacuum dedicated dust catchers, and clear heatsink fins to eliminate fan jet-engine noise and 3-beep shutdown crashes.",
+        summary_ar: "فك أغطية المنصة بأمان وتفريغ مصائد الغبار المخصصة وتنظيف زعانف التبريد للتخلص من صوت المروحة المرتفع ومشكلة انطفاء الجهاز أثناء اللعب.",
         difficulty: "easy",
-        estimated_minutes: 20,
-        required_tools: ["Pencil Eraser", "Microfiber Cloth", "Phillips Screwdriver"],
-        safety_precautions: ["Unplug wall power cord and press case power button once before opening case"],
+        estimated_minutes: 25,
+        required_tools: ["Torx Security T8 Screwdriver", "Soft Bristle Brush", "Household Vacuum / Dust Blower"],
+        safety_precautions: ["Wait 30 minutes after power off for internal power supply capacitors to discharge", "Do NOT touch liquid metal thermal interface"],
         steps: [
           {
             step_number: 1,
-            title_en: "RAM Retention Clip Release",
-            title_ar: "فتح كلبسات تثبيت الرام",
-            instruction_en: "Push down on retention latches at both ends of the DIMM slot to eject RAM module.",
-            instruction_ar: "اضغط على المقابض الجانبية لمنفذ الرام للخارج لتحرير الشريحة بسلاسة."
+            title_en: "Slide and Lift Faceplates",
+            title_ar: "سحب ورفع أغطية الجهاز الجانبية",
+            instruction_en: "Grip top-left corner, gently pull upward and slide panel towards bottom base to unclip.",
+            instruction_ar: "ارفع الزاوية العلوية برفق ثم اسحب الغطاء لأسفل لتحرير المشابك البلاستيكية دون كسرها."
           },
           {
             step_number: 2,
-            title_en: "Contact Polishing with Clean Eraser",
-            title_ar: "مسح أسنان النحاس بممحاة رصاص ناعمة",
-            instruction_en: "Lightly rub gold contact fingers on both sides with clean white eraser to remove oxide film, then brush away eraser dust.",
-            instruction_ar: "امسح الأطراف النحاسية الصفراء بممحاة رصاص بيضاء نظيفة لإزالة طبقة الأكسدة ثم نظف البقايا."
+            title_en: "Clear Dedicated Dust Catcher Holes",
+            title_ar: "شفط الأتربة من فتحات مصيدة الغبار",
+            instruction_en: "Vacuum the two triangular dust catcher ports on chassis to pull accumulated lint out.",
+            instruction_ar: "استخدم مكنسة كهربائية فوق الفتحتين المخصصتين لسحب كتل الغبار المحتبسة بالداخل."
+          }
+        ]
+      },
+      {
+        id: 5,
+        device_category: "Smart TV",
+        problem_category: "Hardware",
+        title_en: "Diagnosing Smart TV Black Screen with Sound (LED Backlight Strip Test)",
+        title_ar: "تشخيص عطل الشاشة السوداء مع وجود صوت في التلفزيون الذكي (فحص شرائط الليد)",
+        summary_en: "Perform the flashlight test to distinguish between burnt LED backlight arrays and T-Con / Mainboard failure without disassembling the panel.",
+        summary_ar: "اختبار الكشاف الضوئي لمعرفة ما إذا كان العطل من احتراق شرائط ليدات الإضاءة الخلفية أو كارت التيكون قبل فك الشاشة.",
+        difficulty: "moderate",
+        estimated_minutes: 20,
+        required_tools: ["Bright LED Flashlight / Smartphone Torch"],
+        safety_precautions: ["High voltage present on TV power supply board even after unplugging; do not touch electrolytic capacitors"],
+        steps: [
+          {
+            step_number: 1,
+            title_en: "Dark Room Flashlight Test",
+            title_ar: "اختبار الكشاف في غرفة مظلمة",
+            instruction_en: "In a dim room with TV powered on and sound playing, shine flashlight directly 2 inches from panel. Look for faint moving shadows of menus.",
+            instruction_ar: "شغل التلفزيون في غرفة مظلمة وسلط ضوء الكشاف على بعد 5 سم من الزجاج؛ إذا رأيت خيالات خافتة للصورة فإن العطل محصور في شرائط الليد."
+          }
+        ]
+      },
+      {
+        id: 6,
+        device_category: "Storage",
+        problem_category: "Hardware",
+        title_en: "Hard Drive S.M.A.R.T. Health Diagnosis & Bad Sector Remediation",
+        title_ar: "فحص صحة الهارد ديسك عبر مؤشرات SMART وعزل القطاعات التالفة (Bad Sectors)",
+        summary_en: "Analyze reallocated sectors (SMART 5) and pending sectors (SMART 197) to prevent catastrophic data loss, grounded in Backblaze telemetry.",
+        summary_ar: "تحليل القطاعات المعاد تعيينها وتوقع انهيار القرص الصلب لإنقاذ الملفات والبيانات الهامة قبل التلف الكامل.",
+        difficulty: "easy",
+        estimated_minutes: 30,
+        required_tools: ["CrystalDiskInfo / SMART CLI tool", "External Backup Drive"],
+        safety_precautions: ["Immediately backup critical files before running intensive surface write tests"],
+        steps: [
+          {
+            step_number: 1,
+            title_en: "Inspect S.M.A.R.T. Raw Values",
+            title_ar: "قراءة قيم مستشعرات SMART",
+            instruction_en: "Verify Reallocated Sectors Count (05) and Current Pending Sector Count (C5). Any non-zero value warrants immediate data replication.",
+            instruction_ar: "افحص قيم القطاعات التالفة؛ إذا كانت القيمة أكبر من الصفر ابدأ فوراً بنسخ بياناتك إلى وسيط تخزين خارجي."
+          }
+        ]
+      },
+      {
+        id: 7,
+        device_category: "Audio",
+        problem_category: "Hardware",
+        title_en: "Fixing Low Volume or Silent Single Earbud (AirPods / Galaxy Buds Mesh Cleaning)",
+        title_ar: "حل مشكلة انخفاض صوت إحدى السماعات (تنظيف شبكة AirPods وسماعات البلوتوث)",
+        summary_en: "Safely dissolve compacted earwax and dust from microscopic acoustic speaker mesh without puncturing driver diaphragm.",
+        summary_ar: "إذابة الشمع والأتربة المتراكمة على الشبكة الصوتية الدقيقة للسماعة لاستعادة الصوت النقي والتوازن بين السماعتين.",
+        difficulty: "easy",
+        estimated_minutes: 15,
+        required_tools: ["Blu-Tack / Antistatic Adhesive Putty", "Soft Toothbrush", "70% Isopropyl Wipe"],
+        safety_precautions: ["Never soak earbuds in liquid; keep alcohol wipe lightly damp and not dripping"],
+        steps: [
+          {
+            step_number: 1,
+            title_en: "Adhesive Putty Press and Pull",
+            title_ar: "استخدام المعجون اللاصق لسحب الشوائب",
+            instruction_en: "Firmly press Blu-Tack into the speaker grill and quickly pull off to draw out debris from the mesh pores.",
+            instruction_ar: "اضغط قطعة المعجون اللاصق على شبكة السماعة واسحبها بسرعة لسحب الأتربة والشمع من مسام الشبك."
+          }
+        ]
+      },
+      {
+        id: 8,
+        device_category: "Home Appliance",
+        problem_category: "Hardware",
+        title_en: "Robotic Vacuum Roller Brush Jam & LiDAR Optical Sensor Clearing",
+        title_ar: "صيانة المكنسة الروبوتية: فك انسداد الفرشاة الدوارة وتنظيف حساسات الليدار",
+        summary_en: "Clear wound hair and fibers from drive axle bearings and clean optical cliff sensors to resolve 'Error 1 / Error 5' navigation stalls.",
+        summary_ar: "إزالة الشعر والخيوط الملتفة حول محاور الفرشاة ومسح حساسات السقوط والليدار لحل أخطاء التوقف الملاحي.",
+        difficulty: "easy",
+        estimated_minutes: 15,
+        required_tools: ["Cleaning Blade / Seam Ripper", "Microfiber Cloth"],
+        safety_precautions: ["Power down main switch underneath vacuum before handling rollers"],
+        steps: [
+          {
+            step_number: 1,
+            title_en: "Extract Main Roller Bearing Bushings",
+            title_ar: "فك أغطية محاور الفرشاة الجانبية",
+            instruction_en: "Pop off side yellow/black bearing caps to remove wound hairs trapped inside the axle shaft.",
+            instruction_ar: "انزع الأغطية الجانبية للفرشاة وقم بقص وإزالة الشعر الملتف حول المحور الحديدي."
           }
         ]
       }
@@ -230,7 +318,7 @@ class ApiClient {
         id: 1,
         user_id: 3,
         name: "Eng. Mahmoud Hassan",
-        email: "cairo.fix@techrepair.com",
+        email: "cairo.fix@fixora.com",
         business_name: "Apex Laptop & Board Diagnostics",
         city: "Cairo",
         specializations: "Laptops, Motherboard Repair, Micro-soldering, MacBooks",
@@ -243,7 +331,7 @@ class ApiClient {
         id: 2,
         user_id: 4,
         name: "Sarah Al-Ghamdi",
-        email: "alex.tech@techrepair.com",
+        email: "alex.tech@fixora.com",
         business_name: "SmartFix Mobile & Tablet Lab",
         city: "Alexandria",
         specializations: "Smartphones, Tablets, Screen Refurbishing, Water Damage Recovery",
@@ -256,7 +344,7 @@ class ApiClient {
         id: 3,
         user_id: 5,
         name: "Khaled El-Sayed",
-        email: "giza.pc@techrepair.com",
+        email: "giza.pc@fixora.com",
         business_name: "ProBuild Workstations & Data Recovery",
         city: "Giza",
         specializations: "Desktop Computers, Data Recovery, NVMe SSDs, Custom PCs",
@@ -317,7 +405,11 @@ class ApiClient {
       no_power: ["won't turn on", "does not turn on", "no power", "completely dead", "no lights", "لا يعمل", "لا يفتح", "قاطع باور"],
       battery_charging_issue: ["battery drains", "won't charge", "not charging", "battery dies fast", "لا يشحن", "البطارية تفرغ", "منفذ الشاحن"],
       screen_display_issue: ["screen flicker", "lines on screen", "cracked screen", "touch not working", "شاشة سوداء", "وميض", "خطوط في الشاشة", "شاشة مكسورة"],
-      slow_performance: ["slow", "lagging", "freezing", "sluggish", "بطيء", "تهنيج", "تعليق", "ثقيل جداً"]
+      slow_performance: ["slow", "lagging", "freezing", "sluggish", "بطيء", "تهنيج", "تعليق", "ثقيل جداً"],
+      console_error: ["ps5", "ps4", "xbox", "switch", "3 beeps", "beep", "beeps", "stick drift", "صفارات", "بلايستيشن", "إكس بوكس", "دريفت"],
+      hdmi_issue: ["hdmi", "no signal", "black screen", "loose port", "منفذ hdmi", "لا توجد إشارة"],
+      storage_failure: ["hdd", "ssd", "smart", "bad sector", "clicking", "clicking sound", "hard drive", "تكتكة", "هارد", "قطاع تالف"],
+      tv_backlight: ["backlight", "tv sound but no picture", "صوت بدون صورة", "ليدات", "شاشة سوداء مع صوت"]
     };
 
     let extractedSymptoms = [];
@@ -330,6 +422,127 @@ class ApiClient {
 
     // 3. Knowledge Base
     const kb = [
+      {
+        id: "kb_console",
+        symptoms: ["console_error", "hdmi_issue", "overheating"],
+        causes: [
+          {
+            title_en: "Cooling Heatsink Dust Blockage or Liquid Metal Dry Spot",
+            title_ar: "انسداد زعانف المبرد بالأتربة أو جفاف سائل التبريد (Liquid Metal)",
+            probability: 0.68,
+            explanation_en: "PlayStation / Xbox consoles pull massive airflow that cakes heatsink fins in lint, causing 3-beep thermal shutdowns.",
+            explanation_ar: "تسحب منصات الألعاب كميات هواء ضخمة تتراكم على هيئة سدادة غبار فوق المبرد مما يجبر الجهاز على الانطفاء لحماية المعالج.",
+            is_hardware: true
+          },
+          {
+            title_en: "Damaged HDMI Port Pins",
+            title_ar: "تلف أو انثناء أسنان منفذ HDMI الداخلي",
+            probability: 0.32,
+            explanation_en: "Accidental cable tugging or repeated insertion bends internal pins, causing White Light of Death (no display).",
+            explanation_ar: "شد الكابل أو إدخاله بقوة يسبب انثناء الأسنان النحاسية الدقيقة داخل المنفذ مما يقطع نقل إشارة الفيديو.",
+            is_hardware: true
+          }
+        ],
+        steps: [
+          {
+            step_number: 1,
+            title_en: "Inspect HDMI Port with Flashlight",
+            title_ar: "معاينة منفذ HDMI بالكشاف",
+            instruction_en: "Look into port for bent gold pins or loose socket housing.",
+            instruction_ar: "سلط ضوءاً داخل منفذ العرض وتأكد من استقامة الأسنان وعدم اهتزاز المنفذ.",
+            requires_tools: false
+          },
+          {
+            step_number: 2,
+            title_en: "Vacuum Dust Catcher Vents",
+            title_ar: "شفط الأتربة من فتحات التهوية",
+            instruction_en: "Remove faceplate and use vacuum nozzle on dust collection ports.",
+            instruction_ar: "انزع الغطاء الجانبي واستخدم مكنسة لتفريغ فتحات مصيدة الغبار المخصصة.",
+            requires_tools: true
+          }
+        ],
+        tools: ["Torx T8 Security Screwdriver", "Vacuum Cleaner", "Flashlight"],
+        difficulty: "easy",
+        minutes: 20
+      },
+      {
+        id: "kb_storage",
+        symptoms: ["storage_failure", "slow_performance"],
+        causes: [
+          {
+            title_en: "Degraded Magnetic Platter Sectors (SMART Reallocated Sectors)",
+            title_ar: "تلف قطاعات القراءة السطحية (Bad Sectors بمؤشرات SMART)",
+            probability: 0.75,
+            explanation_en: "Physical drive degradation detected. Mechanical read heads are repeatedly failing to read weak sectors.",
+            explanation_ar: "تدهور فيزيائي في سطح القرص يمنع إبرة القراءة من قراءة البيانات بسلاسة مما يهدد بفقدانها.",
+            is_hardware: true
+          },
+          {
+            title_en: "Corrupted File System / Partition Table",
+            title_ar: "تلف جدول التقسيم أو نظام الملفات (NTFS / EXT4)",
+            probability: 0.25,
+            explanation_en: "Improper shutdown or disconnection during write operations scrambled the file index.",
+            explanation_ar: "فصل القرص المفاجئ أثناء الكتابة تسبب في تلف فهرس الملفات دون تلف العتاد نفسه.",
+            is_hardware: false
+          }
+        ],
+        steps: [
+          {
+            step_number: 1,
+            title_en: "Immediate Emergency Backup",
+            title_ar: "عمل نسخة احتياطية فورية للملفات الحيوية",
+            instruction_en: "Clone or copy your most irreplaceable files to cloud or external drive before testing.",
+            instruction_ar: "انسخ أهم ملفاتك فوراً إلى وسيط خارجي قبل إجراء أي فحص مكثف على القرص.",
+            requires_tools: false
+          },
+          {
+            step_number: 2,
+            title_en: "Read S.M.A.R.T. Health Attributes",
+            title_ar: "قراءة تقرير مستشعرات SMART",
+            instruction_en: "Check Reallocated Sectors (05) and Uncorrectable Sectors (C6) with diagnostic tool.",
+            instruction_ar: "استخدم أداة فحص SMART للتأكد من عدد القطاعات التالفة.",
+            requires_tools: true
+          }
+        ],
+        tools: ["CrystalDiskInfo / SMART Utility", "Backup Storage"],
+        difficulty: "easy",
+        minutes: 15
+      },
+      {
+        id: "kb_tv",
+        symptoms: ["screen_display_issue", "tv_backlight"],
+        causes: [
+          {
+            title_en: "Burnt LED Backlight Strips",
+            title_ar: "احتراق شرائط ليدات الإضاءة الخلفية (LED Backlight)",
+            probability: 0.80,
+            explanation_en: "One or more LED diodes in the series array burned open, cutting power to all display backlights while audio continues.",
+            explanation_ar: "احتراق أحد الليدات في الدائرة المتوالية يقطع الإضاءة عن كامل الشاشة بينما يستمر الصوت طبيعياً.",
+            is_hardware: true
+          },
+          {
+            title_en: "T-Con Timing Controller Board Failure",
+            title_ar: "تلف بوردة معالج التوقيت والعرض (T-Con Board)",
+            probability: 0.20,
+            explanation_en: "T-Con board power rail failure causes vertical bars, solarized colors, or total panel blackout.",
+            explanation_ar: "عطل في تغذية كارت التيكون ينتج خطوطاً طولية أو شاشة سوداء مع عمل الإضاءة الخلفية.",
+            is_hardware: true
+          }
+        ],
+        steps: [
+          {
+            step_number: 1,
+            title_en: "Perform Flashlight Test",
+            title_ar: "إجراء اختبار الكشاف الضوئي",
+            instruction_en: "Shine phone torch on screen to check if image is forming without light.",
+            instruction_ar: "سلط كشاف الموبايل على الشاشة لمعاينة خيالات الصورة.",
+            requires_tools: false
+          }
+        ],
+        tools: ["LED Flashlight", "Multimeter"],
+        difficulty: "hard",
+        minutes: 40
+      },
       {
         id: "kb_overheat",
         symptoms: ["overheating", "unexpected_shutdown"],
