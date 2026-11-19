@@ -22,3 +22,10 @@ yarn-error.log*
 # OS generated files
 .DS_Store
 Thumbs.db
+
+# Large Raw Datasets (Open Repair Alliance, MyFixit, Backblaze)
+datasets/
+*.zip
+*.tar.gz
+*.csv
+!backend/app/data/*.csv
