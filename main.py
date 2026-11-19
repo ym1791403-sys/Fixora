@@ -1,31 +1,40 @@
 import os
 from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import HTMLResponse, Response
 
 app = FastAPI(title="Fixora AI Platform", version="1.0.0")
 
-current_dir = os.path.dirname(os.path.abspath(__file__))
-
-# Mount static directories
-css_path = os.path.join(current_dir, "css")
-if os.path.exists(css_path):
-    app.mount("/css", StaticFiles(directory=css_path), name="css")
-
-js_path = os.path.join(current_dir, "js")
-if os.path.exists(js_path):
-    app.mount("/js", StaticFiles(directory=js_path), name="js")
+def get_content_type(filepath: str) -> str:
+    ext = os.path.splitext(filepath)[1].lower()
+    types = {
+        ".css": "text/css; charset=utf-8",
+        ".js": "application/javascript; charset=utf-8",
+        ".json": "application/json; charset=utf-8",
+        ".html": "text/html; charset=utf-8",
+        ".svg": "image/svg+xml",
+        ".png": "image/png",
+        ".jpg": "image/jpeg",
+        ".ico": "image/x-icon"
+    }
+    return types.get(ext, "application/octet-stream")
 
 @app.get("/")
-def serve_index():
-    return FileResponse(os.path.join(current_dir, "index.html"))
+def serve_home():
+    if os.path.exists("index.html"):
+        with open("index.html", "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read())
+    return HTMLResponse("<h1>Fixora Platform Live</h1>")
 
 @app.get("/{full_path:path}")
-def serve_all(full_path: str):
-    target = os.path.join(current_dir, full_path)
-    if os.path.exists(target) and os.path.isfile(target):
-        return FileResponse(target)
-    return FileResponse(os.path.join(current_dir, "index.html"))
+def serve_static(full_path: str):
+    if os.path.exists(full_path) and os.path.isfile(full_path):
+        media_type = get_content_type(full_path)
+        with open(full_path, "rb") as f:
+            return Response(content=f.read(), media_type=media_type)
+    if os.path.exists("index.html"):
+        with open("index.html", "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read())
+    return HTMLResponse("<h1>Page Not Found</h1>", status_code=404)
 
 if __name__ == "__main__":
     import uvicorn
