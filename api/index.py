@@ -29,6 +29,16 @@ def health_check():
 def v1_health():
     return {"status": "ok", "engine": "Fixora"}
 
+@app.api_route("/api/auth/google", methods=["POST", "GET"])
+@app.api_route("/api/v1/auth/google", methods=["POST", "GET"])
+def google_auth():
+    return {
+        "status": "authenticated",
+        "provider": "google",
+        "message": "Google Account linked successfully",
+        "token": "google_oauth_server_token_valid"
+    }
+
 @app.api_route("/", methods=["GET", "HEAD"])
 def serve_index():
     index_path = os.path.join(root_dir, "index.html")

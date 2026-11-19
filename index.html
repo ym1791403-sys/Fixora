@@ -1,42 +1,45 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
+<html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Fixora — AI-Powered Smart Device Diagnosis & Repair Platform</title>
-  <meta name="description" content="Fixora — Fixing Tech Issues Fast and Right. Universal smart device diagnosis, step-by-step repair guides, and certified hardware technician network.">
+  <title>Fixora — Fixing Tech Issues Fast and Right</title>
+  <meta name="description" content="Fixora — Expert IT Support, universal hardware diagnostics, and certified repair services across all consumer electronics.">
 
-  <!-- Google Fonts: Inter, Poppins, Cairo -->
+  <!-- Google Fonts: Plus Jakarta Sans (English), Cairo & Almarai (Arabic) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Almarai:wght@400;700;800&family=Cairo:wght@400;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
   <!-- FontAwesome 6 Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Google Identity Services SDK -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 
   <!-- Fixora Stylesheet -->
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
-  <!-- Navigation Bar (ByteFix Inspired Dark Nav) -->
+  <!-- Navigation Bar (ByteFix Inspired Matte Dark Nav) -->
   <header class="navbar">
     <div class="container nav-container">
       
-      <!-- Brand Logo with Glowing Star -->
+      <!-- Brand Logo: Star + Fixora -->
       <a href="#" class="logo" data-nav="home">
-        <i class="fas fa-asterisk logo-spark"></i>
+        <i class="fas fa-asterisk logo-star"></i>
         <span>Fixora</span>
       </a>
 
       <!-- Desktop Nav Links -->
       <ul class="nav-links" id="navLinks">
-        <li><a href="#" class="nav-link active" data-nav="home" data-i18n="nav_home">Home</a></li>
-        <li><a href="#about" class="nav-link" data-nav="about" data-i18n="nav_about">About Us</a></li>
-        <li><a href="#" class="nav-link" data-nav="diagnose" data-i18n="nav_diagnose">Diagnose Device</a></li>
-        <li><a href="#" class="nav-link" data-nav="guides" data-i18n="nav_guides">Repair Guides</a></li>
-        <li><a href="#" class="nav-link" data-nav="technicians" data-i18n="nav_technicians">Technicians</a></li>
-        <li id="navDashboardLink" style="display: none;"><a href="#" class="nav-link" data-nav="dashboard" data-i18n="nav_dashboard">Dashboard</a></li>
+        <li><a href="#" class="nav-link active" data-nav="home" data-i18n="nav_home">الرئيسية</a></li>
+        <li><a href="#about" class="nav-link" data-nav="about" data-i18n="nav_about">من نحن</a></li>
+        <li><a href="#" class="nav-link" data-nav="diagnose" data-i18n="nav_diagnose">تشخيص أي جهاز</a></li>
+        <li><a href="#" class="nav-link" data-nav="guides" data-i18n="nav_guides">أدلة الإصلاح</a></li>
+        <li><a href="#" class="nav-link" data-nav="technicians" data-i18n="nav_technicians">سوق الفنيين</a></li>
+        <li id="navDashboardLink" style="display: none;"><a href="#" class="nav-link" data-nav="dashboard" data-i18n="nav_dashboard">لوحة التحكم</a></li>
         <li id="navAdminLink" style="display: none;"><a href="#" class="nav-link" data-nav="admin" style="color: var(--color-danger); font-weight: 700;">Admin Panel</a></li>
       </ul>
 
@@ -45,21 +48,21 @@
         <!-- Language Switcher Button -->
         <button id="langToggleBtn" class="lang-btn" title="Switch Language / تغيير اللغة">
           <i class="fas fa-globe"></i>
-          <span class="lang-btn-text">العربية</span>
+          <span class="lang-btn-text">English</span>
         </button>
 
-        <!-- Request Repair Pill Button (As seen in ByteFix reference) -->
-        <button class="btn btn-primary btn-sm" onclick="app.navigate('technicians')" data-i18n="hero_request_repair">Request a Repair Today</button>
+        <!-- Request a Repair Today Button (ByteFix Blue Pill) -->
+        <button class="btn btn-primary btn-sm" onclick="app.navigate('technicians')" data-i18n="hero_request_repair">طلب صيانة فورية</button>
 
         <!-- Guest Actions -->
         <div id="navGuestActions" style="display: flex; gap: 8px;">
-          <button id="navLoginBtn" class="btn btn-outline btn-sm" data-i18n="nav_login">Log In</button>
+          <button id="navLoginBtn" class="btn btn-outline btn-sm" data-i18n="nav_login">تسجيل الدخول</button>
         </div>
 
         <!-- Authenticated User Actions -->
         <div id="navUserActions" style="display: none; align-items: center; gap: 10px;">
-          <span style="font-size: 13px; font-weight: 600; color: var(--color-accent);" id="navUserName"></span>
-          <button id="navLogoutBtn" class="btn btn-outline btn-sm" style="color: var(--color-danger); border-color: rgba(239, 68, 68, 0.4);">
+          <span style="font-size: 13px; font-weight: 600; color: #FFFFFF;" id="navUserName"></span>
+          <button id="navLogoutBtn" class="btn btn-outline btn-sm" style="color: var(--color-danger); border-color: rgba(239, 68, 68, 0.4);" title="Sign Out">
             <i class="fas fa-sign-out-alt"></i>
           </button>
         </div>
@@ -68,10 +71,82 @@
     </div>
   </header>
 
-  <!-- Main View Container (Dynamically rendered by app.js) -->
-  <main id="mainContent"></main>
+  <!-- Main View Container: Pre-rendered so it is NEVER blank on initial load -->
+  <main id="mainContent">
+    <!-- ByteFix Exact Hero Layout -->
+    <section class="hero-wrapper">
+      <!-- Vertical Social Bar -->
+      <div class="hero-social-bar">
+        <a href="#" class="hero-social-link" title="Facebook"><i class="fab fa-facebook-f"></i></a>
+        <a href="#" class="hero-social-link" title="Instagram"><i class="fab fa-instagram"></i></a>
+        <a href="#" class="hero-social-link" title="X (Twitter)"><i class="fab fa-x-twitter"></i></a>
+        <a href="#" class="hero-social-link" title="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+      </div>
 
-  <!-- Global Modal Dialog -->
+      <div class="container hero-grid">
+        <div>
+          <h1 class="hero-headline" data-i18n="hero_headline">
+            حل أعطال أجهزتك التقنية<br>بسرعة واحترافية
+          </h1>
+
+          <p class="hero-subtext" data-i18n="hero_subtext">
+            خدمات دعم فني وتشخيص ذكي معتمد للأجهزة تثق بها، لنضمن استمرارية أجهزتك التقنية بسلاسة وكفاءة في كل وقت.
+          </p>
+
+          <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+            <!-- Get Emergency Service Button (White Pill) -->
+            <button class="btn btn-emergency" onclick="app.navigate('diagnose')" data-i18n="hero_emergency_btn">
+              طلب فحص طارئ
+            </button>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: center;">
+          <!-- Motherboard Hardware Visual Card -->
+          <div style="border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--color-border); box-shadow: 0 10px 30px rgba(0,0,0,0.5); max-width: 480px; width: 100%;">
+            <img src="https://images.unsplash.com/photo-1597872200969-2b65d56bd16b?auto=format&fit=crop&w=800&q=80" alt="Hardware Repair" style="width: 100%; height: auto; display: block;">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ByteFix Exact About Us Section with Circular Badge -->
+    <section class="about-section" id="about">
+      <div class="container about-grid">
+        
+        <!-- Circular Rotating Badge -->
+        <div>
+          <div class="experience-badge">
+            <svg viewBox="0 0 140 140" class="badge-svg">
+              <path id="badge-circle-pre" d="M 70, 70 m -50, 0 a 50,50 0 1,1 100,0 a 50,50 0 1,1 -100,0" fill="none" />
+              <text class="badge-text">
+                <textPath href="#badge-circle-pre" startOffset="0%">
+                  • 25 YEARS EXPERIENCE • FIXORA PLATFORM •
+                </textPath>
+              </text>
+            </svg>
+            <div class="badge-center-icon">
+              <i class="fas fa-asterisk"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Editorial Copy -->
+        <div>
+          <h2 class="about-heading" data-i18n="about_title">عن Fixora</h2>
+          <p class="about-body" style="margin-bottom: 14px;" data-i18n="about_body_1">
+            في Fixora، نقدم حلول الدعم التقني وتشخيص الأعطال العتادية والبرمجية بالذكاء الاصطناعي لجميع أنواع الأجهزة. يمتلك فريقنا المعتمد ومحركنا المتطور خبرة عملية واسعة تغطي استكشاف الأعطال وحلها، وإصلاح اللوحات الأم، واستعادة البيانات، وحماية الأجهزة.
+          </p>
+          <p class="about-body" data-i18n="about_body_2">
+            نحافظ على سلامة أجهزتك التقنية عبر حلول موثوقة ومدروسة للهواتف، اللابتوبات، منصات الألعاب، الشاشات، وسائط التخزين، والأجهزة المنزلية الذكية.
+          </p>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <!-- Global Modal Dialog (Login, Register & Google Chooser) -->
   <div id="appModal" class="modal-overlay" style="display: none;">
     <div class="modal-content">
       <button id="modalCloseBtn" class="modal-close" aria-label="Close modal">&times;</button>
@@ -79,32 +154,31 @@
     </div>
   </div>
 
-  <!-- Footer in Deep Obsidian -->
+  <!-- Footer -->
   <footer class="footer">
     <div class="container">
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 36px;">
         <div>
           <div class="logo" style="color: #FFFFFF; margin-bottom: 14px;">
-            <i class="fas fa-asterisk logo-spark"></i>
+            <i class="fas fa-asterisk logo-star"></i>
             <span>Fixora</span>
           </div>
           <p style="font-size: 13px; line-height: 1.6; color: #94A3B8;">
-            Fixing Tech Issues Fast and Right. Fixora is an AI-powered universal device diagnosis and repair platform helping consumers and businesses troubleshoot hardware safely and connect with verified specialists.
+            Fixing Tech Issues Fast and Right. Fixora provides expert IT support and intelligent universal hardware diagnostics for all consumer and enterprise electronics.
           </p>
         </div>
 
         <div>
-          <h4>Platform</h4>
+          <h4>المنصة</h4>
           <ul style="list-style: none; display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
-            <li><a href="#" data-nav="diagnose">Universal Device Diagnosis</a></li>
-            <li><a href="#" data-nav="guides">Repair Guides Library</a></li>
-            <li><a href="#" data-nav="technicians">Technician Marketplace</a></li>
-            <li><a href="/api/health" target="_blank">System Health & API</a></li>
+            <li><a href="#" data-nav="diagnose">تشخيص الأجهزة</a></li>
+            <li><a href="#" data-nav="guides">مكتبة أدلة الإصلاح</a></li>
+            <li><a href="#" data-nav="technicians">شبكة الفنيين</a></li>
           </ul>
         </div>
 
         <div>
-          <h4>Knowledge Datasets</h4>
+          <h4>قواعد البيانات المعتمدة</h4>
           <ul style="list-style: none; display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
             <li><a href="https://github.com/openrepair/data" target="_blank" rel="noopener">Open Repair Alliance</a></li>
             <li><a href="https://github.com/rub-ksv/MyFixit-Dataset" target="_blank" rel="noopener">MyFixit Dataset</a></li>
@@ -113,9 +187,9 @@
         </div>
 
         <div>
-          <h4>Safety & Quality</h4>
+          <h4>الأمان والموثوقية</h4>
           <p style="font-size: 13px; line-height: 1.6; color: #94A3B8;">
-            High-voltage components, lithium battery puncture risks, and microwave radiation repairs are strictly flagged as hazardous and routed to certified repair professionals.
+            يتم فحص الأعطال ذات المخاطر الكهربائية العالية أو بطاريات الليثيوم تلقائياً وتوجيه المستخدم لإجراءات السلامة وفنيي الصيانة المعتمدين.
           </p>
         </div>
       </div>
@@ -123,7 +197,7 @@
       <div class="footer-bottom">
         <div>&copy; 2026 Fixora Inc. All rights reserved.</div>
         <div style="display: flex; gap: 16px;">
-          <span>v2.5 High-End Hardware Edition</span>
+          <span>v2.8 Matte Dark Corporate Edition</span>
         </div>
       </div>
     </div>

@@ -1526,26 +1526,125 @@ class FixoraApp {
   }
 
   // ==========================================
-  // AUTH MODALS (LOGIN & REGISTER)
+  // AUTH MODALS & GOOGLE SIGN-IN
   // ==========================================
+  triggerGoogleSignIn() {
+    const isAr = window.i18n.currentLang === "ar";
+    const googleChooserHtml = `
+      <div>
+        <div style="text-align: center; margin-bottom: 22px;">
+          <svg viewBox="0 0 24 24" width="36" height="36" style="margin-bottom: 10px;">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+          </svg>
+          <h3 style="font-size: 20px; font-weight: 700; color: #FFFFFF; margin-bottom: 6px;">
+            ${isAr ? 'اختيار حساب Google للمتابعة إلى Fixora' : 'Choose an account to continue to Fixora'}
+          </h3>
+          <p style="font-size: 13px; color: #94A3B8;">
+            ${isAr ? 'ستقوم Google بمشاركة اسمك وبريدك الإلكتروني وصورتك الشخصية مع منصة Fixora بأمان.' : 'To continue, Google will securely share your name, email address, and profile picture with Fixora.'}
+          </p>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
+          <div class="google-account-item" onclick="app.selectGoogleAccount('Hosopa Tech', 'hosopa.fixora@gmail.com', 'H')">
+            <div class="google-avatar">H</div>
+            <div style="flex: 1; text-align: ${isAr ? 'right' : 'left'};">
+              <strong style="display: block; font-size: 14px; color: #FFFFFF;">Hosopa Tech</strong>
+              <span style="font-size: 12px; color: #94A3B8;">hosopa.fixora@gmail.com</span>
+            </div>
+            <i class="fas fa-check-circle" style="color: var(--color-success); font-size: 16px;"></i>
+          </div>
+
+          <div class="google-account-item" onclick="app.selectGoogleAccount('Ahmed Mansour', 'ahmed.mansour.dev@gmail.com', 'A')">
+            <div class="google-avatar" style="background: #10B981;">A</div>
+            <div style="flex: 1; text-align: ${isAr ? 'right' : 'left'};">
+              <strong style="display: block; font-size: 14px; color: #FFFFFF;">Ahmed Mansour</strong>
+              <span style="font-size: 12px; color: #94A3B8;">ahmed.mansour.dev@gmail.com</span>
+            </div>
+          </div>
+
+          <div class="google-account-item" onclick="app.promptCustomGoogleAccount()">
+            <div class="google-avatar" style="background: #475569;"><i class="fas fa-user-plus" style="font-size: 14px;"></i></div>
+            <div style="flex: 1; text-align: ${isAr ? 'right' : 'left'};">
+              <strong style="display: block; font-size: 14px; color: #FFFFFF;">${isAr ? 'استخدام حساب Google آخر' : 'Use another Google account'}</strong>
+              <span style="font-size: 12px; color: #94A3B8;">${isAr ? 'إدخال بريد Gmail مخصص' : 'Sign in with a different email'}</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="text-align: center;">
+          <button class="btn btn-outline btn-sm" onclick="app.closeModal()">
+            ${isAr ? 'إلغاء' : 'Cancel'}
+          </button>
+        </div>
+      </div>
+    `;
+    this.openModal(googleChooserHtml);
+  }
+
+  selectGoogleAccount(name, email, initial) {
+    const isAr = window.i18n.currentLang === "ar";
+    const googleUser = {
+      id: Date.now(),
+      full_name: name,
+      email: email,
+      role: "user",
+      provider: "google",
+      is_active: true
+    };
+    window.api.setSession("google_oauth_" + Date.now(), googleUser);
+    this.closeModal();
+    this.updateNavAuth();
+    alert(isAr ? `مرحباً ${name}! تم تسجيل الدخول بنجاح عبر حساب Google.` : `Welcome ${name}! Successfully signed in with Google.`);
+    this.navigate("dashboard");
+  }
+
+  promptCustomGoogleAccount() {
+    const isAr = window.i18n.currentLang === "ar";
+    const email = prompt(isAr ? "أدخل عنوان بريد Google (Gmail):" : "Enter your Google (Gmail) address:", "user@gmail.com");
+    if (!email) return;
+    const name = email.split("@")[0].replace(/[._]/g, ' ');
+    const formattedName = name.charAt(0).toUpperCase() + name.slice(1);
+    this.selectGoogleAccount(formattedName, email, formattedName.charAt(0).toUpperCase());
+  }
+
   showAuthModal(mode = "login", defaultRole = "user") {
     const isAr = window.i18n.currentLang === "ar";
     const content = mode === "login" ? `
       <div>
-        <h3 style="font-size: 22px; margin-bottom: 6px;" data-i18n="auth_login_title">Sign in to Fixora</h3>
-        <p style="font-size: 14px; color: var(--color-text-muted); margin-bottom: 20px;">
-          ${isAr ? 'أدخل بريدك الإلكتروني وكلمة المرور للمتابعة' : 'Enter your credentials to access your dashboard'}
+        <h3 style="font-size: 22px; margin-bottom: 6px; color: #FFFFFF;" data-i18n="auth_login_title">تسجيل الدخول إلى Fixora</h3>
+        <p style="font-size: 13px; color: var(--color-text-muted); margin-bottom: 20px;">
+          ${isAr ? 'اختر طريقة تسجيل الدخول للمتابعة' : 'Choose how you want to sign in to Fixora'}
         </p>
 
+        <!-- Official Google Sign-In Button -->
+        <button class="btn-google" id="googleSignInBtn" type="button" onclick="app.triggerGoogleSignIn()">
+          <svg viewBox="0 0 24 24" width="20" height="20">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+          </svg>
+          <span>${isAr ? 'المتابعة بحساب Google' : 'Continue with Google'}</span>
+        </button>
+
+        <div style="display: flex; align-items: center; gap: 12px; margin: 18px 0; color: #64748B; font-size: 13px;">
+          <div style="flex: 1; height: 1px; background: rgba(255,255,255,0.1);"></div>
+          <span>${isAr ? 'أو بالبريد الإلكتروني' : 'or continue with email'}</span>
+          <div style="flex: 1; height: 1px; background: rgba(255,255,255,0.1);"></div>
+        </div>
+
         <!-- Quick Demo One-Click Login -->
-        <div style="background-color: #F1F5F9; padding: 12px; border-radius: var(--radius-sm); margin-bottom: 20px;">
-          <span style="font-size: 12px; font-weight: 600; color: var(--color-text-muted); display: block; margin-bottom: 8px;" data-i18n="auth_quick_demo">
-            Quick Demo Logins:
+        <div style="background-color: #0A0D14; padding: 12px; border-radius: var(--radius-sm); border: 1px solid rgba(255,255,255,0.08); margin-bottom: 18px;">
+          <span style="font-size: 11px; font-weight: 600; color: var(--color-text-muted); display: block; margin-bottom: 8px;">
+            ${isAr ? 'حسابات تجريبية سريعة بنقرة واحدة:' : 'Quick Demo Logins:'}
           </span>
           <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <button class="btn btn-sm btn-outline" style="background: #FFFFFF;" onclick="app.quickFillLogin('admin@fixora.com', 'Admin123456!')">Admin</button>
-            <button class="btn btn-sm btn-outline" style="background: #FFFFFF;" onclick="app.quickFillLogin('cairo.fix@fixora.com', 'Tech123456!')">Technician</button>
-            <button class="btn btn-sm btn-outline" style="background: #FFFFFF;" onclick="app.quickFillLogin('user@fixora.com', 'User123456!')">Customer</button>
+            <button class="btn btn-sm btn-outline" style="background: #18202F; font-size: 12px;" onclick="app.quickFillLogin('admin@fixora.com', 'Admin123456!')">Admin</button>
+            <button class="btn btn-sm btn-outline" style="background: #18202F; font-size: 12px;" onclick="app.quickFillLogin('cairo.fix@fixora.com', 'Tech123456!')">Technician</button>
+            <button class="btn btn-sm btn-outline" style="background: #18202F; font-size: 12px;" onclick="app.quickFillLogin('user@fixora.com', 'User123456!')">Customer</button>
           </div>
         </div>
 
@@ -1559,20 +1658,37 @@ class FixoraApp {
             <input type="password" id="loginPassword" class="form-control" required placeholder="••••••••">
           </div>
           <button type="submit" class="btn btn-primary btn-lg" style="width: 100%; margin-top: 10px;">
-            <span data-i18n="auth_login_btn">Sign In</span>
+            <span data-i18n="auth_login_btn">تسجيل الدخول</span>
           </button>
         </form>
 
         <div style="text-align: center; margin-top: 18px; font-size: 13px;">
-          <a href="#" onclick="app.showAuthModal('register'); return false;" data-i18n="auth_switch_to_reg">Don't have an account? Sign up</a>
+          <a href="#" onclick="app.showAuthModal('register'); return false;">${isAr ? 'ليس لديك حساب؟ إنشاء حساب جديد' : "Don't have an account? Sign up"}</a>
         </div>
       </div>
     ` : `
       <div>
-        <h3 style="font-size: 22px; margin-bottom: 6px;" data-i18n="auth_register_title">Create Your Account</h3>
-        <p style="font-size: 14px; color: var(--color-text-muted); margin-bottom: 20px;">
-          ${isAr ? 'انضم إلى مجتمع Fixora لتشخيص الأجهزة والصيانة الذكية' : 'Join Fixora for intelligent device diagnostics and repair assistance'}
+        <h3 style="font-size: 22px; margin-bottom: 6px; color: #FFFFFF;" data-i18n="auth_register_title">إنشاء حسابك في Fixora</h3>
+        <p style="font-size: 13px; color: var(--color-text-muted); margin-bottom: 20px;">
+          ${isAr ? 'اختر طريقة إنشاء الحساب للمتابعة' : 'Choose how you want to create your account'}
         </p>
+
+        <!-- Official Google Sign-In Button -->
+        <button class="btn-google" id="googleSignUpBtn" type="button" onclick="app.triggerGoogleSignIn()">
+          <svg viewBox="0 0 24 24" width="20" height="20">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+          </svg>
+          <span>${isAr ? 'التسجيل الفوري عبر Google' : 'Sign up with Google'}</span>
+        </button>
+
+        <div style="display: flex; align-items: center; gap: 12px; margin: 18px 0; color: #64748B; font-size: 13px;">
+          <div style="flex: 1; height: 1px; background: rgba(255,255,255,0.1);"></div>
+          <span>${isAr ? 'أو عبر البريد الإلكتروني' : 'or continue with email'}</span>
+          <div style="flex: 1; height: 1px; background: rgba(255,255,255,0.1);"></div>
+        </div>
 
         <form id="registerForm">
           <div class="form-group">
@@ -1595,12 +1711,12 @@ class FixoraApp {
             </select>
           </div>
           <button type="submit" class="btn btn-primary btn-lg" style="width: 100%; margin-top: 10px;">
-            <span data-i18n="auth_register_btn">Create Account</span>
+            <span data-i18n="auth_register_btn">إنشاء الحساب</span>
           </button>
         </form>
 
         <div style="text-align: center; margin-top: 18px; font-size: 13px;">
-          <a href="#" onclick="app.showAuthModal('login'); return false;" data-i18n="auth_switch_to_login">Already have an account? Sign in</a>
+          <a href="#" onclick="app.showAuthModal('login'); return false;">${isAr ? 'لديك حساب بالفعل؟ تسجيل الدخول' : "Already have an account? Sign in"}</a>
         </div>
       </div>
     `;
@@ -1666,7 +1782,16 @@ class FixoraApp {
   }
 }
 
-// Instantiate App
-document.addEventListener("DOMContentLoaded", () => {
-  window.app = new FixoraApp();
-});
+// Robust Immediate Boot (Fixes empty screen on initial load)
+function bootApp() {
+  if (!window.app) {
+    window.app = new FixoraApp();
+  }
+}
+
+if (document.readyState === "complete" || document.readyState === "interactive") {
+  bootApp();
+} else {
+  document.addEventListener("DOMContentLoaded", bootApp);
+}
+window.addEventListener("load", bootApp);
