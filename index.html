@@ -4,12 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Fixora — AI-Powered Smart Device Diagnosis & Repair Platform</title>
-  <meta name="description" content="Fixora — Universal smart device diagnosis, step-by-step repair guides, and certified hardware technician marketplace.">
+  <meta name="description" content="Fixora — Fixing Tech Issues Fast and Right. Universal smart device diagnosis, step-by-step repair guides, and certified hardware technician network.">
 
   <!-- Google Fonts: Inter, Poppins, Cairo -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- FontAwesome 6 Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -19,19 +19,20 @@
 </head>
 <body>
 
-  <!-- Navigation Bar -->
+  <!-- Navigation Bar (ByteFix Inspired Dark Nav) -->
   <header class="navbar">
     <div class="container nav-container">
       
-      <!-- Brand Logo -->
+      <!-- Brand Logo with Glowing Star -->
       <a href="#" class="logo" data-nav="home">
-        <i class="fas fa-screwdriver-wrench"></i>
+        <i class="fas fa-asterisk logo-spark"></i>
         <span>Fixora</span>
       </a>
 
       <!-- Desktop Nav Links -->
       <ul class="nav-links" id="navLinks">
         <li><a href="#" class="nav-link active" data-nav="home" data-i18n="nav_home">Home</a></li>
+        <li><a href="#about" class="nav-link" data-nav="about" data-i18n="nav_about">About Us</a></li>
         <li><a href="#" class="nav-link" data-nav="diagnose" data-i18n="nav_diagnose">Diagnose Device</a></li>
         <li><a href="#" class="nav-link" data-nav="guides" data-i18n="nav_guides">Repair Guides</a></li>
         <li><a href="#" class="nav-link" data-nav="technicians" data-i18n="nav_technicians">Technicians</a></li>
@@ -47,16 +48,18 @@
           <span class="lang-btn-text">العربية</span>
         </button>
 
+        <!-- Request Repair Pill Button (As seen in ByteFix reference) -->
+        <button class="btn btn-primary btn-sm" onclick="app.navigate('technicians')" data-i18n="hero_request_repair">Request a Repair Today</button>
+
         <!-- Guest Actions -->
         <div id="navGuestActions" style="display: flex; gap: 8px;">
           <button id="navLoginBtn" class="btn btn-outline btn-sm" data-i18n="nav_login">Log In</button>
-          <button id="navRegisterBtn" class="btn btn-primary btn-sm" data-i18n="nav_register">Get Started</button>
         </div>
 
         <!-- Authenticated User Actions -->
         <div id="navUserActions" style="display: none; align-items: center; gap: 10px;">
-          <span style="font-size: 13px; font-weight: 600; color: var(--color-primary);" id="navUserName"></span>
-          <button id="navLogoutBtn" class="btn btn-outline btn-sm" style="color: var(--color-danger); border-color: #FCA5A5;">
+          <span style="font-size: 13px; font-weight: 600; color: var(--color-accent);" id="navUserName"></span>
+          <button id="navLogoutBtn" class="btn btn-outline btn-sm" style="color: var(--color-danger); border-color: rgba(239, 68, 68, 0.4);">
             <i class="fas fa-sign-out-alt"></i>
           </button>
         </div>
@@ -76,17 +79,17 @@
     </div>
   </div>
 
-  <!-- Footer -->
+  <!-- Footer in Deep Obsidian -->
   <footer class="footer">
     <div class="container">
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 36px;">
         <div>
           <div class="logo" style="color: #FFFFFF; margin-bottom: 14px;">
-            <i class="fas fa-screwdriver-wrench" style="color: var(--color-accent);"></i>
+            <i class="fas fa-asterisk logo-spark"></i>
             <span>Fixora</span>
           </div>
           <p style="font-size: 13px; line-height: 1.6; color: #94A3B8;">
-            Fixora is an AI-powered universal device diagnosis and repair platform helping consumers diagnose electronic faults across all devices safely, follow verified repair guides, and connect with certified technicians.
+            Fixing Tech Issues Fast and Right. Fixora is an AI-powered universal device diagnosis and repair platform helping consumers and businesses troubleshoot hardware safely and connect with verified specialists.
           </p>
         </div>
 
@@ -110,7 +113,7 @@
         </div>
 
         <div>
-          <h4>Safety First</h4>
+          <h4>Safety & Quality</h4>
           <p style="font-size: 13px; line-height: 1.6; color: #94A3B8;">
             High-voltage components, lithium battery puncture risks, and microwave radiation repairs are strictly flagged as hazardous and routed to certified repair professionals.
           </p>
@@ -120,7 +123,7 @@
       <div class="footer-bottom">
         <div>&copy; 2026 Fixora Inc. All rights reserved.</div>
         <div style="display: flex; gap: 16px;">
-          <span>v2.0 Universal Device Edition</span>
+          <span>v2.5 High-End Hardware Edition</span>
         </div>
       </div>
     </div>

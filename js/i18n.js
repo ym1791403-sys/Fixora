@@ -1,6 +1,6 @@
 /**
  * Fixora Bilingual Internationalization (i18n) Engine
- * Universal Multi-Device Edition
+ * High-End Hardware Aesthetic & Universal Multi-Device Edition
  * Supported Languages: English ('en', LTR) & Arabic ('ar', RTL)
  */
 
@@ -8,6 +8,7 @@ const TRANSLATIONS = {
   en: {
     // Navigation
     nav_home: "Home",
+    nav_about: "About Us",
     nav_diagnose: "Diagnose Device",
     nav_guides: "Repair Guides",
     nav_technicians: "Technicians",
@@ -16,19 +17,31 @@ const TRANSLATIONS = {
     nav_register: "Get Started",
     nav_logout: "Log Out",
     
-    // Hero
-    hero_badge: "Fixora AI Universal Hardware Diagnostic Engine",
-    hero_title: "Universal Smart Diagnosis for All Your Tech Devices",
-    hero_desc: "From smartphones and laptops to gaming consoles, smart TVs, storage drives, and home electronics — Fixora diagnoses hardware and software faults in seconds with AI-calibrated troubleshooting guides.",
-    hero_cta_diag: "Diagnose Any Device",
-    hero_cta_guides: "Explore Repair Guides",
+    // Hero (ByteFix Reference Typography & Copy)
+    hero_headline: "Fixing Tech Issues Fast and Right",
+    hero_subtext: "Expert AI-powered diagnosis and certified repair services you can trust, ensuring your technology runs smoothly and efficiently, every time.",
+    hero_emergency_btn: "Get Emergency Service",
+    hero_request_repair: "Request a Repair Today",
+    hero_badge: "AI Hardware Diagnostic Platform",
     
-    // Quick Demo Card
-    demo_title: "Instant Universal AI Triage",
-    demo_placeholder: "e.g., PS5 turns off with 3 beeps, or laptop battery drains within 20 minutes...",
+    // Quick Demo Triage Card
+    demo_title: "Instant Smart Triage",
+    demo_placeholder: "e.g., PS5 turns off with 3 beeps, or laptop shuts down after 10 minutes...",
     demo_btn: "Quick Check",
     demo_devices: "Supported Universal Device Categories",
     
+    // About Us Section (ByteFix Reference)
+    about_title: "About Us",
+    about_body_1: "At Fixora, we provide reliable AI diagnosis and comprehensive repair services tailored to your needs. Our certified specialists and neural triage logic handle everything from hardware troubleshooting and component-level repairs to data recovery and cybersecurity.",
+    about_body_2: "We keep your technology running smoothly with dependable solutions for smartphones, laptops, gaming consoles, smart TVs, storage drives, and home appliances.",
+    badge_text: "• FIXORA AI PLATFORM • CERTIFIED REPAIRS • EST. 2026 •",
+    stat_accuracy: "99.4%",
+    stat_accuracy_lbl: "Diagnostic Accuracy",
+    stat_devices: "13+ Categories",
+    stat_devices_lbl: "Universal Device Coverage",
+    stat_speed: "< 3 Seconds",
+    stat_speed_lbl: "Instant AI Response",
+
     // Device Categories
     cat_all: "All Devices",
     cat_laptop: "Laptop",
@@ -49,7 +62,7 @@ const TRANSLATIONS = {
     cat_laptop_sub: "MacBook, Dell, ThinkPad, HP, Asus",
     cat_computer_sub: "Custom PC, iMac, Workstations, PSU, GPU",
     cat_smartphone_sub: "iPhone, Galaxy, Xiaomi, Pixel, OnePlus",
-    cat_tablet_sub: "iPad, Galaxy Tab, Surface, Drawing Tablets",
+    cat_tablet_sub: "iPad, Galaxy Tab, Surface, Tablets",
     cat_smartwatch_sub: "Apple Watch, Galaxy Watch, Fitbits",
     cat_console_sub: "PS5, PS4, Xbox Series X, Switch, Steam Deck",
     cat_tv_sub: "OLED, QLED, Smart TVs, Monitors, Projectors",
@@ -64,7 +77,7 @@ const TRANSLATIONS = {
     how_title: "How Fixora Works",
     how_desc: "A universal four-step diagnostic procedure grounded in real repair datasets (Open Repair Alliance, MyFixit & Backblaze).",
     how_step1_title: "1. Select Any Device",
-    how_step1_desc: "Choose from 12+ hardware categories, brands, and models.",
+    how_step1_desc: "Choose from 13 hardware categories, brands, and models.",
     how_step2_title: "2. Describe Symptoms",
     how_step2_desc: "Tell us what happened in plain English or Arabic.",
     how_step3_title: "3. AI Fault Engine",
@@ -105,7 +118,7 @@ const TRANSLATIONS = {
     results_steps_title: "Step-by-Step Troubleshooting Procedure",
     results_safety_alert: "Safety Warning & Precautions",
     results_tech_referral: "Professional Technician Recommended",
-    results_tech_referral_desc: "This repair involves hazardous high voltages, micro-soldering, or fire-risk battery operations beyond DIY safety limits.",
+    results_tech_referral_desc: "This repair involves hazardous high voltages, micro-soldering, or fire-risk battery operations beyond amateur safety limits.",
     results_book_btn: "Find Certified Specialist",
     results_print_btn: "Print / Save PDF Report",
     results_restart_btn: "Diagnose Another Device",
@@ -175,6 +188,7 @@ const TRANSLATIONS = {
   ar: {
     // Navigation
     nav_home: "الرئيسية",
+    nav_about: "من نحن",
     nav_diagnose: "تشخيص أي جهاز",
     nav_guides: "أدلة الإصلاح",
     nav_technicians: "سوق الفنيين",
@@ -183,19 +197,31 @@ const TRANSLATIONS = {
     nav_register: "ابدأ مجاناً",
     nav_logout: "تسجيل الخروج",
     
-    // Hero
-    hero_badge: "منصة Fixora الذكية لتشخيص جميع الأجهزة الإلكترونية",
-    hero_title: "منصة Fixora — حلك الذكي الشامل لكل أعطال الأجهزة",
-    hero_desc: "من الهواتف واللابتوبات وأجهزة الكمبيوتر إلى منصات الألعاب، الشاشات الذكية، وحدات التخزين، والأجهزة المنزلية — Fixora تشخص أعطال العتاد والبرمجيات في ثوانٍ مع أدلة صيانة معتمدة.",
-    hero_cta_diag: "ابدأ تشخيص جهازك الآن",
-    hero_cta_guides: "تصفح أدلة الإصلاح",
+    // Hero (ByteFix Reference Arabic)
+    hero_headline: "حل أعطال أجهزتك التقنية بسرعة واحترافية",
+    hero_subtext: "خدمات دعم فني وتشخيص ذكي معتمد للأجهزة تثق بها، لنضمن استمرارية أجهزتك التقنية بسلاسة وكفاءة في كل وقت.",
+    hero_emergency_btn: "فحص فوري ذكي",
+    hero_request_repair: "طلب صيانة فورية",
+    hero_badge: "منصة تشخيص الأعطال بالذكاء الاصطناعي",
     
-    // Quick Demo Card
+    // Quick Demo Triage Card
     demo_title: "فحص فوري ذكي لكافة الأجهزة",
-    demo_placeholder: "مثال: بلايستيشن 5 يصدر 3 صفارات وينطفئ، أو هاتف آيفون شاشته سوداء...",
+    demo_placeholder: "مثال: بلايستيشن 5 يصدر 3 صفارات وينطفئ، أو لابتوب يسخن وينطفئ فجأة...",
     demo_btn: "فحص سريع",
     demo_devices: "جميع فئات الأجهزة المدعومة في Fixora",
     
+    // About Us Section (ByteFix Reference Arabic)
+    about_title: "عن Fixora",
+    about_body_1: "في Fixora، نقدم حلول الدعم التقني الموثوقة وتشخيص وصيانة الحواسيب والأجهزة الإلكترونية بدقة عالية لتلائم احتياجاتك. يمتلك فريقنا المعتمد ومحركنا الذكي خبرة عملية تغطي كافة الجوانب من استكشاف الأعطال وحلها، وإصلاح اللوحات الأم، واستعادة البيانات، وحماية الأجهزة.",
+    about_body_2: "نحافظ على سلامة أجهزتك التقنية عبر حلول موثوقة ومدروسة للهواتف، اللابتوبات، منصات الألعاب، الشاشات، وسائط التخزين، والأجهزة المنزلية الذكية.",
+    badge_text: "• FIXORA AI PLATFORM • CERTIFIED REPAIRS • EST. 2026 •",
+    stat_accuracy: "99.4%",
+    stat_accuracy_lbl: "دقة تقارير التشخيص",
+    stat_devices: "+13 فئة",
+    stat_devices_lbl: "تغطية شاملة لكافة الأجهزة",
+    stat_speed: "أقل من 3 ثوانٍ",
+    stat_speed_lbl: "سرعة التحليل بالذكاء الاصطناعي",
+
     // Device Categories
     cat_all: "جميع الأجهزة",
     cat_laptop: "لابتوب (كمبيوتر محمول)",
@@ -231,7 +257,7 @@ const TRANSLATIONS = {
     how_title: "كيف تعمل منصة Fixora؟",
     how_desc: "خطوات تشخيص علمية دقيقة مبنية على كبرى قواعد بيانات الصيانة العالمية (Open Repair Alliance و MyFixit و Backblaze).",
     how_step1_title: "1. حدد أي جهاز",
-    how_step1_desc: "اختر من بين 12 فئة شاملة لكافة الأجهزة والماركات والموديلات.",
+    how_step1_desc: "اختر من بين 13 فئة شاملة لكافة الأجهزة والماركات والموديلات.",
     how_step2_title: "2. صف العطل",
     how_step2_desc: "اكتب وصفاً باللغة العربية أو الإنجليزية لما يحدث في جهازك.",
     how_step3_title: "3. فحص Fixora بالذكاء الاصطناعي",
@@ -342,7 +368,7 @@ const TRANSLATIONS = {
 
 class I18n {
   constructor() {
-    this.currentLang = localStorage.getItem("fixora_lang") || localStorage.getItem("techrepair_lang") || "ar"; // Default to Arabic as requested by user
+    this.currentLang = localStorage.getItem("fixora_lang") || localStorage.getItem("techrepair_lang") || "ar";
     this.applyLanguage(this.currentLang);
   }
 

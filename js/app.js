@@ -114,6 +114,13 @@ class FixoraApp {
       case "home":
         this.renderHome(mainContainer);
         break;
+      case "about":
+        this.renderHome(mainContainer);
+        setTimeout(() => {
+          const aboutEl = document.getElementById("about");
+          if (aboutEl) aboutEl.scrollIntoView({ behavior: "smooth" });
+        }, 60);
+        break;
       case "diagnose":
         this.renderDiagnose(mainContainer);
         break;
@@ -149,73 +156,141 @@ class FixoraApp {
   renderHome(container) {
     const isAr = window.i18n.currentLang === "ar";
     container.innerHTML = `
-      <!-- Hero Section -->
-      <section class="hero-section">
-        <div class="container hero-grid">
+      <!-- ByteFix-Inspired Ultra-Modern Hardware Hero Section -->
+      <section class="hero-wrapper">
+        <!-- Vertical Social Bar (As featured in ByteFix reference) -->
+        <div class="hero-social-bar">
+          <a href="#" class="hero-social-link" title="Facebook"><i class="fab fa-facebook-f"></i></a>
+          <a href="#" class="hero-social-link" title="Instagram"><i class="fab fa-instagram"></i></a>
+          <a href="#" class="hero-social-link" title="X (Twitter)"><i class="fab fa-x-twitter"></i></a>
+          <a href="#" class="hero-social-link" title="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+        </div>
+
+        <div class="container hero-content-grid">
           <div>
-            <div class="hero-badge">
-              <i class="fas fa-microchip"></i>
-              <span data-i18n="hero_badge">AI-Powered Technical Diagnostic Engine</span>
+            <div style="display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px; background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: var(--radius-full); margin-bottom: 24px;">
+              <i class="fas fa-asterisk logo-spark" style="font-size: 13px;"></i>
+              <span style="font-size: 13px; font-weight: 600; color: var(--color-accent);" data-i18n="hero_badge">${window.i18n.t('hero_badge')}</span>
             </div>
-            <h1 class="hero-title" data-i18n="hero_title">Your Smart Solution for Every Tech Problem</h1>
-            <p class="hero-description" data-i18n="hero_desc">
-              Identify computer, laptop, and smartphone faults in seconds. Get AI-calibrated troubleshooting guides or connect with verified technicians when safety requires expert hands.
+
+            <h1 class="hero-headline" data-i18n="hero_headline">
+              ${window.i18n.t('hero_headline')}
+            </h1>
+
+            <p class="hero-subtext" data-i18n="hero_subtext">
+              ${window.i18n.t('hero_subtext')}
             </p>
-            <div class="hero-actions">
-              <button class="btn btn-primary btn-lg" onclick="app.navigate('diagnose')">
-                <i class="fas fa-stethoscope"></i>
-                <span data-i18n="hero_cta_diag">Diagnose Your Device</span>
+
+            <div class="hero-cta-group">
+              <button class="btn btn-emergency btn-lg" onclick="app.navigate('diagnose')">
+                <i class="fas fa-bolt" style="color: var(--color-secondary);"></i>
+                <span data-i18n="hero_emergency_btn">${window.i18n.t('hero_emergency_btn')}</span>
               </button>
-              <button class="btn btn-outline btn-lg" onclick="app.navigate('guides')">
-                <i class="fas fa-book-open"></i>
-                <span data-i18n="hero_cta_guides">Explore Repair Guides</span>
+              <button class="btn btn-primary btn-lg" onclick="app.navigate('technicians')">
+                <i class="fas fa-screwdriver-wrench"></i>
+                <span data-i18n="hero_request_repair">${window.i18n.t('hero_request_repair')}</span>
               </button>
             </div>
           </div>
 
-          <!-- Quick Interactive Triage Card -->
-          <div class="hero-card-preview">
+          <!-- Glass Triage Interactive Widget -->
+          <div class="hero-triage-card">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
-              <h3 style="font-size: 18px;" data-i18n="demo_title">Instant Smart Triage</h3>
-              <span class="tag" style="background-color: var(--color-accent-light); color: var(--color-secondary);">AI Active</span>
+              <h3 style="font-size: 18px; color: #FFFFFF;" data-i18n="demo_title">${window.i18n.t('demo_title')}</h3>
+              <span class="tag" style="background-color: rgba(56, 189, 248, 0.18); color: var(--color-accent); border: 1px solid rgba(56, 189, 248, 0.4);">
+                <i class="fas fa-circle" style="font-size: 7px; color: #10B981;"></i> AI Live
+              </span>
             </div>
-            <p style="font-size: 14px; color: var(--color-text-muted); margin-bottom: 14px;">
-              ${isAr ? 'اختر جهازك واكتب المشكلة باختصار لمعاينتها فوراً:' : 'Select your device and describe your problem for instant check:'}
+            
+            <p style="font-size: 13px; color: var(--color-text-muted); margin-bottom: 14px;">
+              ${isAr ? 'اختر جهازك واكتب المشكلة باختصار لفحصها فوراً:' : 'Select your device and describe the problem for instant diagnosis:'}
             </p>
             
             <div style="display: flex; gap: 8px; margin-bottom: 14px; overflow-x: auto; padding-bottom: 4px; flex-wrap: wrap;">
               <button class="btn btn-sm btn-outline quick-cat-btn active" data-cat="Smartphone"><i class="fas fa-mobile-alt"></i> Smartphone</button>
               <button class="btn btn-sm btn-outline quick-cat-btn" data-cat="Laptop"><i class="fas fa-laptop"></i> Laptop</button>
-              <button class="btn btn-sm btn-outline quick-cat-btn" data-cat="Desktop Computer"><i class="fas fa-desktop"></i> PC</button>
               <button class="btn btn-sm btn-outline quick-cat-btn" data-cat="Gaming Console"><i class="fas fa-gamepad"></i> Console</button>
               <button class="btn btn-sm btn-outline quick-cat-btn" data-cat="Smart TV"><i class="fas fa-tv"></i> TV</button>
               <button class="btn btn-sm btn-outline quick-cat-btn" data-cat="Storage"><i class="fas fa-hard-drive"></i> Drive/SSD</button>
-              <button class="btn btn-sm btn-outline quick-cat-btn" data-cat="Tablet"><i class="fas fa-tablet-alt"></i> Tablet</button>
+              <button class="btn btn-sm btn-outline quick-cat-btn" data-cat="Desktop Computer"><i class="fas fa-desktop"></i> PC</button>
             </div>
 
             <div class="form-group" style="margin-bottom: 14px;">
-              <textarea id="quickDiagInput" class="form-control" style="min-height: 85px;" data-i18n-placeholder="demo_placeholder" placeholder="e.g., My laptop becomes very hot and shuts down after 10 minutes..."></textarea>
+              <textarea id="quickDiagInput" class="form-control" style="min-height: 90px; resize: none;" data-i18n-placeholder="demo_placeholder" placeholder="e.g., PS5 turns off with 3 beeps, or laptop shuts down after 10 minutes..."></textarea>
             </div>
             
             <button id="quickDiagSubmit" class="btn btn-primary" style="width: 100%;">
-              <i class="fas fa-bolt"></i>
-              <span data-i18n="demo_btn">Quick Check</span>
+              <i class="fas fa-microchip"></i>
+              <span data-i18n="demo_btn">${window.i18n.t('demo_btn')}</span>
             </button>
           </div>
         </div>
       </section>
 
-      <!-- Supported Devices Section -->
-      <section style="padding: 60px 0; background-color: #FFFFFF; border-bottom: 1px solid var(--color-border);">
+      <!-- ByteFix-Inspired About Us Section with Rotating Circular Badge -->
+      <section class="about-section" id="about">
+        <div class="container about-grid">
+          
+          <!-- Circular Rotating Badge (ByteFix Seal) -->
+          <div class="experience-badge-wrapper">
+            <div class="experience-badge">
+              <svg viewBox="0 0 160 160" class="badge-svg">
+                <path id="badge-circle" d="M 80, 80 m -60, 0 a 60,60 0 1,1 120,0 a 60,60 0 1,1 -120,0" fill="none" />
+                <text class="badge-text">
+                  <textPath href="#badge-circle" startOffset="0%">
+                    ${window.i18n.t('badge_text')}
+                  </textPath>
+                </text>
+              </svg>
+              <div class="badge-center-icon">
+                <i class="fas fa-asterisk"></i>
+              </div>
+            </div>
+          </div>
+
+          <!-- Editorial Copy & Highlights -->
+          <div>
+            <h2 class="about-heading" data-i18n="about_title">${window.i18n.t('about_title')}</h2>
+            <p class="about-body" data-i18n="about_body_1">
+              ${window.i18n.t('about_body_1')}
+            </p>
+            <p class="about-body" style="margin-bottom: 24px;" data-i18n="about_body_2">
+              ${window.i18n.t('about_body_2')}
+            </p>
+
+            <div class="about-stats-row">
+              <div class="about-stat-box">
+                <div class="about-stat-num text-gradient" data-i18n="stat_accuracy">${window.i18n.t('stat_accuracy')}</div>
+                <div class="about-stat-lbl" data-i18n="stat_accuracy_lbl">${window.i18n.t('stat_accuracy_lbl')}</div>
+              </div>
+              <div class="about-stat-box">
+                <div class="about-stat-num text-gradient" data-i18n="stat_devices">${window.i18n.t('stat_devices')}</div>
+                <div class="about-stat-lbl" data-i18n="stat_devices_lbl">${window.i18n.t('stat_devices_lbl')}</div>
+              </div>
+              <div class="about-stat-box">
+                <div class="about-stat-num text-gradient" data-i18n="stat_speed">${window.i18n.t('stat_speed')}</div>
+                <div class="about-stat-lbl" data-i18n="stat_speed_lbl">${window.i18n.t('stat_speed_lbl')}</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- Supported Universal Devices Section -->
+      <section class="devices-section">
         <div class="container">
-          <div style="text-align: center; max-width: 650px; margin: 0 auto 36px;">
-            <h2 style="font-size: 28px; margin-bottom: 10px;" data-i18n="demo_devices">Supported Device Categories</h2>
+          <div style="text-align: center; max-width: 700px; margin: 0 auto 36px;">
+            <div style="display: inline-block; padding: 4px 14px; background: rgba(56, 189, 248, 0.1); border-radius: var(--radius-full); font-size: 12px; font-weight: 700; color: var(--color-accent); text-transform: uppercase; margin-bottom: 12px; letter-spacing: 1px;">
+              Universal Hardware Coverage
+            </div>
+            <h2 style="font-size: 36px; margin-bottom: 12px; color: #FFFFFF;" data-i18n="demo_devices">${window.i18n.t('demo_devices')}</h2>
             <p style="color: var(--color-text-muted); font-size: 16px;">
-              ${isAr ? 'ندعم جميع الأجهزة الإلكترونية الشائعة عبر معايير تشخيص متقدمة' : 'Comprehensive diagnostic support across all personal computing and mobile hardware.'}
+              ${isAr ? 'ندعم جميع الأجهزة الإلكترونية والمنزلية عبر نماذج تشخيص مدروسة مبنية على قواعد بيانات الصيانة العالمية.' : 'Comprehensive diagnostic support across all personal computing, mobile, entertainment, storage, and home electronics.'}
             </p>
           </div>
 
-          <div class="device-categories-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px;">
+          <div class="device-categories-grid">
             ${[
               { cat: "Smartphone", icon: "fa-mobile-alt", key: "cat_smartphone", sub: "cat_smartphone_sub" },
               { cat: "Laptop", icon: "fa-laptop", key: "cat_laptop", sub: "cat_laptop_sub" },
@@ -231,67 +306,67 @@ class FixoraApp {
               { cat: "Home Appliance", icon: "fa-plug", key: "cat_appliance", sub: "cat_appliance_sub" },
               { cat: "Other", icon: "fa-microchip", key: "cat_other", sub: "cat_other_sub" }
             ].map(item => `
-              <div class="device-category-card" onclick="app.startDiagnosisWithCat('${item.cat}')" style="cursor: pointer; padding: 22px 14px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: #FFFFFF; text-align: center; transition: all 0.2s ease;">
-                <i class="fas ${item.icon}" style="font-size: 32px; color: var(--color-primary); margin-bottom: 10px; display: block;"></i>
-                <strong style="display: block; font-size: 14px; margin-bottom: 4px;" data-i18n="${item.key}">${window.i18n.t(item.key)}</strong>
-                <span style="font-size: 11px; color: var(--color-text-muted); line-height: 1.3; display: block;" data-i18n="${item.sub}">${window.i18n.t(item.sub)}</span>
+              <div class="device-category-card" onclick="app.startDiagnosisWithCat('${item.cat}')">
+                <i class="fas ${item.icon}"></i>
+                <strong style="color: #FFFFFF; font-size: 14px;" data-i18n="${item.key}">${window.i18n.t(item.key)}</strong>
+                <span style="font-size: 11px; color: var(--color-text-muted); line-height: 1.3;" data-i18n="${item.sub}">${window.i18n.t(item.sub)}</span>
               </div>
             `).join('')}
           </div>
         </div>
       </section>
 
-      <!-- How It Works Section -->
-      <section style="padding: 70px 0;">
+      <!-- How Fixora Works Section -->
+      <section style="padding: 85px 0; background-color: var(--color-bg); border-bottom: 1px solid var(--color-border);">
         <div class="container">
-          <div style="text-align: center; max-width: 650px; margin: 0 auto 48px;">
-            <h2 style="font-size: 32px; margin-bottom: 12px;" data-i18n="how_title">How Fixora Works</h2>
+          <div style="text-align: center; max-width: 650px; margin: 0 auto 52px;">
+            <h2 style="font-size: 36px; margin-bottom: 14px; color: #FFFFFF;" data-i18n="how_title">${window.i18n.t('how_title')}</h2>
             <p style="color: var(--color-text-muted); font-size: 16px;" data-i18n="how_desc">
-              A reliable four-step diagnostic procedure grounded in real repair datasets.
+              ${window.i18n.t('how_desc')}
             </p>
           </div>
 
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px;">
-            <div class="card" style="text-align: center; padding: 32px 20px;">
-              <div style="width: 50px; height: 50px; border-radius: 50%; background: rgba(37,99,235,0.1); color: var(--color-secondary); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-size: 22px;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 24px;">
+            <div class="card" style="text-align: center; padding: 36px 24px;">
+              <div style="width: 54px; height: 54px; border-radius: 50%; background: rgba(37,99,235,0.15); color: var(--color-accent); display: flex; align-items: center; justify-content: center; margin: 0 auto 18px; font-size: 24px;">
                 <i class="fas fa-laptop-medical"></i>
               </div>
-              <h4 style="margin-bottom: 8px;" data-i18n="how_step1_title">1. Select Device</h4>
-              <p style="font-size: 14px; color: var(--color-text-muted);" data-i18n="how_step1_desc">Choose your hardware category, brand, and model.</p>
+              <h4 style="margin-bottom: 8px; color: #FFFFFF;" data-i18n="how_step1_title">${window.i18n.t('how_step1_title')}</h4>
+              <p style="font-size: 14px; color: var(--color-text-muted);" data-i18n="how_step1_desc">${window.i18n.t('how_step1_desc')}</p>
             </div>
 
-            <div class="card" style="text-align: center; padding: 32px 20px;">
-              <div style="width: 50px; height: 50px; border-radius: 50%; background: rgba(6,182,212,0.1); color: var(--color-accent); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-size: 22px;">
+            <div class="card" style="text-align: center; padding: 36px 24px;">
+              <div style="width: 54px; height: 54px; border-radius: 50%; background: rgba(56,189,248,0.15); color: var(--color-accent); display: flex; align-items: center; justify-content: center; margin: 0 auto 18px; font-size: 24px;">
                 <i class="fas fa-comment-dots"></i>
               </div>
-              <h4 style="margin-bottom: 8px;" data-i18n="how_step2_title">2. Describe Symptoms</h4>
-              <p style="font-size: 14px; color: var(--color-text-muted);" data-i18n="how_step2_desc">Tell us what happened in plain natural language.</p>
+              <h4 style="margin-bottom: 8px; color: #FFFFFF;" data-i18n="how_step2_title">${window.i18n.t('how_step2_title')}</h4>
+              <p style="font-size: 14px; color: var(--color-text-muted);" data-i18n="how_step2_desc">${window.i18n.t('how_step2_desc')}</p>
             </div>
 
-            <div class="card" style="text-align: center; padding: 32px 20px;">
-              <div style="width: 50px; height: 50px; border-radius: 50%; background: rgba(37,99,235,0.1); color: var(--color-secondary); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-size: 22px;">
+            <div class="card" style="text-align: center; padding: 36px 24px;">
+              <div style="width: 54px; height: 54px; border-radius: 50%; background: rgba(37,99,235,0.15); color: var(--color-secondary); display: flex; align-items: center; justify-content: center; margin: 0 auto 18px; font-size: 24px;">
                 <i class="fas fa-brain"></i>
               </div>
-              <h4 style="margin-bottom: 8px;" data-i18n="how_step3_title">3. AI Analysis</h4>
-              <p style="font-size: 14px; color: var(--color-text-muted);" data-i18n="how_step3_desc">Our engine checks safety hazards and identifies root causes.</p>
+              <h4 style="margin-bottom: 8px; color: #FFFFFF;" data-i18n="how_step3_title">${window.i18n.t('how_step3_title')}</h4>
+              <p style="font-size: 14px; color: var(--color-text-muted);" data-i18n="how_step3_desc">${window.i18n.t('how_step3_desc')}</p>
             </div>
 
-            <div class="card" style="text-align: center; padding: 32px 20px;">
-              <div style="width: 50px; height: 50px; border-radius: 50%; background: rgba(22,163,74,0.1); color: var(--color-success); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-size: 22px;">
+            <div class="card" style="text-align: center; padding: 36px 24px;">
+              <div style="width: 54px; height: 54px; border-radius: 50%; background: rgba(16,185,129,0.15); color: var(--color-success); display: flex; align-items: center; justify-content: center; margin: 0 auto 18px; font-size: 24px;">
                 <i class="fas fa-tools"></i>
               </div>
-              <h4 style="margin-bottom: 8px;" data-i18n="how_step4_title">4. Fix or Hire</h4>
-              <p style="font-size: 14px; color: var(--color-text-muted);" data-i18n="how_step4_desc">Follow verified step-by-step DIY steps or book a local specialist.</p>
+              <h4 style="margin-bottom: 8px; color: #FFFFFF;" data-i18n="how_step4_title">${window.i18n.t('how_step4_title')}</h4>
+              <p style="font-size: 14px; color: var(--color-text-muted);" data-i18n="how_step4_desc">${window.i18n.t('how_step4_desc')}</p>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- Technician Marketplace Teaser Banner -->
-      <section style="padding: 50px 0; background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%); color: #FFFFFF;">
+      <!-- Certified Technician Marketplace Teaser Banner -->
+      <section style="padding: 60px 0; background: linear-gradient(135deg, #0A1020 0%, #0F172A 100%); border-bottom: 1px solid var(--color-border);">
         <div class="container" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 24px;">
           <div>
-            <h3 style="color: #FFFFFF; font-size: 26px; margin-bottom: 8px;">
+            <h3 style="color: #FFFFFF; font-size: 28px; margin-bottom: 8px;">
               ${isAr ? 'هل أنت فني أو مركز صيانة محترف؟' : 'Are you a professional repair technician or lab?'}
             </h3>
             <p style="color: #94A3B8; font-size: 15px; max-width: 580px;">
@@ -307,7 +382,7 @@ class FixoraApp {
     `;
 
     // Bind Quick Diag
-    let selectedCat = "Laptop";
+    let selectedCat = "Smartphone";
     container.querySelectorAll(".quick-cat-btn").forEach(b => {
       b.addEventListener("click", () => {
         container.querySelectorAll(".quick-cat-btn").forEach(btn => btn.classList.remove("active"));
@@ -322,17 +397,18 @@ class FixoraApp {
       quickSubmit.addEventListener("click", () => {
         const text = quickInput.value.trim();
         if (!text) {
-          alert(isAr ? "يرجى كتابة وصف المشكلة أولاً" : "Please describe your device problem first.");
+          alert(isAr ? "يرجى كتابة وصف مختصر للمشكلة" : "Please enter a brief problem description.");
           return;
         }
         this.wizardData.device_category = selectedCat;
         this.wizardData.description = text;
-        this.submitDiagnosis();
+        this.wizardData.problem_category = "Hardware";
+        this.navigate("diagnose");
       });
     }
   }
 
-  startDiagnosisWithCat(cat) {
+    startDiagnosisWithCat(cat) {
     this.wizardData.device_category = cat;
     this.navigate("diagnose");
   }
