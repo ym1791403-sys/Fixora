@@ -21,15 +21,15 @@ def get_content_type(path: str) -> str:
     }
     return types.get(ext, "application/octet-stream")
 
-@app.get("/api/health")
+@app.api_route("/api/health", methods=["GET", "HEAD"])
 def health_check():
     return {"status": "healthy", "service": "Fixora AI Platform"}
 
-@app.get("/api/v1/health")
+@app.api_route("/api/v1/health", methods=["GET", "HEAD"])
 def v1_health():
     return {"status": "ok", "engine": "Fixora"}
 
-@app.get("/")
+@app.api_route("/", methods=["GET", "HEAD"])
 def serve_index():
     index_path = os.path.join(root_dir, "index.html")
     if os.path.exists(index_path):
@@ -37,7 +37,7 @@ def serve_index():
             return HTMLResponse(content=f.read())
     return HTMLResponse("<h1>Fixora Platform Live</h1>")
 
-@app.get("/{full_path:path}")
+@app.api_route("/{full_path:path}", methods=["GET", "HEAD"])
 def serve_static(full_path: str):
     target = os.path.join(root_dir, full_path)
     if os.path.exists(target) and os.path.isfile(target):
