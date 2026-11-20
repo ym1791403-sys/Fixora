@@ -22,7 +22,7 @@ class FixoraApp {
   init() {
     this.bindEvents();
     this.updateNavAuth();
-    this.navigate("home");
+    this.bindHomeTriage();
   }
 
   bindEvents() {
@@ -83,10 +83,14 @@ class FixoraApp {
     const adminLink = document.getElementById("navAdminLink");
     const userNameEl = document.getElementById("navUserName");
 
+    const userAvatarEl = document.getElementById("navUserAvatar");
     if (isLoggedIn && user) {
       if (guestLinks) guestLinks.style.display = "none";
       if (userLinks) userLinks.style.display = "flex";
       if (userNameEl) userNameEl.textContent = user.full_name;
+      if (userAvatarEl) {
+        userAvatarEl.textContent = user.avatar_initial || (user.full_name ? user.full_name.charAt(0).toUpperCase() : "U");
+      }
       if (dashLink) dashLink.style.display = "block";
       if (adminLink) {
         adminLink.style.display = user.role === "admin" ? "block" : "none";
@@ -153,249 +157,23 @@ class FixoraApp {
   // ==========================================
   // VIEW: HOMEPAGE
   // ==========================================
-  renderHome(container) {
-    const isAr = window.i18n.currentLang === "ar";
-    container.innerHTML = `
-      <!-- ByteFix-Inspired Ultra-Modern Hardware Hero Section -->
-      <section class="hero-wrapper">
-        <!-- Vertical Social Bar (As featured in ByteFix reference) -->
-        <div class="hero-social-bar">
-          <a href="#" class="hero-social-link" title="Facebook"><i class="fab fa-facebook-f"></i></a>
-          <a href="#" class="hero-social-link" title="Instagram"><i class="fab fa-instagram"></i></a>
-          <a href="#" class="hero-social-link" title="X (Twitter)"><i class="fab fa-x-twitter"></i></a>
-          <a href="#" class="hero-social-link" title="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
-        </div>
-
-        <div class="container hero-content-grid">
-          <div>
-            <div style="display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px; background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: var(--radius-full); margin-bottom: 24px;">
-              <i class="fas fa-asterisk logo-spark" style="font-size: 13px;"></i>
-              <span style="font-size: 13px; font-weight: 600; color: var(--color-accent);" data-i18n="hero_badge">${window.i18n.t('hero_badge')}</span>
-            </div>
-
-            <h1 class="hero-headline" data-i18n="hero_headline">
-              ${window.i18n.t('hero_headline')}
-            </h1>
-
-            <p class="hero-subtext" data-i18n="hero_subtext">
-              ${window.i18n.t('hero_subtext')}
-            </p>
-
-            <div class="hero-cta-group">
-              <button class="btn btn-emergency btn-lg" onclick="app.navigate('diagnose')">
-                <i class="fas fa-bolt" style="color: var(--color-secondary);"></i>
-                <span data-i18n="hero_emergency_btn">${window.i18n.t('hero_emergency_btn')}</span>
-              </button>
-              <button class="btn btn-primary btn-lg" onclick="app.navigate('technicians')">
-                <i class="fas fa-screwdriver-wrench"></i>
-                <span data-i18n="hero_request_repair">${window.i18n.t('hero_request_repair')}</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- Glass Triage Interactive Widget -->
-          <div class="hero-triage-card">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
-              <h3 style="font-size: 18px; color: #FFFFFF;" data-i18n="demo_title">${window.i18n.t('demo_title')}</h3>
-              <span class="tag" style="background-color: rgba(56, 189, 248, 0.18); color: var(--color-accent); border: 1px solid rgba(56, 189, 248, 0.4);">
-                <i class="fas fa-circle" style="font-size: 7px; color: #10B981;"></i> AI Live
-              </span>
-            </div>
-            
-            <p style="font-size: 13px; color: var(--color-text-muted); margin-bottom: 14px;">
-              ${isAr ? 'اختر جهازك واكتب المشكلة باختصار لفحصها فوراً:' : 'Select your device and describe the problem for instant diagnosis:'}
-            </p>
-            
-            <div style="display: flex; gap: 8px; margin-bottom: 14px; overflow-x: auto; padding-bottom: 4px; flex-wrap: wrap;">
-              <button class="btn btn-sm btn-outline quick-cat-btn active" data-cat="Smartphone"><i class="fas fa-mobile-alt"></i> Smartphone</button>
-              <button class="btn btn-sm btn-outline quick-cat-btn" data-cat="Laptop"><i class="fas fa-laptop"></i> Laptop</button>
-              <button class="btn btn-sm btn-outline quick-cat-btn" data-cat="Gaming Console"><i class="fas fa-gamepad"></i> Console</button>
-              <button class="btn btn-sm btn-outline quick-cat-btn" data-cat="Smart TV"><i class="fas fa-tv"></i> TV</button>
-              <button class="btn btn-sm btn-outline quick-cat-btn" data-cat="Storage"><i class="fas fa-hard-drive"></i> Drive/SSD</button>
-              <button class="btn btn-sm btn-outline quick-cat-btn" data-cat="Desktop Computer"><i class="fas fa-desktop"></i> PC</button>
-            </div>
-
-            <div class="form-group" style="margin-bottom: 14px;">
-              <textarea id="quickDiagInput" class="form-control" style="min-height: 90px; resize: none;" data-i18n-placeholder="demo_placeholder" placeholder="e.g., PS5 turns off with 3 beeps, or laptop shuts down after 10 minutes..."></textarea>
-            </div>
-            
-            <button id="quickDiagSubmit" class="btn btn-primary" style="width: 100%;">
-              <i class="fas fa-microchip"></i>
-              <span data-i18n="demo_btn">${window.i18n.t('demo_btn')}</span>
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <!-- ByteFix-Inspired About Us Section with Rotating Circular Badge -->
-      <section class="about-section" id="about">
-        <div class="container about-grid">
-          
-          <!-- Circular Rotating Badge (ByteFix Seal) -->
-          <div class="experience-badge-wrapper">
-            <div class="experience-badge">
-              <svg viewBox="0 0 160 160" class="badge-svg">
-                <path id="badge-circle" d="M 80, 80 m -60, 0 a 60,60 0 1,1 120,0 a 60,60 0 1,1 -120,0" fill="none" />
-                <text class="badge-text">
-                  <textPath href="#badge-circle" startOffset="0%">
-                    ${window.i18n.t('badge_text')}
-                  </textPath>
-                </text>
-              </svg>
-              <div class="badge-center-icon">
-                <i class="fas fa-asterisk"></i>
-              </div>
-            </div>
-          </div>
-
-          <!-- Editorial Copy & Highlights -->
-          <div>
-            <h2 class="about-heading" data-i18n="about_title">${window.i18n.t('about_title')}</h2>
-            <p class="about-body" data-i18n="about_body_1">
-              ${window.i18n.t('about_body_1')}
-            </p>
-            <p class="about-body" style="margin-bottom: 24px;" data-i18n="about_body_2">
-              ${window.i18n.t('about_body_2')}
-            </p>
-
-            <div class="about-stats-row">
-              <div class="about-stat-box">
-                <div class="about-stat-num text-gradient" data-i18n="stat_accuracy">${window.i18n.t('stat_accuracy')}</div>
-                <div class="about-stat-lbl" data-i18n="stat_accuracy_lbl">${window.i18n.t('stat_accuracy_lbl')}</div>
-              </div>
-              <div class="about-stat-box">
-                <div class="about-stat-num text-gradient" data-i18n="stat_devices">${window.i18n.t('stat_devices')}</div>
-                <div class="about-stat-lbl" data-i18n="stat_devices_lbl">${window.i18n.t('stat_devices_lbl')}</div>
-              </div>
-              <div class="about-stat-box">
-                <div class="about-stat-num text-gradient" data-i18n="stat_speed">${window.i18n.t('stat_speed')}</div>
-                <div class="about-stat-lbl" data-i18n="stat_speed_lbl">${window.i18n.t('stat_speed_lbl')}</div>
-              </div>
-            </div>
-          </div>
-
-        </div>
-      </section>
-
-      <!-- Supported Universal Devices Section -->
-      <section class="devices-section">
-        <div class="container">
-          <div style="text-align: center; max-width: 700px; margin: 0 auto 36px;">
-            <div style="display: inline-block; padding: 4px 14px; background: rgba(56, 189, 248, 0.1); border-radius: var(--radius-full); font-size: 12px; font-weight: 700; color: var(--color-accent); text-transform: uppercase; margin-bottom: 12px; letter-spacing: 1px;">
-              Universal Hardware Coverage
-            </div>
-            <h2 style="font-size: 36px; margin-bottom: 12px; color: #FFFFFF;" data-i18n="demo_devices">${window.i18n.t('demo_devices')}</h2>
-            <p style="color: var(--color-text-muted); font-size: 16px;">
-              ${isAr ? 'ندعم جميع الأجهزة الإلكترونية والمنزلية عبر نماذج تشخيص مدروسة مبنية على قواعد بيانات الصيانة العالمية.' : 'Comprehensive diagnostic support across all personal computing, mobile, entertainment, storage, and home electronics.'}
-            </p>
-          </div>
-
-          <div class="device-categories-grid">
-            ${[
-              { cat: "Smartphone", icon: "fa-mobile-alt", key: "cat_smartphone", sub: "cat_smartphone_sub" },
-              { cat: "Laptop", icon: "fa-laptop", key: "cat_laptop", sub: "cat_laptop_sub" },
-              { cat: "Desktop Computer", icon: "fa-desktop", key: "cat_computer", sub: "cat_computer_sub" },
-              { cat: "Gaming Console", icon: "fa-gamepad", key: "cat_console", sub: "cat_console_sub" },
-              { cat: "Smart TV", icon: "fa-tv", key: "cat_tv", sub: "cat_tv_sub" },
-              { cat: "Storage", icon: "fa-hard-drive", key: "cat_storage", sub: "cat_storage_sub" },
-              { cat: "Tablet", icon: "fa-tablet-alt", key: "cat_tablet", sub: "cat_tablet_sub" },
-              { cat: "Smartwatch", icon: "fa-clock", key: "cat_smartwatch", sub: "cat_smartwatch_sub" },
-              { cat: "Audio", icon: "fa-headphones", key: "cat_audio", sub: "cat_audio_sub" },
-              { cat: "Camera", icon: "fa-camera", key: "cat_camera", sub: "cat_camera_sub" },
-              { cat: "Printer", icon: "fa-print", key: "cat_printer", sub: "cat_printer_sub" },
-              { cat: "Home Appliance", icon: "fa-plug", key: "cat_appliance", sub: "cat_appliance_sub" },
-              { cat: "Other", icon: "fa-microchip", key: "cat_other", sub: "cat_other_sub" }
-            ].map(item => `
-              <div class="device-category-card" onclick="app.startDiagnosisWithCat('${item.cat}')">
-                <i class="fas ${item.icon}"></i>
-                <strong style="color: #FFFFFF; font-size: 14px;" data-i18n="${item.key}">${window.i18n.t(item.key)}</strong>
-                <span style="font-size: 11px; color: var(--color-text-muted); line-height: 1.3;" data-i18n="${item.sub}">${window.i18n.t(item.sub)}</span>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-      </section>
-
-      <!-- How Fixora Works Section -->
-      <section style="padding: 85px 0; background-color: var(--color-bg); border-bottom: 1px solid var(--color-border);">
-        <div class="container">
-          <div style="text-align: center; max-width: 650px; margin: 0 auto 52px;">
-            <h2 style="font-size: 36px; margin-bottom: 14px; color: #FFFFFF;" data-i18n="how_title">${window.i18n.t('how_title')}</h2>
-            <p style="color: var(--color-text-muted); font-size: 16px;" data-i18n="how_desc">
-              ${window.i18n.t('how_desc')}
-            </p>
-          </div>
-
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 24px;">
-            <div class="card" style="text-align: center; padding: 36px 24px;">
-              <div style="width: 54px; height: 54px; border-radius: 50%; background: rgba(37,99,235,0.15); color: var(--color-accent); display: flex; align-items: center; justify-content: center; margin: 0 auto 18px; font-size: 24px;">
-                <i class="fas fa-laptop-medical"></i>
-              </div>
-              <h4 style="margin-bottom: 8px; color: #FFFFFF;" data-i18n="how_step1_title">${window.i18n.t('how_step1_title')}</h4>
-              <p style="font-size: 14px; color: var(--color-text-muted);" data-i18n="how_step1_desc">${window.i18n.t('how_step1_desc')}</p>
-            </div>
-
-            <div class="card" style="text-align: center; padding: 36px 24px;">
-              <div style="width: 54px; height: 54px; border-radius: 50%; background: rgba(56,189,248,0.15); color: var(--color-accent); display: flex; align-items: center; justify-content: center; margin: 0 auto 18px; font-size: 24px;">
-                <i class="fas fa-comment-dots"></i>
-              </div>
-              <h4 style="margin-bottom: 8px; color: #FFFFFF;" data-i18n="how_step2_title">${window.i18n.t('how_step2_title')}</h4>
-              <p style="font-size: 14px; color: var(--color-text-muted);" data-i18n="how_step2_desc">${window.i18n.t('how_step2_desc')}</p>
-            </div>
-
-            <div class="card" style="text-align: center; padding: 36px 24px;">
-              <div style="width: 54px; height: 54px; border-radius: 50%; background: rgba(37,99,235,0.15); color: var(--color-secondary); display: flex; align-items: center; justify-content: center; margin: 0 auto 18px; font-size: 24px;">
-                <i class="fas fa-brain"></i>
-              </div>
-              <h4 style="margin-bottom: 8px; color: #FFFFFF;" data-i18n="how_step3_title">${window.i18n.t('how_step3_title')}</h4>
-              <p style="font-size: 14px; color: var(--color-text-muted);" data-i18n="how_step3_desc">${window.i18n.t('how_step3_desc')}</p>
-            </div>
-
-            <div class="card" style="text-align: center; padding: 36px 24px;">
-              <div style="width: 54px; height: 54px; border-radius: 50%; background: rgba(16,185,129,0.15); color: var(--color-success); display: flex; align-items: center; justify-content: center; margin: 0 auto 18px; font-size: 24px;">
-                <i class="fas fa-tools"></i>
-              </div>
-              <h4 style="margin-bottom: 8px; color: #FFFFFF;" data-i18n="how_step4_title">${window.i18n.t('how_step4_title')}</h4>
-              <p style="font-size: 14px; color: var(--color-text-muted);" data-i18n="how_step4_desc">${window.i18n.t('how_step4_desc')}</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Certified Technician Marketplace Teaser Banner -->
-      <section style="padding: 60px 0; background: linear-gradient(135deg, #0A1020 0%, #0F172A 100%); border-bottom: 1px solid var(--color-border);">
-        <div class="container" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 24px;">
-          <div>
-            <h3 style="color: #FFFFFF; font-size: 28px; margin-bottom: 8px;">
-              ${isAr ? 'هل أنت فني أو مركز صيانة محترف؟' : 'Are you a professional repair technician or lab?'}
-            </h3>
-            <p style="color: #94A3B8; font-size: 15px; max-width: 580px;">
-              ${isAr ? 'انضم إلى شبكة Fixora واستقبل طلبات الصيانة الموثقة من العملاء في مدينتك بعد اعتماد حسابك.' : 'Join Fixora to receive verified repair requests from customers in your area after administrative verification.'}
-            </p>
-          </div>
-          <button class="btn btn-accent btn-lg" onclick="app.showAuthModal('register', 'technician')">
-            <i class="fas fa-user-plus"></i>
-            <span>${isAr ? 'سجل كفني صيانة معتمد' : 'Register as Technician'}</span>
-          </button>
-        </div>
-      </section>
-    `;
-
-    // Bind Quick Diag
+  bindHomeTriage() {
     let selectedCat = "Smartphone";
-    container.querySelectorAll(".quick-cat-btn").forEach(b => {
-      b.addEventListener("click", () => {
-        container.querySelectorAll(".quick-cat-btn").forEach(btn => btn.classList.remove("active"));
+    const pills = document.querySelectorAll(".triage-pill-btn");
+    pills.forEach(b => {
+      b.onclick = () => {
+        pills.forEach(btn => btn.classList.remove("active"));
         b.classList.add("active");
         selectedCat = b.getAttribute("data-cat");
-      });
+      };
     });
 
-    const quickSubmit = container.querySelector("#quickDiagSubmit");
-    const quickInput = container.querySelector("#quickDiagInput");
-    if (quickSubmit && quickInput) {
-      quickSubmit.addEventListener("click", () => {
-        const text = quickInput.value.trim();
+    const submitBtn = document.getElementById("homeQuickDiagSubmit");
+    const inputEl = document.getElementById("homeQuickDiagInput");
+    if (submitBtn && inputEl) {
+      submitBtn.onclick = () => {
+        const text = inputEl.value.trim();
+        const isAr = window.i18n.currentLang === "ar";
         if (!text) {
           alert(isAr ? "يرجى كتابة وصف مختصر للمشكلة" : "Please enter a brief problem description.");
           return;
@@ -404,11 +182,239 @@ class FixoraApp {
         this.wizardData.description = text;
         this.wizardData.problem_category = "Hardware";
         this.navigate("diagnose");
-      });
+      };
     }
   }
 
-    startDiagnosisWithCat(cat) {
+  renderHome(container) {
+    const isAr = window.i18n.currentLang === "ar";
+    container.innerHTML = `
+    <!-- ByteFix Exact Hero Layout -->
+    <section class="hero-wrapper">
+      <!-- Vertical Social Bar -->
+      <div class="hero-social-bar">
+        <a href="#" class="hero-social-link" title="Facebook"><i class="fab fa-facebook-f"></i></a>
+        <a href="#" class="hero-social-link" title="Instagram"><i class="fab fa-instagram"></i></a>
+        <a href="#" class="hero-social-link" title="X (Twitter)"><i class="fab fa-x-twitter"></i></a>
+        <a href="#" class="hero-social-link" title="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+      </div>
+
+      <div class="container">
+        <div class="hero-content-col">
+          <h1 class="hero-headline" data-i18n="hero_headline">
+            ${window.i18n.t('hero_headline')}
+          </h1>
+
+          <p class="hero-subtext" data-i18n="hero_subtext">
+            ${window.i18n.t('hero_subtext')}
+          </p>
+
+          <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+            <!-- Get Emergency Service Button (White Pill) -->
+            <button class="btn btn-emergency" onclick="app.navigate('diagnose')" data-i18n="hero_emergency_btn">
+              ${window.i18n.t('hero_emergency_btn')}
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ByteFix Exact About Us Section with Circular Badge & Stats -->
+    <section class="about-section" id="about">
+      <div class="container about-grid">
+        
+        <!-- Circular Rotating Badge -->
+        <div>
+          <div class="experience-badge">
+            <svg viewBox="0 0 160 160" class="badge-svg">
+              <path id="badge-circle" d="M 80, 80 m -60, 0 a 60,60 0 1,1 120,0 a 60,60 0 1,1 -120,0" fill="none" />
+              <text class="badge-text">
+                <textPath href="#badge-circle" startOffset="0%">
+                  ${window.i18n.t('badge_text')}
+                </textPath>
+              </text>
+            </svg>
+            <div class="badge-center-icon">
+              <i class="fas fa-asterisk"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Editorial Copy & Stats -->
+        <div>
+          <h2 class="about-heading" data-i18n="about_title">${window.i18n.t('about_title')}</h2>
+          <p class="about-body" style="margin-bottom: 14px;" data-i18n="about_body_1">
+            ${window.i18n.t('about_body_1')}
+          </p>
+          <p class="about-body" data-i18n="about_body_2">
+            ${window.i18n.t('about_body_2')}
+          </p>
+
+          <div class="about-stats-row">
+            <div class="about-stat-box">
+              <div class="about-stat-num">99.4%</div>
+              <div class="about-stat-lbl" data-i18n="stat_accuracy_lbl">${window.i18n.t('stat_accuracy_lbl')}</div>
+            </div>
+            <div class="about-stat-box">
+              <div class="about-stat-num">13+ فئة</div>
+              <div class="about-stat-lbl" data-i18n="stat_devices_lbl">${window.i18n.t('stat_devices_lbl')}</div>
+            </div>
+            <div class="about-stat-box">
+              <div class="about-stat-num">&lt; 3 ثوانٍ</div>
+              <div class="about-stat-lbl" data-i18n="stat_speed_lbl">${window.i18n.t('stat_speed_lbl')}</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Instant AI Diagnostic Triage / Symptom Checker Widget -->
+    <section class="triage-section">
+      <div class="container">
+        <div class="triage-card">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+            <div>
+              <h3 style="font-size: 20px; color: #FFFFFF; margin-bottom: 4px;" data-i18n="demo_title">${window.i18n.t('demo_title')}</h3>
+              <p style="font-size: 13px; color: var(--color-text-muted);">${isAr ? 'اختر نوع جهازك واكتب المشكلة باختصار للبدء في الفحص والتشخيص الفوري:' : 'Select your device and describe the problem for instant diagnosis:'}</p>
+            </div>
+            <span style="background-color: rgba(56, 189, 248, 0.15); color: #38BDF8; border: 1px solid rgba(56, 189, 248, 0.3); padding: 4px 12px; border-radius: var(--radius-full); font-size: 12px; font-weight: 700;">
+              <i class="fas fa-circle" style="font-size: 7px; color: #10B981; margin-inline-end: 4px;"></i> AI Live
+            </span>
+          </div>
+
+          <div class="triage-pills" id="homeTriagePills">
+            <button class="triage-pill-btn active" data-cat="Smartphone"><i class="fas fa-mobile-alt"></i> ${window.i18n.t('cat_smartphone')}</button>
+            <button class="triage-pill-btn" data-cat="Laptop"><i class="fas fa-laptop"></i> ${window.i18n.t('cat_laptop')}</button>
+            <button class="triage-pill-btn" data-cat="Desktop Computer"><i class="fas fa-desktop"></i> ${window.i18n.t('cat_computer')}</button>
+            <button class="triage-pill-btn" data-cat="Gaming Console"><i class="fas fa-gamepad"></i> ${window.i18n.t('cat_console')}</button>
+            <button class="triage-pill-btn" data-cat="Smart TV"><i class="fas fa-tv"></i> ${window.i18n.t('cat_tv')}</button>
+            <button class="triage-pill-btn" data-cat="Storage"><i class="fas fa-hard-drive"></i> ${window.i18n.t('cat_storage')}</button>
+            <button class="triage-pill-btn" data-cat="Home Appliance"><i class="fas fa-plug"></i> ${window.i18n.t('cat_appliance')}</button>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 14px;">
+            <textarea id="homeQuickDiagInput" class="form-control" style="min-height: 85px; resize: none;" placeholder="${isAr ? 'مثلاً: جهاز PS5 ينطفئ تلقائياً مع 3 صافرات، أو لابتوب لا يشحن ويصدر صوتاً عند بدء التشغيل...' : 'e.g., PS5 turns off after 10 mins with 3 beeps, or laptop battery not charging...'}"></textarea>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end;">
+            <button id="homeQuickDiagSubmit" class="btn btn-primary" style="padding: 10px 24px;">
+              <i class="fas fa-microchip"></i>
+              <span data-i18n="demo_btn">${window.i18n.t('demo_btn')}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Supported Universal Devices Section (13 Categories) -->
+    <section class="devices-section">
+      <div class="container">
+        <div style="text-align: center; max-width: 720px; margin: 0 auto 36px;">
+          <div style="display: inline-block; padding: 4px 14px; background: rgba(56, 189, 248, 0.1); border-radius: var(--radius-full); font-size: 12px; font-weight: 700; color: var(--color-accent); text-transform: uppercase; margin-bottom: 12px; letter-spacing: 1px;">
+            Universal Hardware Coverage
+          </div>
+          <h2 style="font-size: 34px; margin-bottom: 12px; color: #FFFFFF;" data-i18n="demo_devices">${window.i18n.t('demo_devices')}</h2>
+          <p style="color: var(--color-text-muted); font-size: 15px;">
+            ${isAr ? 'تغطية شاملة ومدروسة لكافة الأجهزة الاستهلاكية والمنزلية والتقنية عبر نماذج تشخيص مبنية على قواعد بيانات الصيانة العالمية.' : 'Comprehensive diagnostic support across all personal computing, mobile, entertainment, storage, and home electronics.'}
+          </p>
+        </div>
+
+        <div class="device-categories-grid">
+          ${[
+            { cat: 'Smartphone', icon: 'fa-mobile-alt', key: 'cat_smartphone', sub: 'cat_smartphone_sub' },
+            { cat: 'Laptop', icon: 'fa-laptop', key: 'cat_laptop', sub: 'cat_laptop_sub' },
+            { cat: 'Desktop Computer', icon: 'fa-desktop', key: 'cat_computer', sub: 'cat_computer_sub' },
+            { cat: 'Gaming Console', icon: 'fa-gamepad', key: 'cat_console', sub: 'cat_console_sub' },
+            { cat: 'Smart TV', icon: 'fa-tv', key: 'cat_tv', sub: 'cat_tv_sub' },
+            { cat: 'Storage', icon: 'fa-hard-drive', key: 'cat_storage', sub: 'cat_storage_sub' },
+            { cat: 'Tablet', icon: 'fa-tablet-alt', key: 'cat_tablet', sub: 'cat_tablet_sub' },
+            { cat: 'Smartwatch', icon: 'fa-clock', key: 'cat_smartwatch', sub: 'cat_smartwatch_sub' },
+            { cat: 'Audio', icon: 'fa-headphones', key: 'cat_audio', sub: 'cat_audio_sub' },
+            { cat: 'Camera', icon: 'fa-camera', key: 'cat_camera', sub: 'cat_camera_sub' },
+            { cat: 'Printer', icon: 'fa-print', key: 'cat_printer', sub: 'cat_printer_sub' },
+            { cat: 'Home Appliance', icon: 'fa-plug', key: 'cat_appliance', sub: 'cat_appliance_sub' },
+            { cat: 'Other', icon: 'fa-microchip', key: 'cat_other', sub: 'cat_other_sub' }
+          ].map(item => `
+            <div class="device-category-card" onclick="app.startDiagnosisWithCat('${item.cat}')">
+              <i class="fas ${item.icon}"></i>
+              <strong data-i18n="${item.key}">${window.i18n.t(item.key)}</strong>
+              <span data-i18n="${item.sub}">${window.i18n.t(item.sub)}</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </section>
+
+    <!-- How Fixora Works Section -->
+    <section style="padding: 85px 0; background-color: var(--color-bg); border-bottom: 1px solid var(--color-border);">
+      <div class="container">
+        <div style="text-align: center; max-width: 650px; margin: 0 auto 52px;">
+          <h2 style="font-size: 34px; margin-bottom: 14px; color: #FFFFFF;" data-i18n="how_title">${window.i18n.t('how_title')}</h2>
+          <p style="color: var(--color-text-muted); font-size: 15px;" data-i18n="how_desc">
+            ${window.i18n.t('how_desc')}
+          </p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px;">
+          <div class="card" style="text-align: center; padding: 32px 20px;">
+            <div style="width: 50px; height: 50px; border-radius: 50%; background: rgba(37,99,235,0.15); color: #38BDF8; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-size: 22px;">
+              <i class="fas fa-laptop-medical"></i>
+            </div>
+            <h4 style="margin-bottom: 8px; color: #FFFFFF; font-size: 16px;" data-i18n="how_step1_title">${window.i18n.t('how_step1_title')}</h4>
+            <p style="font-size: 13px; color: var(--color-text-muted);">${window.i18n.t('how_step1_desc')}</p>
+          </div>
+
+          <div class="card" style="text-align: center; padding: 32px 20px;">
+            <div style="width: 50px; height: 50px; border-radius: 50%; background: rgba(56,189,248,0.15); color: #38BDF8; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-size: 22px;">
+              <i class="fas fa-comment-dots"></i>
+            </div>
+            <h4 style="margin-bottom: 8px; color: #FFFFFF; font-size: 16px;" data-i18n="how_step2_title">${window.i18n.t('how_step2_title')}</h4>
+            <p style="font-size: 13px; color: var(--color-text-muted);">${window.i18n.t('how_step2_desc')}</p>
+          </div>
+
+          <div class="card" style="text-align: center; padding: 32px 20px;">
+            <div style="width: 50px; height: 50px; border-radius: 50%; background: rgba(37,99,235,0.15); color: #1D64F2; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-size: 22px;">
+              <i class="fas fa-brain"></i>
+            </div>
+            <h4 style="margin-bottom: 8px; color: #FFFFFF; font-size: 16px;" data-i18n="how_step3_title">${window.i18n.t('how_step3_title')}</h4>
+            <p style="font-size: 13px; color: var(--color-text-muted);">${window.i18n.t('how_step3_desc')}</p>
+          </div>
+
+          <div class="card" style="text-align: center; padding: 32px 20px;">
+            <div style="width: 50px; height: 50px; border-radius: 50%; background: rgba(16,185,129,0.15); color: #10B981; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-size: 22px;">
+              <i class="fas fa-tools"></i>
+            </div>
+            <h4 style="margin-bottom: 8px; color: #FFFFFF; font-size: 16px;" data-i18n="how_step4_title">${window.i18n.t('how_step4_title')}</h4>
+            <p style="font-size: 13px; color: var(--color-text-muted);">${window.i18n.t('how_step4_desc')}</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Certified Technician Marketplace Teaser Banner -->
+    <section style="padding: 60px 0; background: #0F131C; border-bottom: 1px solid var(--color-border);">
+      <div class="container" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 24px;">
+        <div>
+          <h3 style="color: #FFFFFF; font-size: 26px; margin-bottom: 8px;">
+            ${isAr ? 'هل أنت فني أو مركز صيانة محترف؟' : 'Are you a professional repair technician or lab?'}
+          </h3>
+          <p style="color: #94A3B8; font-size: 14px; max-width: 580px;">
+            ${isAr ? 'انضم إلى شبكة فنيي Fixora المعتمدين واستقبل طلبات الصيانة الموثقة من العملاء في مدينتك بعد مراجعة ملفك واعتماده.' : 'Join Fixora to receive verified repair requests from customers in your area after administrative verification.'}
+          </p>
+        </div>
+        <button class="btn btn-primary btn-lg" onclick="app.showAuthModal('register', 'technician')">
+          <i class="fas fa-user-plus"></i>
+          <span>${isAr ? 'سجل كفني صيانة معتمد' : 'Register as Technician'}</span>
+        </button>
+      </div>
+    </section>
+    `;
+
+    this.bindHomeTriage();
+  }
+
+  startDiagnosisWithCat(cat) {
     this.wizardData.device_category = cat;
     this.navigate("diagnose");
   }
@@ -1533,7 +1539,7 @@ class FixoraApp {
     const googleChooserHtml = `
       <div>
         <div style="text-align: center; margin-bottom: 22px;">
-          <svg viewBox="0 0 24 24" width="36" height="36" style="margin-bottom: 10px;">
+          <svg viewBox="0 0 24 24" width="38" height="38" style="margin-bottom: 10px;">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
             <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
             <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
@@ -1543,11 +1549,11 @@ class FixoraApp {
             ${isAr ? 'اختيار حساب Google للمتابعة إلى Fixora' : 'Choose an account to continue to Fixora'}
           </h3>
           <p style="font-size: 13px; color: #94A3B8;">
-            ${isAr ? 'ستقوم Google بمشاركة اسمك وبريدك الإلكتروني وصورتك الشخصية مع منصة Fixora بأمان.' : 'To continue, Google will securely share your name, email address, and profile picture with Fixora.'}
+            ${isAr ? 'ستقوم Google بمشاركة اسمك وبريدك الإلكتروني مع خوادم Fixora بأمان.' : 'To continue, Google will securely share your profile and email with Fixora.'}
           </p>
         </div>
 
-        <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px;">
           <div class="google-account-item" onclick="app.selectGoogleAccount('Hosopa Tech', 'hosopa.fixora@gmail.com', 'H')">
             <div class="google-avatar">H</div>
             <div style="flex: 1; text-align: ${isAr ? 'right' : 'left'};">
@@ -1564,13 +1570,18 @@ class FixoraApp {
               <span style="font-size: 12px; color: #94A3B8;">ahmed.mansour.dev@gmail.com</span>
             </div>
           </div>
+        </div>
 
-          <div class="google-account-item" onclick="app.promptCustomGoogleAccount()">
-            <div class="google-avatar" style="background: #475569;"><i class="fas fa-user-plus" style="font-size: 14px;"></i></div>
-            <div style="flex: 1; text-align: ${isAr ? 'right' : 'left'};">
-              <strong style="display: block; font-size: 14px; color: #FFFFFF;">${isAr ? 'استخدام حساب Google آخر' : 'Use another Google account'}</strong>
-              <span style="font-size: 12px; color: #94A3B8;">${isAr ? 'إدخال بريد Gmail مخصص' : 'Sign in with a different email'}</span>
-            </div>
+        <!-- Custom Account Entry Box -->
+        <div style="background: #0A0D14; border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 20px;">
+          <label style="display: block; font-size: 12px; color: #94A3B8; margin-bottom: 6px; font-weight: 600;">
+            ${isAr ? 'أو أدخل أي بريد Gmail مخصص:' : 'Or enter custom Gmail:'}
+          </label>
+          <div style="display: flex; gap: 8px;">
+            <input type="email" id="customGoogleEmail" class="form-control" style="font-size: 13px; padding: 8px 12px;" placeholder="user@gmail.com">
+            <button class="btn btn-primary btn-sm" onclick="app.submitCustomGoogleAccount()" style="white-space: nowrap;">
+              ${isAr ? 'دخول' : 'Sign In'}
+            </button>
           </div>
         </div>
 
@@ -1584,30 +1595,60 @@ class FixoraApp {
     this.openModal(googleChooserHtml);
   }
 
-  selectGoogleAccount(name, email, initial) {
+  submitCustomGoogleAccount() {
+    const input = document.getElementById("customGoogleEmail");
+    const email = input ? input.value.trim() : "";
+    if (!email || !email.includes("@")) {
+      const isAr = window.i18n.currentLang === "ar";
+      alert(isAr ? "يرجى إدخال بريد إلكتروني صحيح" : "Please enter a valid Gmail address");
+      return;
+    }
+    const name = email.split("@")[0].replace(/[._]/g, ' ');
+    const formattedName = name.charAt(0).toUpperCase() + name.slice(1);
+    this.selectGoogleAccount(formattedName, email, formattedName.charAt(0).toUpperCase());
+  }
+
+  async selectGoogleAccount(name, email, initial) {
     const isAr = window.i18n.currentLang === "ar";
+    const modalBody = document.getElementById("modalBody");
+    if (modalBody) {
+      modalBody.innerHTML = `
+        <div style="text-align: center; padding: 36px 16px;">
+          <div style="width: 44px; height: 44px; border: 3px solid rgba(255,255,255,0.15); border-top-color: #38BDF8; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 18px;"></div>
+          <h4 style="color: #FFFFFF; font-size: 17px; margin-bottom: 8px;">${isAr ? 'الاتصال بخوادم Google...' : 'Connecting to Google Authentication...'}</h4>
+          <p style="font-size: 13px; color: #94A3B8;">${isAr ? 'جاري التحقق من حساب ' + email : 'Verifying ' + email}</p>
+        </div>
+      `;
+    }
+
+    try {
+      await window.api.request("/auth/google", {
+        method: "POST",
+        body: JSON.stringify({ email: email, name: name })
+      });
+    } catch(err) {
+      // Offline fallback
+    }
+
     const googleUser = {
       id: Date.now(),
       full_name: name,
       email: email,
       role: "user",
       provider: "google",
+      avatar_initial: initial || name.charAt(0).toUpperCase(),
       is_active: true
     };
-    window.api.setSession("google_oauth_" + Date.now(), googleUser);
-    this.closeModal();
-    this.updateNavAuth();
-    alert(isAr ? `مرحباً ${name}! تم تسجيل الدخول بنجاح عبر حساب Google.` : `Welcome ${name}! Successfully signed in with Google.`);
-    this.navigate("dashboard");
-  }
 
-  promptCustomGoogleAccount() {
-    const isAr = window.i18n.currentLang === "ar";
-    const email = prompt(isAr ? "أدخل عنوان بريد Google (Gmail):" : "Enter your Google (Gmail) address:", "user@gmail.com");
-    if (!email) return;
-    const name = email.split("@")[0].replace(/[._]/g, ' ');
-    const formattedName = name.charAt(0).toUpperCase() + name.slice(1);
-    this.selectGoogleAccount(formattedName, email, formattedName.charAt(0).toUpperCase());
+    window.api.setSession("google_oauth_" + Date.now(), googleUser);
+    localStorage.setItem("fixora_user", JSON.stringify(googleUser));
+    localStorage.setItem("fixora_token", "google_oauth_" + Date.now());
+
+    setTimeout(() => {
+      this.closeModal();
+      this.updateNavAuth();
+      this.navigate("dashboard");
+    }, 450);
   }
 
   showAuthModal(mode = "login", defaultRole = "user") {

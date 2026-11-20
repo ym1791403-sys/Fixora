@@ -248,21 +248,26 @@ h1, h2, h3, h4, h5, h6 {
    ========================================== */
 .hero-wrapper {
   position: relative;
-  background: linear-gradient(to right, rgba(11, 14, 20, 0.96) 0%, rgba(11, 14, 20, 0.82) 48%, rgba(11, 14, 20, 0.94) 100%),
+  min-height: 520px;
+  display: flex;
+  align-items: center;
+  background: linear-gradient(to right, rgba(11, 14, 20, 0.97) 0%, rgba(11, 14, 20, 0.88) 46%, rgba(11, 14, 20, 0.25) 100%),
               url('https://images.unsplash.com/photo-1597872200969-2b65d56bd16b?auto=format&fit=crop&w=1920&q=80') center right/cover no-repeat;
   border-bottom: 1px solid var(--color-border);
-  padding: 95px 0 95px;
+  padding: 90px 0;
 }
 
-.hero-grid {
-  display: grid;
-  grid-template-columns: 1.1fr 0.9fr;
-  gap: 40px;
-  align-items: center;
+[dir="rtl"] .hero-wrapper {
+  background: linear-gradient(to left, rgba(11, 14, 20, 0.97) 0%, rgba(11, 14, 20, 0.88) 46%, rgba(11, 14, 20, 0.25) 100%),
+              url('https://images.unsplash.com/photo-1597872200969-2b65d56bd16b?auto=format&fit=crop&w=1920&q=80') center left/cover no-repeat;
+}
+
+.hero-content-col {
+  max-width: 620px;
 }
 
 .hero-headline {
-  font-size: 54px;
+  font-size: 52px;
   font-weight: 800;
   letter-spacing: -1.2px;
   line-height: 1.15;
@@ -275,27 +280,28 @@ h1, h2, h3, h4, h5, h6 {
   color: #94A3B8;
   line-height: 1.65;
   margin-bottom: 34px;
-  max-width: 500px;
+  max-width: 520px;
 }
 
 /* Right-Edge Vertical Social Bar from ByteFix */
 .hero-social-bar {
   position: absolute;
-  right: 24px;
+  right: 28px;
   top: 50%;
   transform: translateY(-50%);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 16px;
+  z-index: 5;
 }
 
 .hero-social-bar::before,
 .hero-social-bar::after {
   content: '';
   width: 1px;
-  height: 40px;
-  background-color: rgba(255, 255, 255, 0.15);
+  height: 44px;
+  background-color: rgba(255, 255, 255, 0.16);
 }
 
 .hero-social-link {
@@ -310,7 +316,7 @@ h1, h2, h3, h4, h5, h6 {
 
 [dir="rtl"] .hero-social-bar {
   right: auto;
-  left: 24px;
+  left: 28px;
 }
 
 /* ==========================================
@@ -332,13 +338,13 @@ h1, h2, h3, h4, h5, h6 {
 /* Rotating Seal from ByteFix */
 .experience-badge {
   position: relative;
-  width: 140px;
-  height: 140px;
+  width: 145px;
+  height: 145px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border: 1px dashed rgba(255, 255, 255, 0.22);
 }
 
 .badge-svg {
@@ -349,6 +355,11 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 @keyframes rotateBadge {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
@@ -377,6 +388,79 @@ h1, h2, h3, h4, h5, h6 {
   font-size: 15px;
   color: #94A3B8;
   line-height: 1.7;
+}
+
+.about-stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.about-stat-box {
+  background: #121722;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  text-align: center;
+}
+
+.about-stat-num {
+  font-size: 24px;
+  font-weight: 800;
+  color: #FFFFFF;
+  margin-bottom: 4px;
+}
+
+.about-stat-lbl {
+  font-size: 12px;
+  color: #94A3B8;
+}
+
+/* ==========================================
+   Quick Triage Section
+   ========================================== */
+.triage-section {
+  padding: 60px 0;
+  background-color: var(--color-bg-alt);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.triage-card {
+  background-color: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 32px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.triage-pills {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.triage-pill-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #94A3B8;
+  padding: 7px 14px;
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.triage-pill-btn:hover, .triage-pill-btn.active {
+  background: rgba(56, 189, 248, 0.12);
+  border-color: #38BDF8;
+  color: #FFFFFF;
 }
 
 /* ==========================================
