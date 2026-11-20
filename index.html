@@ -59,8 +59,8 @@
 
         <!-- Authenticated User Actions -->
         <div id="navUserActions" style="display: none; align-items: center; gap: 10px;">
-          <div id="navUserAvatar" style="width: 32px; height: 32px; border-radius: 50%; background: #2563EB; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px;">U</div>
-          <span style="font-size: 13px; font-weight: 600; color: #FFFFFF;" id="navUserName"></span>
+          <div id="navUserAvatar" style="width: 32px; height: 32px; border-radius: 50%; background: #2563EB; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; cursor: pointer;" title="Dashboard / لوحة التحكم" onclick="app.navigate('dashboard')">U</div>
+          <span style="font-size: 13px; font-weight: 600; color: #FFFFFF; cursor: pointer;" id="navUserName" onclick="app.navigate('dashboard')"></span>
           <button id="navLogoutBtn" class="btn btn-outline btn-sm" style="color: var(--color-danger); border-color: rgba(239, 68, 68, 0.4);" title="Sign Out">
             <i class="fas fa-sign-out-alt"></i>
           </button>
