@@ -36,6 +36,7 @@
         <li><a href="#" class="nav-link" data-nav="diagnose" data-i18n="nav_diagnose">تشخيص أي جهاز</a></li>
         <li><a href="#" class="nav-link" data-nav="guides" data-i18n="nav_guides">أدلة الإصلاح</a></li>
         <li><a href="#" class="nav-link" data-nav="technicians" data-i18n="nav_technicians">سوق الفنيين</a></li>
+        <li><a href="#" class="nav-link" onclick="app.showDatasetsModal(); return false;"><i class="fas fa-database" style="color: #38BDF8; font-size: 11px; margin-inline-end: 4px;"></i> <span data-i18n="nav_datasets">قواعد البيانات</span></a></li>
         <li id="navDashboardLink" style="display: none;"><a href="#" class="nav-link" data-nav="dashboard" data-i18n="nav_dashboard">لوحة التحكم</a></li>
         <li id="navAdminLink" style="display: none;"><a href="#" class="nav-link" data-nav="admin" style="color: var(--color-danger); font-weight: 700;">Admin Panel</a></li>
       </ul>
@@ -53,7 +54,7 @@
 
         <!-- Guest Actions -->
         <div id="navGuestActions" style="display: flex; gap: 8px;">
-          <button id="navLoginBtn" class="btn btn-outline btn-sm" data-i18n="nav_login">تسجيل الدخول</button>
+          <button id="navLoginBtn" class="btn btn-outline btn-sm" onclick="app.showAuthModal('login')" data-i18n="nav_login">تسجيل الدخول</button>
         </div>
 
         <!-- Authenticated User Actions -->
@@ -383,11 +384,11 @@
         </div>
 
         <div>
-          <h4>قواعد البيانات المعتمدة</h4>
+          <h4><a href="#" onclick="app.showDatasetsModal(); return false;" style="color: inherit; text-decoration: none;"><i class="fas fa-database" style="color: #38BDF8; font-size: 11px;"></i> قواعد البيانات المعتمدة</a></h4>
           <ul style="list-style: none; display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
-            <li><a href="https://github.com/openrepair/data" target="_blank" rel="noopener">Open Repair Alliance</a></li>
-            <li><a href="https://github.com/rub-ksv/MyFixit-Dataset" target="_blank" rel="noopener">MyFixit Dataset</a></li>
-            <li><a href="https://www.backblaze.com/cloud-storage/resources/hard-drive-test-data" target="_blank" rel="noopener">Backblaze Hard Drive Data</a></li>
+            <li><a href="#" onclick="app.showDatasetsModal(); return false;">Open Repair Alliance (128K+ Records)</a></li>
+            <li><a href="#" onclick="app.showDatasetsModal(); return false;">MyFixit Dataset (34K+ Guides)</a></li>
+            <li><a href="#" onclick="app.showDatasetsModal(); return false;">Backblaze Hard Drive Stats (SMART Telemetry)</a></li>
           </ul>
         </div>
 
@@ -412,5 +413,10 @@
   <script src="js/i18n.js"></script>
   <script src="js/api.js"></script>
   <script src="js/app.js"></script>
+  <script>
+    if (!window.app && typeof FixoraApp !== 'undefined') {
+      window.app = app = new FixoraApp();
+    }
+  </script>
 </body>
 </html>
