@@ -20,10 +20,10 @@ const TRANSLATIONS = {
     
     // Hero (ByteFix Reference Typography & Copy)
     hero_headline: "Fixing Tech Issues Fast and Right",
-    hero_subtext: "Expert AI-powered diagnosis and certified repair services you can trust, ensuring your technology runs smoothly and efficiently, every time.",
+    hero_subtext: "From smartphones and laptops to gaming consoles, smart TVs, storage drives, and home electronics — AI-calibrated troubleshooting guides and direct connection to certified technicians.",
     hero_emergency_btn: "Get Emergency Service",
     hero_request_repair: "Request a Repair Today",
-    hero_badge: "AI Hardware Diagnostic Platform",
+    hero_badge: "Fixora AI Universal Hardware Diagnostic Platform",
     
     // Quick Demo Triage Card
     demo_title: "Instant Smart Triage",
@@ -201,10 +201,10 @@ const TRANSLATIONS = {
     
     // Hero (ByteFix Reference Arabic)
     hero_headline: "حل أعطال أجهزتك التقنية بسرعة واحترافية",
-    hero_subtext: "خدمات دعم فني وتشخيص ذكي معتمد للأجهزة تثق بها، لنضمن استمرارية أجهزتك التقنية بسلاسة وكفاءة في كل وقت.",
+    hero_subtext: "من الهواتف واللابتوبات وأجهزة الكمبيوتر إلى منصات الألعاب، الشاشات، وسائط التخزين، والأجهزة المنزلية الذكية — تشخيص أعطال العتاد والبرمجيات في ثوانٍ مع أدلة صيانة معتمدة وربط فوري بفنيين موثوقين.",
     hero_emergency_btn: "فحص فوري ذكي",
     hero_request_repair: "طلب صيانة فورية",
-    hero_badge: "منصة تشخيص الأعطال بالذكاء الاصطناعي",
+    hero_badge: "منصة Fixora الذكية لتشخيص كافة الأجهزة الإلكترونية",
     
     // Quick Demo Triage Card
     demo_title: "فحص فوري ذكي لكافة الأجهزة",

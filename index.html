@@ -84,18 +84,26 @@
 
       <div class="container">
         <div class="hero-content-col">
+          <div class="hero-badge" style="display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: var(--radius-full); font-size: 12px; font-weight: 600; color: #38BDF8; margin-bottom: 18px;">
+            <i class="fas fa-microchip"></i>
+            <span data-i18n="hero_badge">منصة Fixora الذكية لتشخيص جميع الأجهزة الإلكترونية</span>
+          </div>
+
           <h1 class="hero-headline" data-i18n="hero_headline">
             حل أعطال أجهزتك التقنية<br>بسرعة واحترافية
           </h1>
 
           <p class="hero-subtext" data-i18n="hero_subtext">
-            خدمات دعم فني وتشخيص ذكي معتمد للأجهزة تثق بها، لنضمن استمرارية أجهزتك التقنية بسلاسة وكفاءة في كل وقت.
+            من الهواتف واللابتوبات وأجهزة الكمبيوتر إلى منصات الألعاب، الشاشات، وسائط التخزين، والأجهزة الذكية — تشخيص دقيق بالذكاء الاصطناعي مع أدلة صيانة معتمدة وربط فوري بفنيين موثوقين.
           </p>
 
-          <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+          <div style="display: flex; gap: 14px; align-items: center; flex-wrap: wrap;">
             <!-- Get Emergency Service Button (White Pill) -->
             <button class="btn btn-emergency" onclick="app.navigate('diagnose')" data-i18n="hero_emergency_btn">
               طلب فحص طارئ
+            </button>
+            <button class="btn btn-outline" onclick="app.navigate('guides')" style="border-radius: var(--radius-full); padding: 10px 22px; font-size: 14px; font-weight: 600;" data-i18n="nav_guides">
+              أدلة الإصلاح
             </button>
           </div>
         </div>

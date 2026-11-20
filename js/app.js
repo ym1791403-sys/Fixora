@@ -204,6 +204,11 @@ class FixoraApp {
 
       <div class="container">
         <div class="hero-content-col">
+          <div class="hero-badge" style="display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: var(--radius-full); font-size: 12px; font-weight: 600; color: #38BDF8; margin-bottom: 18px;">
+            <i class="fas fa-microchip"></i>
+            <span data-i18n="hero_badge">${window.i18n.t('hero_badge')}</span>
+          </div>
+
           <h1 class="hero-headline" data-i18n="hero_headline">
             ${window.i18n.t('hero_headline')}
           </h1>
@@ -212,10 +217,13 @@ class FixoraApp {
             ${window.i18n.t('hero_subtext')}
           </p>
 
-          <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+          <div style="display: flex; gap: 14px; align-items: center; flex-wrap: wrap;">
             <!-- Get Emergency Service Button (White Pill) -->
             <button class="btn btn-emergency" onclick="app.navigate('diagnose')" data-i18n="hero_emergency_btn">
               ${window.i18n.t('hero_emergency_btn')}
+            </button>
+            <button class="btn btn-outline" onclick="app.navigate('guides')" style="border-radius: var(--radius-full); padding: 10px 22px; font-size: 14px; font-weight: 600;" data-i18n="nav_guides">
+              ${window.i18n.t('nav_guides')}
             </button>
           </div>
         </div>
@@ -441,27 +449,30 @@ class FixoraApp {
           <div class="card" style="padding: 36px;">
             
             <!-- Step 1: Device Category -->
-            <div class="form-group">
-              <label class="form-label" data-i18n="diag_step1">1. Device Category</label>
-              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: 12px;">
+            <div class="form-group" style="margin-bottom: 28px;">
+              <label class="form-label" style="font-size: 15px; font-weight: 700; color: #FFFFFF; margin-bottom: 12px; display: block;" data-i18n="diag_step1">1. فئة ونوع الجهاز</label>
+              <div class="wizard-cat-grid">
                 ${[
-                  { cat: "Smartphone", icon: "fa-mobile-alt", key: "cat_smartphone" },
-                  { cat: "Laptop", icon: "fa-laptop", key: "cat_laptop" },
-                  { cat: "Desktop Computer", icon: "fa-desktop", key: "cat_computer" },
-                  { cat: "Gaming Console", icon: "fa-gamepad", key: "cat_console" },
-                  { cat: "Smart TV", icon: "fa-tv", key: "cat_tv" },
-                  { cat: "Storage", icon: "fa-hard-drive", key: "cat_storage" },
-                  { cat: "Tablet", icon: "fa-tablet-alt", key: "cat_tablet" },
-                  { cat: "Smartwatch", icon: "fa-clock", key: "cat_smartwatch" },
-                  { cat: "Audio", icon: "fa-headphones", key: "cat_audio" },
-                  { cat: "Camera", icon: "fa-camera", key: "cat_camera" },
-                  { cat: "Printer", icon: "fa-print", key: "cat_printer" },
-                  { cat: "Home Appliance", icon: "fa-plug", key: "cat_appliance" },
-                  { cat: "Other", icon: "fa-microchip", key: "cat_other" }
+                  { cat: "Smartphone", icon: "fa-mobile-screen-button", key: "cat_smartphone", sub: isAr ? "آيفون / أندرويد" : "iPhone / Android" },
+                  { cat: "Laptop", icon: "fa-laptop", key: "cat_laptop", sub: isAr ? "ماك بوك / ويندوز" : "MacBook / Windows" },
+                  { cat: "Desktop Computer", icon: "fa-desktop", key: "cat_computer", sub: isAr ? "بي سي / تجميعات" : "PC / Mac / Workstation" },
+                  { cat: "Gaming Console", icon: "fa-gamepad", key: "cat_console", sub: isAr ? "بلايستيشن / إكس بوكس" : "PlayStation / Xbox / Switch" },
+                  { cat: "Smart TV", icon: "fa-tv", key: "cat_tv", sub: isAr ? "شاشات وتلفزيونات" : "Smart TV / Monitors" },
+                  { cat: "Storage", icon: "fa-hard-drive", key: "cat_storage", sub: isAr ? "هارد ديسك / SSD" : "SSD / HDD / NVMe" },
+                  { cat: "Tablet", icon: "fa-tablet-screen-button", key: "cat_tablet", sub: isAr ? "آيباد / تابلت" : "iPad / Android Tablet" },
+                  { cat: "Smartwatch", icon: "fa-clock", key: "cat_smartwatch", sub: isAr ? "ساعات ذكية" : "Apple Watch / Smartwatch" },
+                  { cat: "Audio", icon: "fa-headphones", key: "cat_audio", sub: isAr ? "سماعات وأنظمة صوت" : "Headphones / Audio" },
+                  { cat: "Camera", icon: "fa-camera", key: "cat_camera", sub: isAr ? "كاميرات ودرون" : "Cameras / Drones" },
+                  { cat: "Printer", icon: "fa-print", key: "cat_printer", sub: isAr ? "طابعات وسكانر" : "Printers / Scanners" },
+                  { cat: "Home Appliance", icon: "fa-plug", key: "cat_appliance", sub: isAr ? "أجهزة منزلية ذكية" : "Smart Home Appliances" },
+                  { cat: "Other", icon: "fa-microchip", key: "cat_other", sub: isAr ? "معدات وإلكترونيات أخرى" : "Other Electronics" }
                 ].map(item => `
-                  <div class="device-category-card ${this.wizardData.device_category === item.cat ? 'selected' : ''}" onclick="app.setWizardCat('${item.cat}', this)" style="cursor: pointer; padding: 14px 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); text-align: center; background: #FFFFFF;">
-                    <i class="fas ${item.icon}" style="font-size: 24px; color: ${this.wizardData.device_category === item.cat ? 'var(--color-secondary)' : 'var(--color-primary)'}; margin-bottom: 6px; display: block;"></i>
-                    <span style="font-size: 12px; font-weight: 600; display: block;" data-i18n="${item.key}">${window.i18n.t(item.key)}</span>
+                  <div class="wizard-cat-item ${this.wizardData.device_category === item.cat ? 'selected' : ''}" onclick="app.setWizardCat('${item.cat}', this)">
+                    <div class="wizard-cat-icon">
+                      <i class="fas ${item.icon}"></i>
+                    </div>
+                    <strong class="wizard-cat-title" data-i18n="${item.key}">${window.i18n.t(item.key)}</strong>
+                    <span class="wizard-cat-sub">${item.sub}</span>
                   </div>
                 `).join('')}
               </div>
@@ -500,8 +511,8 @@ class FixoraApp {
             </div>
 
             <!-- Step 5: Optional Details Accordion -->
-            <div style="margin-bottom: 24px; padding: 16px; background-color: #F8FAFC; border-radius: var(--radius-md); border: 1px solid var(--color-border);">
-              <h5 style="margin-bottom: 12px; font-size: 14px;" data-i18n="diag_step5">5. Additional Details (Optional)</h5>
+            <div style="margin-bottom: 24px; padding: 16px; background-color: #0E131F; border-radius: var(--radius-md); border: 1px solid rgba(255, 255, 255, 0.08);">
+              <h5 style="margin-bottom: 12px; font-size: 14px; color: #FFFFFF;" data-i18n="diag_step5">5. Additional Details (Optional)</h5>
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
                 <div>
                   <label style="font-size: 12px; font-weight: 600; color: var(--color-text-muted);" data-i18n="diag_age_label">Device Age</label>
@@ -546,8 +557,8 @@ class FixoraApp {
 
   setWizardCat(cat, el) {
     this.wizardData.device_category = cat;
-    document.querySelectorAll(".device-category-card").forEach(c => c.classList.remove("selected"));
-    el.classList.add("selected");
+    document.querySelectorAll(".wizard-cat-item").forEach(c => c.classList.remove("selected"));
+    if (el) el.classList.add("selected");
   }
 
   async submitDiagnosis() {
@@ -609,7 +620,7 @@ class FixoraApp {
           <!-- Top Bar Action -->
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
             <div>
-              <span class="tag" style="background-color: #E2E8F0; margin-bottom: 6px;">Report #${report.report_id || 'TEMP'}</span>
+              <span class="tag" style="background-color: rgba(56, 189, 248, 0.15); color: #38BDF8; border: 1px solid rgba(56, 189, 248, 0.3); margin-bottom: 6px;">Report #${report.report_id || 'TEMP'}</span>
               <h1 style="font-size: 28px;" data-i18n="results_title">Diagnostic Report</h1>
               <p style="color: var(--color-text-muted); font-size: 14px;">
                 ${report.brand || ''} ${report.model || ''} (${report.device_category})
@@ -681,13 +692,13 @@ class FixoraApp {
             <h3 style="font-size: 18px; margin-bottom: 16px;" data-i18n="results_causes_title">Most Probable Root Causes</h3>
             <div style="display: flex; flex-direction: column; gap: 16px;">
               ${report.possible_causes.map(c => `
-                <div style="padding: 16px; background-color: #F8FAFC; border-radius: var(--radius-sm); border: 1px solid var(--color-border);">
+                <div style="padding: 16px; background-color: #0E131F; border-radius: var(--radius-sm); border: 1px solid rgba(255, 255, 255, 0.08);">
                   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                    <strong>${isAr ? c.title_ar : c.title_en}</strong>
-                    <span style="font-weight: 700; color: var(--color-secondary); font-size: 14px;">${Math.round(c.probability * 100)}%</span>
+                    <strong style="color: #FFFFFF;">${isAr ? c.title_ar : c.title_en}</strong>
+                    <span style="font-weight: 700; color: #38BDF8; font-size: 14px;">${Math.round(c.probability * 100)}%</span>
                   </div>
                   <!-- Progress bar -->
-                  <div style="width: 100%; height: 6px; background-color: #E2E8F0; border-radius: var(--radius-full); margin-bottom: 8px; overflow: hidden;">
+                  <div style="width: 100%; height: 6px; background-color: rgba(255, 255, 255, 0.1); border-radius: var(--radius-full); margin-bottom: 8px; overflow: hidden;">
                     <div style="width: ${Math.round(c.probability * 100)}%; height: 100%; background-color: var(--color-secondary);"></div>
                   </div>
                   <p style="font-size: 13px; color: var(--color-text-muted); margin: 0;">
