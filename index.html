@@ -36,7 +36,6 @@
         <li><a href="#" class="nav-link" data-nav="diagnose" data-i18n="nav_diagnose">تشخيص أي جهاز</a></li>
         <li><a href="#" class="nav-link" data-nav="guides" data-i18n="nav_guides">أدلة الإصلاح</a></li>
         <li><a href="#" class="nav-link" data-nav="technicians" data-i18n="nav_technicians">سوق الفنيين</a></li>
-        <li><a href="#" class="nav-link" onclick="app.showDatasetsModal(); return false;"><i class="fas fa-database" style="color: #38BDF8; font-size: 11px; margin-inline-end: 4px;"></i> <span data-i18n="nav_datasets">قواعد البيانات</span></a></li>
         <li id="navDashboardLink" style="display: none;"><a href="#" class="nav-link" data-nav="dashboard" data-i18n="nav_dashboard">لوحة التحكم</a></li>
         <li id="navAdminLink" style="display: none;"><a href="#" class="nav-link" data-nav="admin" style="color: var(--color-danger); font-weight: 700;">Admin Panel</a></li>
       </ul>
@@ -409,7 +408,14 @@
     </div>
   </footer>
 
-  <!-- Scripts -->
+  <!-- Firebase App & Auth SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics-compat.js"></script>
+  <script src="js/firebase-init.js"></script>
+
+  <!-- Fixora Core Scripts -->
   <script src="js/i18n.js"></script>
   <script src="js/api.js"></script>
   <script src="js/app.js"></script>

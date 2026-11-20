@@ -54,7 +54,10 @@ class FixoraApp {
     }
     const logoutBtn = document.getElementById("navLogoutBtn");
     if (logoutBtn) {
-      logoutBtn.addEventListener("click", () => {
+      logoutBtn.addEventListener("click", async () => {
+        if (window.FirebaseBridge && typeof window.FirebaseBridge.signOut === "function") {
+          try { await window.FirebaseBridge.signOut(); } catch(e) {}
+        }
         window.api.clearSession();
         this.updateNavAuth();
         this.navigate("home");
@@ -1534,7 +1537,30 @@ class FixoraApp {
   // ==========================================
   // AUTH MODALS & GOOGLE SIGN-IN
   // ==========================================
-  triggerGoogleSignIn() {
+  async triggerGoogleSignIn() {
+    const isAr = window.i18n.currentLang === "ar";
+    if (window.FirebaseBridge && window.FirebaseBridge.isReady()) {
+      try {
+        const fbUser = await window.FirebaseBridge.signInWithGoogle();
+        if (fbUser) {
+          window.api.setSession("fb_token_" + Date.now(), fbUser);
+          this.closeModal();
+          this.updateNavAuth();
+          this.navigate("dashboard");
+          return;
+        }
+      } catch (err) {
+        console.warn("Firebase Google Sign-In error:", err);
+        if (err.code === "auth/popup-closed-by-user" || err.code === "auth/cancelled-popup-request") {
+          return;
+        }
+      }
+    }
+    // Fallback to Google Account Chooser
+    this.showGoogleChooser();
+  }
+
+  showGoogleChooser() {
     const isAr = window.i18n.currentLang === "ar";
     const googleChooserHtml = `
       <div>
@@ -1802,18 +1828,6 @@ class FixoraApp {
           <div style="flex: 1; height: 1px; background: rgba(255,255,255,0.1);"></div>
         </div>
 
-        <!-- Quick Demo One-Click Login -->
-        <div style="background-color: #0A0D14; padding: 12px; border-radius: var(--radius-sm); border: 1px solid rgba(255,255,255,0.08); margin-bottom: 18px;">
-          <span style="font-size: 11px; font-weight: 600; color: var(--color-text-muted); display: block; margin-bottom: 8px;">
-            ${isAr ? 'حسابات تجريبية سريعة بنقرة واحدة:' : 'Quick Demo Logins:'}
-          </span>
-          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <button class="btn btn-sm btn-primary" style="font-size: 12px; padding: 6px 14px;" onclick="app.quickLogin('admin')"><i class="fas fa-user-shield"></i> Admin</button>
-            <button class="btn btn-sm btn-primary" style="font-size: 12px; padding: 6px 14px; background: #0D9488;" onclick="app.quickLogin('technician')"><i class="fas fa-wrench"></i> Technician</button>
-            <button class="btn btn-sm btn-primary" style="font-size: 12px; padding: 6px 14px; background: #6366F1;" onclick="app.quickLogin('user')"><i class="fas fa-user"></i> Customer</button>
-          </div>
-        </div>
-
         <form id="loginForm">
           <div class="form-group">
             <label class="form-label" data-i18n="auth_email">Email Address</label>
@@ -1895,27 +1909,55 @@ class FixoraApp {
         e.preventDefault();
         const email = document.getElementById("loginEmail").value.trim();
         const pwd = document.getElementById("loginPassword").value;
+        const submitBtn = e.target.querySelector("button[type='submit']");
+        const originalText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${isAr ? 'جاري التحقق...' : 'Signing in...'}`;
+
         try {
-          if (window.api && typeof window.api.login === "function") {
-            await window.api.login(email, pwd);
-          } else {
-            const fallbackUser = {
+          let userProfile = null;
+          // Try Firebase Auth
+          if (window.FirebaseBridge && window.FirebaseBridge.isReady()) {
+            try {
+              userProfile = await window.FirebaseBridge.login(email, pwd);
+            } catch (fbErr) {
+              console.warn("Firebase sign-in message:", fbErr);
+              let msg = fbErr.message;
+              if (fbErr.code === "auth/user-not-found" || fbErr.code === "auth/wrong-password" || fbErr.code === "auth/invalid-credential") {
+                msg = isAr ? "البريد الإلكتروني أو كلمة المرور غير صحيحة" : "Invalid email or password";
+              } else if (fbErr.code === "auth/invalid-email") {
+                msg = isAr ? "صيغة البريد الإلكتروني غير صحيحة" : "Invalid email address";
+              }
+              alert((isAr ? "فشل تسجيل الدخول: " : "Login failed: ") + msg);
+              submitBtn.disabled = false;
+              submitBtn.innerHTML = originalText;
+              return;
+            }
+          }
+
+          if (!userProfile && window.api && typeof window.api.login === "function") {
+            const data = await window.api.login(email, pwd);
+            userProfile = data.user;
+          }
+
+          if (!userProfile) {
+            userProfile = {
               id: Date.now(),
               email: email,
               full_name: email.split("@")[0],
               role: email.includes("admin") ? "admin" : (email.includes("tech") ? "technician" : "user"),
               is_active: true
             };
-            localStorage.setItem("techrepair_token", "fixora_token_" + Date.now());
-            localStorage.setItem("techrepair_user", JSON.stringify(fallbackUser));
-            localStorage.setItem("fixora_user", JSON.stringify(fallbackUser));
-            localStorage.setItem("fixora_token", "fixora_token_" + Date.now());
           }
+
+          window.api.setSession("session_" + Date.now(), userProfile);
           this.closeModal();
           this.updateNavAuth();
           this.navigate("dashboard");
         } catch (err) {
           alert((isAr ? "فشل تسجيل الدخول: " : "Login failed: ") + err.message);
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = originalText;
         }
       });
     } else {
@@ -1925,27 +1967,57 @@ class FixoraApp {
         const email = document.getElementById("regEmail").value.trim();
         const pwd = document.getElementById("regPassword").value;
         const role = document.getElementById("regRole").value;
+        const submitBtn = e.target.querySelector("button[type='submit']");
+        const originalText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${isAr ? 'جاري إنشاء الحساب...' : 'Creating account...'}`;
+
         try {
-          if (window.api && typeof window.api.register === "function") {
-            await window.api.register(name, email, pwd, role);
-          } else {
-            const fallbackUser = {
+          let userProfile = null;
+          // Try Firebase Auth
+          if (window.FirebaseBridge && window.FirebaseBridge.isReady()) {
+            try {
+              userProfile = await window.FirebaseBridge.register(name, email, pwd, role);
+            } catch (fbErr) {
+              console.warn("Firebase register message:", fbErr);
+              let msg = fbErr.message;
+              if (fbErr.code === "auth/email-already-in-use") {
+                msg = isAr ? "هذا البريد مسجل بالفعل، يرجى تسجيل الدخول" : "Email already registered. Please sign in";
+              } else if (fbErr.code === "auth/weak-password") {
+                msg = isAr ? "كلمة المرور ضعيفة، يجب ألا تقل عن 6 أحرف" : "Password should be at least 6 characters";
+              } else if (fbErr.code === "auth/invalid-email") {
+                msg = isAr ? "صيغة البريد الإلكتروني غير صحيحة" : "Invalid email address";
+              }
+              alert((isAr ? "فشل إنشاء الحساب: " : "Registration failed: ") + msg);
+              submitBtn.disabled = false;
+              submitBtn.innerHTML = originalText;
+              return;
+            }
+          }
+
+          if (!userProfile && window.api && typeof window.api.register === "function") {
+            const data = await window.api.register(name, email, pwd, role);
+            userProfile = data.user;
+          }
+
+          if (!userProfile) {
+            userProfile = {
               id: Date.now(),
               email: email,
               full_name: name,
               role: role || "user",
               is_active: true
             };
-            localStorage.setItem("techrepair_token", "fixora_token_" + Date.now());
-            localStorage.setItem("techrepair_user", JSON.stringify(fallbackUser));
-            localStorage.setItem("fixora_user", JSON.stringify(fallbackUser));
-            localStorage.setItem("fixora_token", "fixora_token_" + Date.now());
           }
+
+          window.api.setSession("session_" + Date.now(), userProfile);
           this.closeModal();
           this.updateNavAuth();
           this.navigate("dashboard");
         } catch (err) {
           alert((isAr ? "فشل إنشاء الحساب: " : "Registration failed: ") + err.message);
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = originalText;
         }
       });
     }
