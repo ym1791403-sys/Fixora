@@ -191,7 +191,7 @@ class ApiClient {
             instruction_ar: "حرك العود الخشبي بمحاذاة الجوانب برفق لإخراج الأتربة المتكتلة مبتعداً عن شريحة الأسنان الوسطى."
           }
         ]
-      },      },
+      },
       {
         id: 4,
         device_category: "Gaming Console",
@@ -923,4 +923,4 @@ class ApiClient {
   }
 }
 
-window.api = new ApiClient();
+var api = window.api = new ApiClient();
