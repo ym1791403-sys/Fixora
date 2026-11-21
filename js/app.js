@@ -739,7 +739,7 @@ class FixoraApp {
                         <span>${isAr ? 'طريقة التصليح المعتمدة (MyFixit & ORA):' : 'Verified Repair Method (MyFixit & ORA):'}</span>
                       </div>
                       <div style="color: #F1F5F9; font-weight: 500;">
-                        ${isAr ? (c.repair_method_ar || c.repair_method_en) : (c.repair_method_en || c.repair_method_ar)}
+                        ${(isAr ? (c.repair_method_ar || c.repair_method_en) : (c.repair_method_en || c.repair_method_ar)).replace(/^(طريقة التصليح المعتمدة:\s*|Repair Method:\s*)/i, '')}
                       </div>
                     </div>
                   ` : ''}
