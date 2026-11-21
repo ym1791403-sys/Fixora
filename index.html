@@ -49,7 +49,7 @@
         </button>
 
         <!-- Request a Repair Today Button (ByteFix Blue Pill) -->
-        <button class="btn btn-primary btn-sm" onclick="app.navigate('technicians')" data-i18n="hero_request_repair">طلب صيانة فورية</button>
+        <button class="btn btn-primary btn-sm nav-repair-btn" onclick="app.navigate('technicians')" data-i18n="hero_request_repair">طلب صيانة فورية</button>
 
         <!-- Guest Actions -->
         <div id="navGuestActions" style="display: flex; gap: 8px;">
@@ -64,8 +64,29 @@
             <i class="fas fa-sign-out-alt"></i>
           </button>
         </div>
+
+        <!-- Mobile Menu Toggle Button -->
+        <button id="navMobileToggleBtn" class="mobile-toggle-btn" aria-label="Toggle Navigation Menu" onclick="app.toggleMobileMenu()">
+          <i class="fas fa-bars"></i>
+        </button>
       </div>
 
+    </div>
+
+    <!-- Mobile Navigation Drawer -->
+    <div id="mobileNavDrawer" class="mobile-nav-drawer" style="display: none;">
+      <ul class="mobile-nav-list">
+        <li><a href="#" class="mobile-nav-link" data-nav="home" data-i18n="nav_home" onclick="app.navigate('home'); app.closeMobileMenu(); return false;">الرئيسية</a></li>
+        <li><a href="#about" class="mobile-nav-link" data-nav="about" data-i18n="nav_about" onclick="app.navigate('about'); app.closeMobileMenu(); return false;">من نحن</a></li>
+        <li><a href="#" class="mobile-nav-link" data-nav="diagnose" data-i18n="nav_diagnose" onclick="app.navigate('diagnose'); app.closeMobileMenu(); return false;">تشخيص أي جهاز</a></li>
+        <li><a href="#" class="mobile-nav-link" data-nav="guides" data-i18n="nav_guides" onclick="app.navigate('guides'); app.closeMobileMenu(); return false;">أدلة الإصلاح</a></li>
+        <li><a href="#" class="mobile-nav-link" data-nav="technicians" data-i18n="nav_technicians" onclick="app.navigate('technicians'); app.closeMobileMenu(); return false;">سوق الفنيين</a></li>
+        <li id="mobileNavDashboardLink" style="display: none;"><a href="#" class="mobile-nav-link" data-nav="dashboard" data-i18n="nav_dashboard" onclick="app.navigate('dashboard'); app.closeMobileMenu(); return false;">لوحة التحكم</a></li>
+        <li id="mobileNavAdminLink" style="display: none;"><a href="#" class="mobile-nav-link" data-nav="admin" style="color: var(--color-danger); font-weight: 700;" onclick="app.navigate('admin'); app.closeMobileMenu(); return false;">Admin Panel</a></li>
+      </ul>
+      <div style="padding: 10px 16px 16px; border-top: 1px solid rgba(255,255,255,0.08);">
+        <button class="btn btn-primary btn-sm" style="width: 100%; justify-content: center;" onclick="app.navigate('technicians'); app.closeMobileMenu();" data-i18n="hero_request_repair">طلب صيانة فورية</button>
+      </div>
     </div>
   </header>
 
@@ -97,7 +118,7 @@
             من الهواتف واللابتوبات وأجهزة الكمبيوتر إلى منصات الألعاب، الشاشات، وسائط التخزين، والأجهزة الذكية — تشخيص دقيق بالذكاء الاصطناعي مع أدلة صيانة معتمدة وربط فوري بفنيين موثوقين.
           </p>
 
-          <div style="display: flex; gap: 14px; align-items: center; flex-wrap: wrap;">
+          <div class="hero-actions" style="display: flex; gap: 14px; align-items: center; flex-wrap: wrap;">
             <!-- Get Emergency Service Button (White Pill) -->
             <button class="btn btn-emergency" onclick="app.navigate('diagnose')" data-i18n="hero_emergency_btn">
               طلب فحص طارئ

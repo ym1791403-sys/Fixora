@@ -84,6 +84,8 @@ class FixoraApp {
     const userLinks = document.getElementById("navUserActions");
     const dashLink = document.getElementById("navDashboardLink");
     const adminLink = document.getElementById("navAdminLink");
+    const mobileDashLink = document.getElementById("mobileNavDashboardLink");
+    const mobileAdminLink = document.getElementById("mobileNavAdminLink");
     const userNameEl = document.getElementById("navUserName");
 
     const userAvatarEl = document.getElementById("navUserAvatar");
@@ -98,12 +100,36 @@ class FixoraApp {
       if (adminLink) {
         adminLink.style.display = user.role === "admin" ? "block" : "none";
       }
+      if (mobileDashLink) mobileDashLink.style.display = "block";
+      if (mobileAdminLink) {
+        mobileAdminLink.style.display = user.role === "admin" ? "block" : "none";
+      }
     } else {
       if (guestLinks) guestLinks.style.display = "flex";
       if (userLinks) userLinks.style.display = "none";
       if (dashLink) dashLink.style.display = "none";
       if (adminLink) adminLink.style.display = "none";
+      if (mobileDashLink) mobileDashLink.style.display = "none";
+      if (mobileAdminLink) mobileAdminLink.style.display = "none";
     }
+  }
+
+  toggleMobileMenu() {
+    const drawer = document.getElementById("mobileNavDrawer");
+    const toggleBtn = document.getElementById("navMobileToggleBtn");
+    if (!drawer) return;
+    const isVisible = drawer.style.display === "block";
+    drawer.style.display = isVisible ? "none" : "block";
+    if (toggleBtn) {
+      toggleBtn.innerHTML = isVisible ? '<i class="fas fa-bars"></i>' : '<i class="fas fa-times"></i>';
+    }
+  }
+
+  closeMobileMenu() {
+    const drawer = document.getElementById("mobileNavDrawer");
+    const toggleBtn = document.getElementById("navMobileToggleBtn");
+    if (drawer) drawer.style.display = "none";
+    if (toggleBtn) toggleBtn.innerHTML = '<i class="fas fa-bars"></i>';
   }
 
   navigate(viewName, params = {}) {
