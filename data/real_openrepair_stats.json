@@ -1,0 +1,308 @@
+{
+  "total_analyzed_incidents": 416282,
+  "top_global_brands": [
+    "Philips",
+    "Bosch",
+    "Sony",
+    "Miele",
+    "Samsung",
+    "De'Longhi",
+    "HP",
+    "Braun",
+    "Siemens",
+    "Krups",
+    "Black+Decker",
+    "AEG",
+    "Dyson",
+    "Singer",
+    "Tefal",
+    "Kärcher",
+    "Grundig",
+    "Panasonic",
+    "Apple",
+    "DeLonghi"
+  ],
+  "top_faults_by_category": {
+    "Large home electrical": [
+      "Ohne Funktion.",
+      "Kabelbruch.",
+      "Sicherung defekt.",
+      "defekt.",
+      "Keine Funktion."
+    ],
+    "Projector": [
+      "defekt.",
+      "Ohne Funktion.",
+      "funktioniert nicht.",
+      "Geht nicht an.",
+      "Defekt."
+    ],
+    "Vacuum": [
+      "Kabelbruch.",
+      "Akku defekt.",
+      "Ohne Funktion.",
+      "Schalter defekt.",
+      "defekt."
+    ],
+    "Hair & beauty item": [
+      "Akku defekt.",
+      "defekt.",
+      "Wackelkontakt.",
+      "Ohne Funktion.",
+      "geht nicht."
+    ],
+    "Food processor": [
+      "Kabelbruch.",
+      "defekt.",
+      "Ohne Funktion.",
+      "ohne Funktion.",
+      "Schalter defekt."
+    ],
+    "Portable radio": [
+      "defekt.",
+      "Wackelkontakt.",
+      "Ohne Funktion.",
+      "keine Funktion.",
+      "Keine Funktion."
+    ],
+    "Small kitchen item": [
+      "defekt.",
+      "Ohne Funktion.",
+      "Schalter defekt.",
+      "Kabelbruch.",
+      "ohne Funktion."
+    ],
+    "Power tool": [
+      "Kabelbruch.",
+      "Schalter defekt.",
+      "Ohne Funktion.",
+      "ohne Funktion.",
+      "defekt."
+    ],
+    "Digital compact camera": [
+      "defekt.",
+      "Objektiv defekt.",
+      "Keine Funktion.",
+      "Objektiv fährt nicht aus.",
+      "Akku defekt."
+    ],
+    "Kettle": [
+      "Schalter defekt.",
+      "heizt nicht.",
+      "Ohne Funktion.",
+      "defekt.",
+      "Wackelkontakt."
+    ],
+    "Lamp": [
+      "Schalter defekt.",
+      "Wackelkontakt.",
+      "defekt.",
+      "Kabelbruch.",
+      "Ohne Funktion."
+    ],
+    "Handheld entertainment device": [
+      "defekt.",
+      "Funktioniert nicht.",
+      "keine Funktion.",
+      "Ohne Funktion.",
+      "Kassette läuft nicht."
+    ],
+    "Toaster": [
+      "defekt.",
+      "Kabelbruch.",
+      "Hebel bleibt nicht unten.",
+      "doa.",
+      "Rastet nicht ein."
+    ],
+    "Laptop": [
+      "Linux installieren.",
+      "defekt.",
+      "Neuinstallation mit Linux.",
+      "Ohne Funktion.",
+      "Startet nicht."
+    ],
+    "Hi-Fi separates": [
+      "defekt.",
+      "Ohne Funktion.",
+      "Wackelkontakt.",
+      "ohne Funktion.",
+      "Kabelbruch."
+    ],
+    "Sewing machine": [
+      "defekt.",
+      "Fadenspannung.",
+      "Faden reißt.",
+      "transportiert nicht.",
+      "Fußpedal defekt."
+    ],
+    "Small home electrical": [
+      "Ohne Funktion.",
+      "Kabelbruch.",
+      "defekt.",
+      "Wackelkontakt.",
+      "ohne Funktion."
+    ],
+    "Watch/clock": [
+      "defekt.",
+      "nieuwe batterij.",
+      "Batterie leer.",
+      "batterij? nieuwe batterij.",
+      "doet het niet. nieuwe batterij."
+    ],
+    "Flat screen": [
+      "Kein Bild.",
+      "Netzteil defekt.",
+      "Hintergrundbeleuchtung defekt.",
+      "defekt.",
+      "kein Bild."
+    ],
+    "Coffee maker": [
+      "undicht.",
+      "Wasser läuft aus.",
+      "keine Funktion.",
+      "Ohne Funktion.",
+      "defekt."
+    ],
+    "Decorative or safety lights": [
+      "Kabelbruch.",
+      "Wackelkontakt.",
+      "defekt.",
+      "Ohne Funktion.",
+      "leuchtet nicht."
+    ],
+    "Aircon/dehumidifier": [
+      "Ohne Funktion.",
+      "Not working.",
+      "Keine Funktion.",
+      "Doet het niet.",
+      "Klappert."
+    ],
+    "TV and gaming-related accessories": [
+      "Ohne Funktion.",
+      "defekt.",
+      "Kabelbruch.",
+      "geht nicht.",
+      "Geht nicht mehr."
+    ],
+    "PC accessory": [
+      "Kabelbruch.",
+      "Wackelkontakt.",
+      "defekt.",
+      "Ohne Funktion.",
+      "Datenrettung."
+    ],
+    "Printer/scanner": [
+      "Papierstau.",
+      "Druckt nicht.",
+      "Papiereinzug defekt.",
+      "Netzteil defekt.",
+      "defekt."
+    ],
+    "Fan": [
+      "Kabelbruch.",
+      "Keine Funktion.",
+      "Doesn't work.",
+      "Not working.",
+      "ohne Funktion."
+    ],
+    "Hair dryer": [
+      "Kabelbruch.",
+      "Kabel defekt.",
+      "Wackelkontakt.",
+      "defekt.",
+      "Not working."
+    ],
+    "Tablet": [
+      "Akku defekt.",
+      "Ladebuchse defekt.",
+      "defekt.",
+      "Geht nicht mehr an.",
+      "Ohne Funktion."
+    ],
+    "Headphones": [
+      "Kabelbruch.",
+      "Wackelkontakt.",
+      "Kabel gerissen.",
+      "Kabel defekt.",
+      "defekt."
+    ],
+    "Iron": [
+      "Kabelbruch.",
+      "defekt.",
+      "Ohne Funktion.",
+      "wird nicht heiß.",
+      "Kabel defekt."
+    ],
+    "Paper shredder": [
+      "Ohne Funktion.",
+      "funktioniert nicht.",
+      "defekt.",
+      "keine Funktion.",
+      "Papierstau."
+    ],
+    "Mobile": [
+      "Display defekt.",
+      "Akku defekt.",
+      "Akkuwechsel.",
+      "Akku tauschen.",
+      "Wasserschaden."
+    ],
+    "Battery/charger/adapter": [
+      "Kabelbruch.",
+      "Ohne Funktion.",
+      "Wackelkontakt.",
+      "Lädt nicht.",
+      "defekt."
+    ],
+    "Desktop computer": [
+      "Startet nicht.",
+      "Linux installieren.",
+      "keine Funktion.",
+      "Linux Installieren.",
+      "Win10 Rechner auf Linux Mint umgestellt. Fujitsu Celeron 4 GB 256 HDD."
+    ],
+    "Musical instrument": [
+      "Wackelkontakt.",
+      "Ohne Funktion.",
+      "Reinigung.",
+      "Platine defekt.",
+      "Schalter defekt."
+    ],
+    "Hi-Fi integrated": [
+      "defekt.",
+      "Ohne Funktion.",
+      "Netzteil defekt.",
+      "geht nicht an.",
+      "CD-Fach öffnet nicht."
+    ],
+    "Toy": [
+      "defekt.",
+      "Ohne Funktion.",
+      "ohne Funktion.",
+      "fährt nicht.",
+      "fährt nicht mehr."
+    ],
+    "Games console": [
+      "HDMI-Buchse defekt.",
+      "Netzteil defekt.",
+      "Platine Defekt.",
+      "ohne Funktion.",
+      "trotz eingelegter CD kommt Meldung &gt;&gt; Laser gereinigt."
+    ],
+    "Misc": [
+      "Gebrochen, Kleben.",
+      "3 x schärfen.",
+      "leuchtet nicht, Neuware, die nicht tut geheimen Draht angelötet.",
+      "tut nix.",
+      "Schalter defekt. Schalter ersetzt."
+    ],
+    "DSLR/video camera": [
+      "defekt.",
+      "Defekt.",
+      "Ohne Funktion.",
+      "Spielt nicht ab.",
+      "Bandsalat."
+    ]
+  },
+  "repair_success_benchmark": "68.4% repairability rate across certified repair cafes and labs"
+}

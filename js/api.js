@@ -119,197 +119,10 @@ class ApiClient {
   }
 
   getPreseededGuides() {
-    return [
-      {
-        id: 1,
-        device_category: "Laptop",
-        problem_category: "Hardware",
-        title_en: "Complete Laptop Dust Cleaning and Thermal Paste Replacement",
-        title_ar: "دليل تنظيف مروحة اللابتوب وتجديد المعجون الحراري",
-        summary_en: "Learn how to open your laptop safely, clean heatsink fins from dust, and re-apply thermal compound to drop temperatures by 15-25C.",
-        summary_ar: "تعلم كيفية فك اللابتوب بأمان وتنظيف شفرات المروحة من الغبار المتراكم وتجديد المعجون الحراري لخفض الحرارة حتى 25 درجة مئوية.",
-        difficulty: "moderate",
-        estimated_minutes: 45,
-        required_tools: ["Precision Screwdriver", "Compressed Air Can", "Thermal Paste", "99% Isopropyl Alcohol"],
-        safety_precautions: ["Always disconnect internal battery before touching internal components", "Ground yourself against electrostatic discharge (ESD)"],
-        steps: [
-          {
-            step_number: 1,
-            title_en: "Chassis Back Cover Removal",
-            title_ar: "فك مسامير الغطاء الخلفي",
-            instruction_en: "Remove all perimeter screws from the bottom casing. Group screws by length as corner screws often differ.",
-            instruction_ar: "انزع جميع المسامير المحيطية من الغطاء الخلفي ورتبها حسب الطول."
-          },
-          {
-            step_number: 2,
-            title_en: "Disconnect Battery Connector",
-            title_ar: "فصل كابل البطارية الداخلي",
-            instruction_en: "Locate the main battery flex connector. Gently slide the plastic latch back and unplug.",
-            instruction_ar: "حدد مكان كابل البطارية المتصل باللوحة الأم وافصله برفق لتفريغ أي تيار."
-          },
-          {
-            step_number: 3,
-            title_en: "Heatsink Unscrewing in Diagonal Order",
-            title_ar: "فك مسامير المشتت الحراري بنظام قطري",
-            instruction_en: "Unscrew heat sink retaining screws following the numbered sequence stamped on the copper arm (1, 2, 3, 4) to ensure even pressure release.",
-            instruction_ar: "فك مسامير المبرد النحاسي بالترتيب الرقمي المكتوب عليه (1-2-3-4) لضمان تخفيف الضغط المتساوي."
-          },
-          {
-            step_number: 4,
-            title_en: "Clean Old Paste & Apply New Dot",
-            title_ar: "تنظيف المعجون الجاف ووضع المعجون الجديد",
-            instruction_en: "Wipe mirror-clean with isopropyl alcohol and apply a single rice-grain bead of thermal paste directly in the center of the silicon die.",
-            instruction_ar: "امسح المعجون القديم بكحول نقي حتى يلمع سطح المعالج، ثم ضع نقطة صغيرة بحجم حبة الأرز في المنتصف."
-          }
-        ]
-      },
-      {
-        id: 2,
-        device_category: "Smartphone",
-        problem_category: "Hardware",
-        title_en: "Safe Smartphone USB-C / Lightning Port Deep Cleaning",
-        title_ar: "طريقة تنظيف منفذ شحن الهاتف الذكي بأمان دون إتلاف الأسنان",
-        summary_en: "Fix slow or intermittent charging caused by compressed pocket debris without damaging fragile golden terminal pins.",
-        summary_ar: "علاج مشكلة بطء الشحن أو انقطاع الكابل بسبب تراكم الأتربة والألياف داخل المنفذ دون إيذاء الأسنان النحاسية الحساسة.",
-        difficulty: "easy",
-        estimated_minutes: 15,
-        required_tools: ["Non-conductive Bamboo Probe / Toothpick", "Bright LED Flashlight", "Soft Antistatic Brush"],
-        safety_precautions: ["Do NOT use conductive metal pins or needles", "Do not spray aerosol liquids directly into port"],
-        steps: [
-          {
-            step_number: 1,
-            title_en: "Port Visual Inspection",
-            title_ar: "المعاينة البصرية لمنفذ الشحن",
-            instruction_en: "Shine flashlight directly inside port to check if lint layer is compressed at the bottom floor.",
-            instruction_ar: "سلط ضوء الكشاف داخل المنفذ لفحص طبقة الغبار المتراكمة في القاع."
-          },
-          {
-            step_number: 2,
-            title_en: "Gentle Longitudinal Sweep",
-            title_ar: "تنظيف طولي خفيف بعود غير معدني",
-            instruction_en: "Carefully slide wooden toothpick along the walls to scrape compacted debris, avoiding center tongue pins.",
-            instruction_ar: "حرك العود الخشبي بمحاذاة الجوانب برفق لإخراج الأتربة المتكتلة مبتعداً عن شريحة الأسنان الوسطى."
-          }
-        ]
-      },
-      {
-        id: 4,
-        device_category: "Gaming Console",
-        problem_category: "Hardware",
-        title_en: "PlayStation 5 & Xbox Series X Cooling Fan Cleaning & Overheating Prevention",
-        title_ar: "طريقة تنظيف مروحة تبريد بلايستيشن 5 وإكس بوكس لمنع السخونة وإيقاف التشغيل المفاجئ",
-        summary_en: "Safely remove console side panels, vacuum dedicated dust catchers, and clear heatsink fins to eliminate fan jet-engine noise and 3-beep shutdown crashes.",
-        summary_ar: "فك أغطية المنصة بأمان وتفريغ مصائد الغبار المخصصة وتنظيف زعانف التبريد للتخلص من صوت المروحة المرتفع ومشكلة انطفاء الجهاز أثناء اللعب.",
-        difficulty: "easy",
-        estimated_minutes: 25,
-        required_tools: ["Torx Security T8 Screwdriver", "Soft Bristle Brush", "Household Vacuum / Dust Blower"],
-        safety_precautions: ["Wait 30 minutes after power off for internal power supply capacitors to discharge", "Do NOT touch liquid metal thermal interface"],
-        steps: [
-          {
-            step_number: 1,
-            title_en: "Slide and Lift Faceplates",
-            title_ar: "سحب ورفع أغطية الجهاز الجانبية",
-            instruction_en: "Grip top-left corner, gently pull upward and slide panel towards bottom base to unclip.",
-            instruction_ar: "ارفع الزاوية العلوية برفق ثم اسحب الغطاء لأسفل لتحرير المشابك البلاستيكية دون كسرها."
-          },
-          {
-            step_number: 2,
-            title_en: "Clear Dedicated Dust Catcher Holes",
-            title_ar: "شفط الأتربة من فتحات مصيدة الغبار",
-            instruction_en: "Vacuum the two triangular dust catcher ports on chassis to pull accumulated lint out.",
-            instruction_ar: "استخدم مكنسة كهربائية فوق الفتحتين المخصصتين لسحب كتل الغبار المحتبسة بالداخل."
-          }
-        ]
-      },
-      {
-        id: 5,
-        device_category: "Smart TV",
-        problem_category: "Hardware",
-        title_en: "Diagnosing Smart TV Black Screen with Sound (LED Backlight Strip Test)",
-        title_ar: "تشخيص عطل الشاشة السوداء مع وجود صوت في التلفزيون الذكي (فحص شرائط الليد)",
-        summary_en: "Perform the flashlight test to distinguish between burnt LED backlight arrays and T-Con / Mainboard failure without disassembling the panel.",
-        summary_ar: "اختبار الكشاف الضوئي لمعرفة ما إذا كان العطل من احتراق شرائط ليدات الإضاءة الخلفية أو كارت التيكون قبل فك الشاشة.",
-        difficulty: "moderate",
-        estimated_minutes: 20,
-        required_tools: ["Bright LED Flashlight / Smartphone Torch"],
-        safety_precautions: ["High voltage present on TV power supply board even after unplugging; do not touch electrolytic capacitors"],
-        steps: [
-          {
-            step_number: 1,
-            title_en: "Dark Room Flashlight Test",
-            title_ar: "اختبار الكشاف في غرفة مظلمة",
-            instruction_en: "In a dim room with TV powered on and sound playing, shine flashlight directly 2 inches from panel. Look for faint moving shadows of menus.",
-            instruction_ar: "شغل التلفزيون في غرفة مظلمة وسلط ضوء الكشاف على بعد 5 سم من الزجاج؛ إذا رأيت خيالات خافتة للصورة فإن العطل محصور في شرائط الليد."
-          }
-        ]
-      },
-      {
-        id: 6,
-        device_category: "Storage",
-        problem_category: "Hardware",
-        title_en: "Hard Drive S.M.A.R.T. Health Diagnosis & Bad Sector Remediation",
-        title_ar: "فحص صحة الهارد ديسك عبر مؤشرات SMART وعزل القطاعات التالفة (Bad Sectors)",
-        summary_en: "Analyze reallocated sectors (SMART 5) and pending sectors (SMART 197) to prevent catastrophic data loss, grounded in Backblaze telemetry.",
-        summary_ar: "تحليل القطاعات المعاد تعيينها وتوقع انهيار القرص الصلب لإنقاذ الملفات والبيانات الهامة قبل التلف الكامل.",
-        difficulty: "easy",
-        estimated_minutes: 30,
-        required_tools: ["CrystalDiskInfo / SMART CLI tool", "External Backup Drive"],
-        safety_precautions: ["Immediately backup critical files before running intensive surface write tests"],
-        steps: [
-          {
-            step_number: 1,
-            title_en: "Inspect S.M.A.R.T. Raw Values",
-            title_ar: "قراءة قيم مستشعرات SMART",
-            instruction_en: "Verify Reallocated Sectors Count (05) and Current Pending Sector Count (C5). Any non-zero value warrants immediate data replication.",
-            instruction_ar: "افحص قيم القطاعات التالفة؛ إذا كانت القيمة أكبر من الصفر ابدأ فوراً بنسخ بياناتك إلى وسيط تخزين خارجي."
-          }
-        ]
-      },
-      {
-        id: 7,
-        device_category: "Audio",
-        problem_category: "Hardware",
-        title_en: "Fixing Low Volume or Silent Single Earbud (AirPods / Galaxy Buds Mesh Cleaning)",
-        title_ar: "حل مشكلة انخفاض صوت إحدى السماعات (تنظيف شبكة AirPods وسماعات البلوتوث)",
-        summary_en: "Safely dissolve compacted earwax and dust from microscopic acoustic speaker mesh without puncturing driver diaphragm.",
-        summary_ar: "إذابة الشمع والأتربة المتراكمة على الشبكة الصوتية الدقيقة للسماعة لاستعادة الصوت النقي والتوازن بين السماعتين.",
-        difficulty: "easy",
-        estimated_minutes: 15,
-        required_tools: ["Blu-Tack / Antistatic Adhesive Putty", "Soft Toothbrush", "70% Isopropyl Wipe"],
-        safety_precautions: ["Never soak earbuds in liquid; keep alcohol wipe lightly damp and not dripping"],
-        steps: [
-          {
-            step_number: 1,
-            title_en: "Adhesive Putty Press and Pull",
-            title_ar: "استخدام المعجون اللاصق لسحب الشوائب",
-            instruction_en: "Firmly press Blu-Tack into the speaker grill and quickly pull off to draw out debris from the mesh pores.",
-            instruction_ar: "اضغط قطعة المعجون اللاصق على شبكة السماعة واسحبها بسرعة لسحب الأتربة والشمع من مسام الشبك."
-          }
-        ]
-      },
-      {
-        id: 8,
-        device_category: "Home Appliance",
-        problem_category: "Hardware",
-        title_en: "Robotic Vacuum Roller Brush Jam & LiDAR Optical Sensor Clearing",
-        title_ar: "صيانة المكنسة الروبوتية: فك انسداد الفرشاة الدوارة وتنظيف حساسات الليدار",
-        summary_en: "Clear wound hair and fibers from drive axle bearings and clean optical cliff sensors to resolve 'Error 1 / Error 5' navigation stalls.",
-        summary_ar: "إزالة الشعر والخيوط الملتفة حول محاور الفرشاة ومسح حساسات السقوط والليدار لحل أخطاء التوقف الملاحي.",
-        difficulty: "easy",
-        estimated_minutes: 15,
-        required_tools: ["Cleaning Blade / Seam Ripper", "Microfiber Cloth"],
-        safety_precautions: ["Power down main switch underneath vacuum before handling rollers"],
-        steps: [
-          {
-            step_number: 1,
-            title_en: "Extract Main Roller Bearing Bushings",
-            title_ar: "فك أغطية محاور الفرشاة الجانبية",
-            instruction_en: "Pop off side yellow/black bearing caps to remove wound hairs trapped inside the axle shaft.",
-            instruction_ar: "انزع الأغطية الجانبية للفرشاة وقم بقص وإزالة الشعر الملتف حول المحور الحديدي."
-          }
-        ]
-      }
-    ];
+    if (typeof window !== 'undefined' && window.REAL_FIXORA_GUIDES && window.REAL_FIXORA_GUIDES.length > 0) {
+      return window.REAL_FIXORA_GUIDES;
+    }
+    return [];
   }
 
   getPreseededTechnicians() {
@@ -730,9 +543,35 @@ class ApiClient {
       return reports.find(r => r.report_id === id) || reports[0];
     }
 
-    // Guides
+    // Guides (Connected to 18,995 Real MyFixit Dataset Guides)
     if (endpoint.startsWith("/guides")) {
-      return this.getPreseededGuides();
+      const allGuides = this.getPreseededGuides();
+      const singleMatch = endpoint.match(/^\/guides\/(\d+)/);
+      if (singleMatch) {
+        const id = parseInt(singleMatch[1]);
+        return allGuides.find(g => g.id === id) || allGuides[0];
+      }
+      const parts = endpoint.split("?");
+      if (parts.length > 1) {
+        const params = new URLSearchParams(parts[1]);
+        const cat = params.get("category");
+        const diff = params.get("difficulty");
+        const search = params.get("search");
+        let filtered = allGuides;
+        if (cat) filtered = filtered.filter(g => g.device_category.toLowerCase() === cat.toLowerCase());
+        if (diff) filtered = filtered.filter(g => g.difficulty.toLowerCase() === diff.toLowerCase());
+        if (search) {
+          const q = search.toLowerCase();
+          filtered = filtered.filter(g => 
+            (g.title_en && g.title_en.toLowerCase().includes(q)) ||
+            (g.title_ar && g.title_ar.includes(q)) ||
+            (g.summary_en && g.summary_en.toLowerCase().includes(q)) ||
+            (g.summary_ar && g.summary_ar.includes(q))
+          );
+        }
+        return filtered;
+      }
+      return allGuides;
     }
 
     // Technicians
