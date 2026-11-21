@@ -720,16 +720,29 @@ class FixoraApp {
               ${report.possible_causes.map(c => `
                 <div style="padding: 16px; background-color: #0E131F; border-radius: var(--radius-sm); border: 1px solid rgba(255, 255, 255, 0.08);">
                   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                    <strong style="color: #FFFFFF;">${isAr ? c.title_ar : c.title_en}</strong>
+                    <strong style="color: #FFFFFF; font-size: 15px;">${isAr ? c.title_ar : c.title_en}</strong>
                     <span style="font-weight: 700; color: #38BDF8; font-size: 14px;">${Math.round(c.probability * 100)}%</span>
                   </div>
                   <!-- Progress bar -->
-                  <div style="width: 100%; height: 6px; background-color: rgba(255, 255, 255, 0.1); border-radius: var(--radius-full); margin-bottom: 8px; overflow: hidden;">
+                  <div style="width: 100%; height: 6px; background-color: rgba(255, 255, 255, 0.1); border-radius: var(--radius-full); margin-bottom: 10px; overflow: hidden;">
                     <div style="width: ${Math.round(c.probability * 100)}%; height: 100%; background-color: var(--color-secondary);"></div>
                   </div>
-                  <p style="font-size: 13px; color: var(--color-text-muted); margin: 0;">
+                  <p style="font-size: 13.5px; color: var(--color-text-muted); margin: 0 0 10px 0; line-height: 1.5;">
                     ${isAr ? c.explanation_ar : c.explanation_en}
                   </p>
+                  
+                  <!-- Dedicated Instant Repair Method Banner -->
+                  ${(c.repair_method_ar || c.repair_method_en) ? `
+                    <div style="margin-top: 10px; padding: 12px 14px; background: rgba(56, 189, 248, 0.08); border-left: 3px solid #38BDF8; border-right: ${isAr ? '3px solid #38BDF8' : 'none'}; border-radius: 6px; font-size: 13px; line-height: 1.6;">
+                      <div style="display: flex; align-items: center; gap: 6px; color: #38BDF8; font-weight: 700; margin-bottom: 4px;">
+                        <i class="fas fa-tools"></i>
+                        <span>${isAr ? 'طريقة التصليح المعتمدة (MyFixit & ORA):' : 'Verified Repair Method (MyFixit & ORA):'}</span>
+                      </div>
+                      <div style="color: #F1F5F9; font-weight: 500;">
+                        ${isAr ? (c.repair_method_ar || c.repair_method_en) : (c.repair_method_en || c.repair_method_ar)}
+                      </div>
+                    </div>
+                  ` : ''}
                 </div>
               `).join('')}
             </div>

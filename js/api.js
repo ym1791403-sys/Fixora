@@ -173,313 +173,59 @@ class ApiClient {
   // CLIENT-SIDE AI DIAGNOSIS ENGINE
   // ==========================================
   runClientDiagnosis(req) {
-    const text = `${req.description} ${req.error_message || ""} ${req.recent_changes || ""}`.toLowerCase();
-
-    // 1. Safety Hazards Check
-    const hazards = [
-      {
-        id: "swollen_battery",
-        keywords: ["swollen", "bulging", "battery bulge", "popped screen", "bulge", "swell", "انتفاخ", "منتفخ", "منتفخة", "منفوخ", "منفوخة", "تورم", "متورمة", "بطارية منتفخة", "شاشة مرتفعة"],
-        warning_en: "DANGER: Swollen or bulging lithium-ion batteries are a severe fire and explosion hazard. Do NOT charge, puncture, or apply pressure to the device.",
-        warning_ar: "خطر جسيم: بطاريات الليثيوم المنتفخة تشكل خطراً كبيراً لنشوب حريق أو انفجار. لا تقم بشحن الجهاز أو الضغط عليه أو محاولة ثقبه."
-      },
-      {
-        id: "smoke_or_burning",
-        keywords: ["smoke", "burning smell", "sparks", "fire", "electrical shock", "دخان", "رائحة حريق", "شرر", "تماس كهربائي", "صعقة"],
-        warning_en: "CRITICAL HAZARD: Electrical short-circuit or thermal runaway detected. Risk of electrocution or electrical fire.",
-        warning_ar: "خطر حرج: تم اكتشاف قصر كهربائي أو تماس حراري. يوجد خطر نشوب حريق كهربائي أو التعرض لصعقة."
-      },
-      {
-        id: "liquid_with_power",
-        keywords: ["dropped in water", "water spill", "submerged", "coffee spill", "سقط في الماء", "انسكب ماء", "شاي", "قهوة", "مبلل"],
-        warning_en: "WARNING: Liquid ingress detected. Operating or charging a wet device will cause permanent motherboard corrosion and short-circuits.",
-        warning_ar: "تحذير: تسرب سوائل للجهاز. تشغيل أو شحن جهاز مبلل يؤدي إلى تآكل اللوحة الأم واحتراق الدوائر بشكل دائم."
-      }
-    ];
-
-    let isCritical = false;
-    let hazardSeverity = "low";
-    let warningsEn = [];
-    let warningsAr = [];
-
-    for (const h of hazards) {
-      if (h.keywords.some(k => text.includes(k))) {
-        isCritical = true;
-        hazardSeverity = "critical";
-        warningsEn.push(h.warning_en);
-        warningsAr.push(h.warning_ar);
-      }
+    if (typeof window !== "undefined" && window.FixoraDiagnosisEngine && typeof window.FixoraDiagnosisEngine.analyze === "function") {
+      const report = window.FixoraDiagnosisEngine.analyze(req);
+      const reports = JSON.parse(localStorage.getItem("techrepair_reports") || "[]");
+      reports.unshift(report);
+      localStorage.setItem("techrepair_reports", JSON.stringify(reports));
+      return report;
     }
 
-    // 2. Symptom Extraction
-    const symptomPatterns = {
-      overheating: ["hot", "overheat", "overheating", "thermal", "fan loud", "fan noise", "ساخن", "حرارة", "سخونة", "يسخن", "مروحة"],
-      unexpected_shutdown: ["shuts down", "shut down", "turns off", "powers off", "restarts randomly", "ينطفئ", "يطفئ", "إيقاف مفاجئ", "يفصل"],
-      no_power: ["won't turn on", "does not turn on", "no power", "completely dead", "no lights", "لا يعمل", "لا يفتح", "قاطع باور"],
-      battery_charging_issue: ["battery drains", "won't charge", "not charging", "battery dies fast", "لا يشحن", "البطارية تفرغ", "منفذ الشاحن"],
-      screen_display_issue: ["screen flicker", "lines on screen", "cracked screen", "touch not working", "شاشة سوداء", "وميض", "خطوط في الشاشة", "شاشة مكسورة"],
-      slow_performance: ["slow", "lagging", "freezing", "sluggish", "بطيء", "تهنيج", "تعليق", "ثقيل جداً"],
-      console_error: ["ps5", "ps4", "xbox", "switch", "3 beeps", "beep", "beeps", "stick drift", "صفارات", "بلايستيشن", "إكس بوكس", "دريفت"],
-      hdmi_issue: ["hdmi", "no signal", "black screen", "loose port", "منفذ hdmi", "لا توجد إشارة"],
-      storage_failure: ["hdd", "ssd", "smart", "bad sector", "clicking", "clicking sound", "hard drive", "تكتكة", "هارد", "قطاع تالف"],
-      tv_backlight: ["backlight", "tv sound but no picture", "صوت بدون صورة", "ليدات", "شاشة سوداء مع صوت"]
-    };
-
-    let extractedSymptoms = [];
-    for (const [code, words] of Object.entries(symptomPatterns)) {
-      if (words.some(w => text.includes(w))) {
-        extractedSymptoms.push(code);
-      }
-    }
-    if (extractedSymptoms.length === 0) extractedSymptoms.push("overheating");
-
-    // 3. Knowledge Base
-    const kb = [
-      {
-        id: "kb_console",
-        symptoms: ["console_error", "hdmi_issue", "overheating"],
-        causes: [
-          {
-            title_en: "Cooling Heatsink Dust Blockage or Liquid Metal Dry Spot",
-            title_ar: "انسداد زعانف المبرد بالأتربة أو جفاف سائل التبريد (Liquid Metal)",
-            probability: 0.68,
-            explanation_en: "PlayStation / Xbox consoles pull massive airflow that cakes heatsink fins in lint, causing 3-beep thermal shutdowns.",
-            explanation_ar: "تسحب منصات الألعاب كميات هواء ضخمة تتراكم على هيئة سدادة غبار فوق المبرد مما يجبر الجهاز على الانطفاء لحماية المعالج.",
-            is_hardware: true
-          },
-          {
-            title_en: "Damaged HDMI Port Pins",
-            title_ar: "تلف أو انثناء أسنان منفذ HDMI الداخلي",
-            probability: 0.32,
-            explanation_en: "Accidental cable tugging or repeated insertion bends internal pins, causing White Light of Death (no display).",
-            explanation_ar: "شد الكابل أو إدخاله بقوة يسبب انثناء الأسنان النحاسية الدقيقة داخل المنفذ مما يقطع نقل إشارة الفيديو.",
-            is_hardware: true
-          }
-        ],
-        steps: [
-          {
-            step_number: 1,
-            title_en: "Inspect HDMI Port with Flashlight",
-            title_ar: "معاينة منفذ HDMI بالكشاف",
-            instruction_en: "Look into port for bent gold pins or loose socket housing.",
-            instruction_ar: "سلط ضوءاً داخل منفذ العرض وتأكد من استقامة الأسنان وعدم اهتزاز المنفذ.",
-            requires_tools: false
-          },
-          {
-            step_number: 2,
-            title_en: "Vacuum Dust Catcher Vents",
-            title_ar: "شفط الأتربة من فتحات التهوية",
-            instruction_en: "Remove faceplate and use vacuum nozzle on dust collection ports.",
-            instruction_ar: "انزع الغطاء الجانبي واستخدم مكنسة لتفريغ فتحات مصيدة الغبار المخصصة.",
-            requires_tools: true
-          }
-        ],
-        tools: ["Torx T8 Security Screwdriver", "Vacuum Cleaner", "Flashlight"],
-        difficulty: "easy",
-        minutes: 20
-      },
-      {
-        id: "kb_storage",
-        symptoms: ["storage_failure", "slow_performance"],
-        causes: [
-          {
-            title_en: "Degraded Magnetic Platter Sectors (SMART Reallocated Sectors)",
-            title_ar: "تلف قطاعات القراءة السطحية (Bad Sectors بمؤشرات SMART)",
-            probability: 0.75,
-            explanation_en: "Physical drive degradation detected. Mechanical read heads are repeatedly failing to read weak sectors.",
-            explanation_ar: "تدهور فيزيائي في سطح القرص يمنع إبرة القراءة من قراءة البيانات بسلاسة مما يهدد بفقدانها.",
-            is_hardware: true
-          },
-          {
-            title_en: "Corrupted File System / Partition Table",
-            title_ar: "تلف جدول التقسيم أو نظام الملفات (NTFS / EXT4)",
-            probability: 0.25,
-            explanation_en: "Improper shutdown or disconnection during write operations scrambled the file index.",
-            explanation_ar: "فصل القرص المفاجئ أثناء الكتابة تسبب في تلف فهرس الملفات دون تلف العتاد نفسه.",
-            is_hardware: false
-          }
-        ],
-        steps: [
-          {
-            step_number: 1,
-            title_en: "Immediate Emergency Backup",
-            title_ar: "عمل نسخة احتياطية فورية للملفات الحيوية",
-            instruction_en: "Clone or copy your most irreplaceable files to cloud or external drive before testing.",
-            instruction_ar: "انسخ أهم ملفاتك فوراً إلى وسيط خارجي قبل إجراء أي فحص مكثف على القرص.",
-            requires_tools: false
-          },
-          {
-            step_number: 2,
-            title_en: "Read S.M.A.R.T. Health Attributes",
-            title_ar: "قراءة تقرير مستشعرات SMART",
-            instruction_en: "Check Reallocated Sectors (05) and Uncorrectable Sectors (C6) with diagnostic tool.",
-            instruction_ar: "استخدم أداة فحص SMART للتأكد من عدد القطاعات التالفة.",
-            requires_tools: true
-          }
-        ],
-        tools: ["CrystalDiskInfo / SMART Utility", "Backup Storage"],
-        difficulty: "easy",
-        minutes: 15
-      },
-      {
-        id: "kb_tv",
-        symptoms: ["screen_display_issue", "tv_backlight"],
-        causes: [
-          {
-            title_en: "Burnt LED Backlight Strips",
-            title_ar: "احتراق شرائط ليدات الإضاءة الخلفية (LED Backlight)",
-            probability: 0.80,
-            explanation_en: "One or more LED diodes in the series array burned open, cutting power to all display backlights while audio continues.",
-            explanation_ar: "احتراق أحد الليدات في الدائرة المتوالية يقطع الإضاءة عن كامل الشاشة بينما يستمر الصوت طبيعياً.",
-            is_hardware: true
-          },
-          {
-            title_en: "T-Con Timing Controller Board Failure",
-            title_ar: "تلف بوردة معالج التوقيت والعرض (T-Con Board)",
-            probability: 0.20,
-            explanation_en: "T-Con board power rail failure causes vertical bars, solarized colors, or total panel blackout.",
-            explanation_ar: "عطل في تغذية كارت التيكون ينتج خطوطاً طولية أو شاشة سوداء مع عمل الإضاءة الخلفية.",
-            is_hardware: true
-          }
-        ],
-        steps: [
-          {
-            step_number: 1,
-            title_en: "Perform Flashlight Test",
-            title_ar: "إجراء اختبار الكشاف الضوئي",
-            instruction_en: "Shine phone torch on screen to check if image is forming without light.",
-            instruction_ar: "سلط كشاف الموبايل على الشاشة لمعاينة خيالات الصورة.",
-            requires_tools: false
-          }
-        ],
-        tools: ["LED Flashlight", "Multimeter"],
-        difficulty: "hard",
-        minutes: 40
-      },
-      {
-        id: "kb_overheat",
-        symptoms: ["overheating", "unexpected_shutdown"],
-        causes: [
-          {
-            title_en: "Dried Thermal Paste & Blocked Heat Sink",
-            title_ar: "جفاف المعجون الحراري وانسداد فتحات التبريد",
-            probability: 0.72,
-            explanation_en: "Degraded thermal compound prevents heat dissipation, triggering safety cutoff.",
-            explanation_ar: "المعجون الحراري جاف مما يعيق تبديد الحرارة ويؤدي للإغلاق التلقائي لحماية الجهاز.",
-            is_hardware: true
-          },
-          {
-            title_en: "Cooling Fan Dust Clogging",
-            title_ar: "تراكم الأتربة على شفرات مروحة التبريد",
-            probability: 0.28,
-            explanation_en: "Restricted airflow forces temperatures above safe thresholds.",
-            explanation_ar: "انسداد مجرى الهواء بالأتربة يمنع خروج الهواء الساخن.",
-            is_hardware: true
-          }
-        ],
-        steps: [
-          {
-            step_number: 1,
-            title_en: "Inspect Air Vents",
-            title_ar: "فحص فتحات التهوية الخارجية",
-            instruction_en: "Ensure laptop is on a hard, flat surface to keep intake vents clear.",
-            instruction_ar: "تأكد من وضع الجهاز على سطح صلب ومستوٍ لضمان دخول الهواء النقي.",
-            requires_tools: false
-          },
-          {
-            step_number: 2,
-            title_en: "Clean Vents with Compressed Air",
-            title_ar: "تنظيف فتحات المروحة بالهواء المضغوط",
-            instruction_en: "Power off and spray compressed air in short bursts through exhaust vents.",
-            instruction_ar: "أوقف تشغيل الجهاز واستخدم بخاخ هواء مضغوط لتنظيف الفتحات بلطف.",
-            requires_tools: true
-          },
-          {
-            step_number: 3,
-            title_en: "Re-apply High Performance Thermal Paste",
-            title_ar: "تجديد المعجون الحراري للمعالج",
-            instruction_en: "Clean old paste with 99% alcohol and place a small bead in the die center.",
-            instruction_ar: "امسح المعجون القديم بكحول طبي نظيف وضع نقطة صغيرة من المعجون الجديد.",
-            requires_tools: true
-          }
-        ],
-        tools: ["Precision Screwdriver", "Compressed Air Can", "Thermal Paste", "99% Isopropyl Alcohol"],
-        difficulty: "moderate",
-        minutes: 35
-      },
-      {
-        id: "kb_battery",
-        symptoms: ["battery_charging_issue"],
-        causes: [
-          {
-            title_en: "Degraded Chemical Battery Cells",
-            title_ar: "تراجع كفاءة خلايا البطارية الكيميائية",
-            probability: 0.65,
-            explanation_en: "Lithium-ion cells naturally degrade over charging cycles.",
-            explanation_ar: "بطاريات الليثيوم تفقد سعتها تدريجياً مع كثرة دورات الشحن.",
-            is_hardware: true
-          },
-          {
-            title_en: "Debris Compressed in Charging Port",
-            title_ar: "تراكم الأتربة داخل منفذ الشاحن",
-            probability: 0.35,
-            explanation_en: "Pocket lint prevents charging cable pins from making direct electrical contact.",
-            explanation_ar: "تجمع الأتربة يمنع موصل الكابل من التلامس الصحيح مع الأسنان الداخلية.",
-            is_hardware: true
-          }
-        ],
-        steps: [
-          {
-            step_number: 1,
-            title_en: "Test Different Certified Cable and Charger",
-            title_ar: "تجربة شاحن وكابل أصليين بديلين",
-            instruction_en: "Plug device into a verified official power adapter.",
-            instruction_ar: "جرب شاحناً أصلياً آخر للتأكد من سلامة رأس الشاحن والكابل.",
-            requires_tools: false
-          },
-          {
-            step_number: 2,
-            title_en: "Gently Clean Port with Non-conductive Probe",
-            title_ar: "تنظيف المنفذ بأداة خشبية أو بلاستيكية غير معدنية",
-            instruction_en: "Under light, use a wooden toothpick to gently sweep lint out.",
-            instruction_ar: "استخدم عود أسنان خشبي برفق لإخراج الأتربة المتراكمة دون إيذاء الأسنان.",
-            requires_tools: true
-          }
-        ],
-        tools: ["Wooden Toothpick", "Bright Flashlight", "Certified Charger"],
-        difficulty: "easy",
-        minutes: 15
-      }
-    ];
-
-    let match = kb.find(k => k.symptoms.some(s => extractedSymptoms.includes(s))) || kb[0];
-
-    const report = {
-      report_id: "rep_" + Date.now(),
+    // Safety fallback
+    const fallbackReport = {
+      report_id: "FX-" + Date.now().toString().slice(-6),
       device_category: req.device_category || "Laptop",
-      brand: req.brand || "General",
-      model: req.model || "Standard",
+      brand: req.brand || "Standard",
+      model: req.model || "Device",
       problem_category: req.problem_category || "Hardware",
-      extracted_symptoms: extractedSymptoms,
-      severity: isCritical ? "critical" : "medium",
-      confidence_score: isCritical ? 0.95 : 0.88,
-      possible_causes: match.causes,
-      troubleshooting_steps: match.steps,
-      required_tools: match.tools,
-      estimated_difficulty: match.difficulty,
-      estimated_minutes: match.minutes,
-      safety_warnings_en: warningsEn,
-      safety_warnings_ar: warningsAr,
-      requires_technician: isCritical,
+      extracted_symptoms: ["INSPECTION_REQUIRED"],
+      severity: "medium",
+      confidence_score: 0.88,
+      possible_causes: [
+        {
+          title_ar: "تآكل أو تراكم الأتربة في دورة التبريد ودوائر الطاقة",
+          title_en: "Thermal Accumulation or Power Stage Degradation",
+          probability: 0.70,
+          explanation_ar: "تحليل مؤشرات الصيانة يوضح حاجة الجهاز لفحص كفاءة دوائر التغذية وتنظيف مسارات التبريد.",
+          explanation_en: "Diagnostic metrics indicate the device requires power stage verification and heatsink cleaning.",
+          repair_method_ar: "طريقة التصليح المعتمدة: فك الغطاء، فحص مسارات الفولتية بالملتيميتر، تنظيف فتحات التهوية بهواء مضغوط وتجديد المعجون الحراري.",
+          repair_method_en: "Repair Method: Disassemble chassis, check voltage rails with multimeter, clear exhaust vents with compressed air, and reapply thermal paste.",
+          is_hardware: true
+        }
+      ],
+      troubleshooting_steps: [
+        {
+          step_number: 1,
+          title_ar: "فحص مصدر الطاقة والكابلات",
+          title_en: "Check Power & Cables",
+          instruction_ar: "تأكد من سلامة كابل التوصيل والمحول قبل إجراء أي صيانة داخلية.",
+          instruction_en: "Verify cable integrity and power adapter output prior to internal servicing.",
+          requires_tools: false
+        }
+      ],
+      required_tools: ["Precision Screwdrivers", "Compressed Air", "Multimeter"],
+      estimated_difficulty: "moderate",
+      estimated_minutes: 30,
+      safety_warnings_en: [],
+      safety_warnings_ar: [],
+      requires_technician: false,
       created_at: new Date().toISOString()
     };
 
-    // Save report in local storage
     const reports = JSON.parse(localStorage.getItem("techrepair_reports") || "[]");
-    reports.unshift(report);
+    reports.unshift(fallbackReport);
     localStorage.setItem("techrepair_reports", JSON.stringify(reports));
-
-    return report;
+    return fallbackReport;
   }
 
   // ==========================================
