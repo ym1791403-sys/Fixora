@@ -1,12 +1,22 @@
 import os
+import sys
 import json
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 
-app = FastAPI(title="Fixora AI Platform", version="2.0.0")
-
 current_dir = os.path.dirname(os.path.abspath(__file__))
 root_dir = os.path.abspath(os.path.join(current_dir, ".."))
+if root_dir not in sys.path:
+    sys.path.insert(0, root_dir)
+
+from api.routers.datasets import router as datasets_router
+from api.routers.analysis import router as analysis_router
+
+app = FastAPI(title="Fixora AI Platform", version="2.0.0")
+
+# Mount genuine dataset status and empirical analysis routers
+app.include_router(datasets_router)
+app.include_router(analysis_router)
 
 # Active Users Database (Clean Enterprise System)
 USERS_DB = [
@@ -312,43 +322,6 @@ def get_real_guides(category: str = None, difficulty: str = None, search: str = 
                 guides = [g for g in guides if q in g.get("title_en", "").lower() or q in g.get("title_ar", "") or q in g.get("summary_en", "").lower()]
             return guides
     return []
-
-# Datasets Status & Verification API
-@app.api_route("/api/datasets/status", methods=["GET"])
-@app.api_route("/api/v1/datasets/status", methods=["GET"])
-def dataset_status():
-    return {
-        "status": "active",
-        "summary": "جميع قواعد البيانات الثلاث الحقيقية تم تنزيلها ودمجها بنسبة 100% في محرك Fixora",
-        "datasets": {
-            "open_repair_alliance": {
-                "name": "Open Repair Alliance (ORA)",
-                "status": "operational",
-                "indexed_records": "416,283 Real Repair Incidents",
-                "file_size": "76.67 MB CSV",
-                "categories": ["Smartphones", "Laptops", "Desktops", "Tablets", "Printers", "Vacuums", "Batteries"],
-                "source": "https://github.com/openrepair/data",
-                "role_in_fixora": "تحليل أسباب الأعطال الحقيقية ونسب الفشل للأجهزة واللوحات الإلكترونية"
-            },
-            "myfixit": {
-                "name": "MyFixit Complete Dataset",
-                "status": "operational",
-                "indexed_guides": "18,995 Real Step-by-Step Manuals",
-                "files_count": "15 Category JSON Files (163.1 MB)",
-                "source": "https://github.com/rub-ksv/MyFixit-Dataset",
-                "role_in_fixora": "أدلة التفكيك والإصلاح وخطوات الصيانة وقوائم الأدوات الدقيقة"
-            },
-            "backblaze": {
-                "name": "Backblaze Hard Drive Stats Q2 2026",
-                "status": "operational",
-                "archive_size": "2,092,757,685 Bytes (2.09 GB ZIP)",
-                "verified_files": "91 Daily Telemetry CSV Logs (April-June 2026)",
-                "source": "https://www.backblaze.com/cloud-storage/resources/hard-drive-test-data",
-                "role_in_fixora": "خوارزميات فحص صحة الأقراص الميكانيكية ووسائط SSD والتنبؤ بالأعطال قبل حدوثها"
-            }
-        },
-        "engine": "Fixora Neural Rule Engine v3.0 (Active)"
-    }
 
 # Fallback for API routes (Returns JSON instead of HTML so client fetch does not crash)
 @app.api_route("/api/{full_path:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE"])

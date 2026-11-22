@@ -1,0 +1,940 @@
+{
+  "dataset_name": "Open Repair Alliance (ORA)",
+  "source": "https://raw.githubusercontent.com/openrepair/data/main/OpenRepairData_v0.3_aggregate_202607_eee.csv",
+  "processed_at": "2026-11-22T23:26:48.882123Z",
+  "total_records_analyzed": 416282,
+  "global_repair_rate": 0.5447,
+  "categories_covered": 10,
+  "category_statistics": {
+    "Audio": {
+      "total_incidents": 46467,
+      "repair_status_distribution": {
+        "Fixed": 23550,
+        "End of life": 12661,
+        "Repairable": 8640,
+        "Unknown": 1616
+      },
+      "empirical_fix_rate": 0.5068,
+      "empirical_repairable_rate": 0.1859,
+      "empirical_end_of_life_rate": 0.2725,
+      "average_device_age_years": 17.4,
+      "median_device_age_years": 12.0,
+      "top_failure_modes": [
+        {
+          "cluster": "GENERAL_DEFECT",
+          "count": 35839,
+          "frequency": 0.7713
+        },
+        {
+          "cluster": "CABLE_CONNECTION",
+          "count": 2619,
+          "frequency": 0.0564
+        },
+        {
+          "cluster": "POWER_FAILURE",
+          "count": 2103,
+          "frequency": 0.0453
+        },
+        {
+          "cluster": "SWITCH_BUTTON",
+          "count": 1483,
+          "frequency": 0.0319
+        },
+        {
+          "cluster": "BATTERY_CHARGING",
+          "count": 1163,
+          "frequency": 0.025
+        },
+        {
+          "cluster": "MECHANICAL_WEAR",
+          "count": 1128,
+          "frequency": 0.0243
+        },
+        {
+          "cluster": "MOTOR_DRIVE",
+          "count": 940,
+          "frequency": 0.0202
+        },
+        {
+          "cluster": "COMPONENT_SHORT",
+          "count": 639,
+          "frequency": 0.0138
+        }
+      ],
+      "top_repair_barriers": [
+        {
+          "barrier": "Spare parts not available",
+          "count": 1577,
+          "frequency": 0.1246
+        },
+        {
+          "barrier": "Repair information not available",
+          "count": 1238,
+          "frequency": 0.0978
+        },
+        {
+          "barrier": "Product too worn out",
+          "count": 906,
+          "frequency": 0.0716
+        },
+        {
+          "barrier": "No way to open product",
+          "count": 618,
+          "frequency": 0.0488
+        },
+        {
+          "barrier": "Spare parts too expensive",
+          "count": 508,
+          "frequency": 0.0401
+        }
+      ],
+      "top_brands": {
+        "Sony": 3430,
+        "Philips": 2528,
+        "Roberts": 1355,
+        "Bose": 929,
+        "Grundig": 775,
+        "Phillips": 748,
+        "Panasonic": 728,
+        "Pure": 646
+      }
+    },
+    "Desktop Computer": {
+      "total_incidents": 4408,
+      "repair_status_distribution": {
+        "Fixed": 2396,
+        "End of life": 917,
+        "Repairable": 889,
+        "Unknown": 206
+      },
+      "empirical_fix_rate": 0.5436,
+      "empirical_repairable_rate": 0.2017,
+      "empirical_end_of_life_rate": 0.208,
+      "average_device_age_years": 8.6,
+      "median_device_age_years": 7.0,
+      "top_failure_modes": [
+        {
+          "cluster": "GENERAL_DEFECT",
+          "count": 3514,
+          "frequency": 0.7972
+        },
+        {
+          "cluster": "CABLE_CONNECTION",
+          "count": 199,
+          "frequency": 0.0451
+        },
+        {
+          "cluster": "POWER_FAILURE",
+          "count": 178,
+          "frequency": 0.0404
+        },
+        {
+          "cluster": "BATTERY_CHARGING",
+          "count": 120,
+          "frequency": 0.0272
+        },
+        {
+          "cluster": "MECHANICAL_WEAR",
+          "count": 82,
+          "frequency": 0.0186
+        },
+        {
+          "cluster": "SWITCH_BUTTON",
+          "count": 78,
+          "frequency": 0.0177
+        },
+        {
+          "cluster": "MOTOR_DRIVE",
+          "count": 78,
+          "frequency": 0.0177
+        },
+        {
+          "cluster": "SCREEN_DISPLAY",
+          "count": 64,
+          "frequency": 0.0145
+        }
+      ],
+      "top_repair_barriers": [
+        {
+          "barrier": "Repair information not available",
+          "count": 105,
+          "frequency": 0.1145
+        },
+        {
+          "barrier": "Spare parts not available",
+          "count": 103,
+          "frequency": 0.1123
+        },
+        {
+          "barrier": "Spare parts too expensive",
+          "count": 44,
+          "frequency": 0.048
+        },
+        {
+          "barrier": "Product too worn out",
+          "count": 38,
+          "frequency": 0.0414
+        },
+        {
+          "barrier": "No way to open product",
+          "count": 29,
+          "frequency": 0.0316
+        }
+      ],
+      "top_brands": {
+        "HP": 196,
+        "Apple": 158,
+        "Logitech": 149,
+        "Dell": 135,
+        "Lenovo": 119,
+        "Asus": 82,
+        "Acer": 79,
+        "Samsung": 70
+      }
+    },
+    "Gaming Console": {
+      "total_incidents": 8733,
+      "repair_status_distribution": {
+        "Fixed": 4062,
+        "End of life": 2651,
+        "Repairable": 1691,
+        "Unknown": 329
+      },
+      "empirical_fix_rate": 0.4651,
+      "empirical_repairable_rate": 0.1936,
+      "empirical_end_of_life_rate": 0.3036,
+      "average_device_age_years": 12.9,
+      "median_device_age_years": 10.0,
+      "top_failure_modes": [
+        {
+          "cluster": "GENERAL_DEFECT",
+          "count": 6836,
+          "frequency": 0.7828
+        },
+        {
+          "cluster": "POWER_FAILURE",
+          "count": 425,
+          "frequency": 0.0487
+        },
+        {
+          "cluster": "CABLE_CONNECTION",
+          "count": 344,
+          "frequency": 0.0394
+        },
+        {
+          "cluster": "BATTERY_CHARGING",
+          "count": 245,
+          "frequency": 0.0281
+        },
+        {
+          "cluster": "SWITCH_BUTTON",
+          "count": 233,
+          "frequency": 0.0267
+        },
+        {
+          "cluster": "MECHANICAL_WEAR",
+          "count": 194,
+          "frequency": 0.0222
+        },
+        {
+          "cluster": "COMPONENT_SHORT",
+          "count": 153,
+          "frequency": 0.0175
+        },
+        {
+          "cluster": "SCREEN_DISPLAY",
+          "count": 131,
+          "frequency": 0.015
+        }
+      ],
+      "top_repair_barriers": [
+        {
+          "barrier": "Repair information not available",
+          "count": 331,
+          "frequency": 0.1249
+        },
+        {
+          "barrier": "Spare parts not available",
+          "count": 320,
+          "frequency": 0.1207
+        },
+        {
+          "barrier": "Product too worn out",
+          "count": 215,
+          "frequency": 0.0811
+        },
+        {
+          "barrier": "Spare parts too expensive",
+          "count": 126,
+          "frequency": 0.0475
+        },
+        {
+          "barrier": "No way to open product",
+          "count": 90,
+          "frequency": 0.0339
+        }
+      ],
+      "top_brands": {
+        "Sony": 721,
+        "Philips": 464,
+        "Nintendo": 429,
+        "Panasonic": 382,
+        "Samsung": 358,
+        "LG": 217,
+        "Phillips": 194,
+        "Toshiba": 142
+      }
+    },
+    "Home Appliance": {
+      "total_incidents": 189528,
+      "repair_status_distribution": {
+        "Fixed": 101644,
+        "End of life": 51314,
+        "Repairable": 31046,
+        "Unknown": 5524
+      },
+      "empirical_fix_rate": 0.5363,
+      "empirical_repairable_rate": 0.1638,
+      "empirical_end_of_life_rate": 0.2707,
+      "average_device_age_years": 10.4,
+      "median_device_age_years": 6.0,
+      "top_failure_modes": [
+        {
+          "cluster": "GENERAL_DEFECT",
+          "count": 141340,
+          "frequency": 0.7457
+        },
+        {
+          "cluster": "CABLE_CONNECTION",
+          "count": 9311,
+          "frequency": 0.0491
+        },
+        {
+          "cluster": "MOTOR_DRIVE",
+          "count": 7586,
+          "frequency": 0.04
+        },
+        {
+          "cluster": "SWITCH_BUTTON",
+          "count": 6422,
+          "frequency": 0.0339
+        },
+        {
+          "cluster": "POWER_FAILURE",
+          "count": 4779,
+          "frequency": 0.0252
+        },
+        {
+          "cluster": "BATTERY_CHARGING",
+          "count": 4620,
+          "frequency": 0.0244
+        },
+        {
+          "cluster": "LIQUID_LEAK",
+          "count": 4547,
+          "frequency": 0.024
+        },
+        {
+          "cluster": "MECHANICAL_WEAR",
+          "count": 4403,
+          "frequency": 0.0232
+        }
+      ],
+      "top_repair_barriers": [
+        {
+          "barrier": "Spare parts not available",
+          "count": 6410,
+          "frequency": 0.1249
+        },
+        {
+          "barrier": "Product too worn out",
+          "count": 4555,
+          "frequency": 0.0888
+        },
+        {
+          "barrier": "No way to open product",
+          "count": 4016,
+          "frequency": 0.0783
+        },
+        {
+          "barrier": "Spare parts too expensive",
+          "count": 3597,
+          "frequency": 0.0701
+        },
+        {
+          "barrier": "Repair information not available",
+          "count": 3306,
+          "frequency": 0.0644
+        }
+      ],
+      "top_brands": {
+        "Philips": 9328,
+        "Dyson": 4423,
+        "Bosch": 4099,
+        "Miele": 3700,
+        "Singer": 2867,
+        "Tefal": 2856,
+        "Kenwood": 2774,
+        "Krups": 2511
+      }
+    },
+    "Laptop": {
+      "total_incidents": 16955,
+      "repair_status_distribution": {
+        "Fixed": 9416,
+        "Repairable": 4287,
+        "End of life": 2593,
+        "Unknown": 659
+      },
+      "empirical_fix_rate": 0.5554,
+      "empirical_repairable_rate": 0.2528,
+      "empirical_end_of_life_rate": 0.1529,
+      "average_device_age_years": 7.5,
+      "median_device_age_years": 7.0,
+      "top_failure_modes": [
+        {
+          "cluster": "GENERAL_DEFECT",
+          "count": 12957,
+          "frequency": 0.7642
+        },
+        {
+          "cluster": "SCREEN_DISPLAY",
+          "count": 1061,
+          "frequency": 0.0626
+        },
+        {
+          "cluster": "BATTERY_CHARGING",
+          "count": 1048,
+          "frequency": 0.0618
+        },
+        {
+          "cluster": "POWER_FAILURE",
+          "count": 669,
+          "frequency": 0.0395
+        },
+        {
+          "cluster": "MECHANICAL_WEAR",
+          "count": 312,
+          "frequency": 0.0184
+        },
+        {
+          "cluster": "MOTOR_DRIVE",
+          "count": 266,
+          "frequency": 0.0157
+        },
+        {
+          "cluster": "THERMAL_OVERHEAT",
+          "count": 228,
+          "frequency": 0.0134
+        },
+        {
+          "cluster": "CABLE_CONNECTION",
+          "count": 213,
+          "frequency": 0.0126
+        }
+      ],
+      "top_repair_barriers": [
+        {
+          "barrier": "Spare parts too expensive",
+          "count": 208,
+          "frequency": 0.0802
+        },
+        {
+          "barrier": "Repair information not available",
+          "count": 174,
+          "frequency": 0.0671
+        },
+        {
+          "barrier": "Spare parts not available",
+          "count": 151,
+          "frequency": 0.0582
+        },
+        {
+          "barrier": "Product too worn out",
+          "count": 105,
+          "frequency": 0.0405
+        },
+        {
+          "barrier": "No way to open product",
+          "count": 92,
+          "frequency": 0.0355
+        }
+      ],
+      "top_brands": {
+        "HP": 2325,
+        "Lenovo": 1574,
+        "Acer": 1324,
+        "Apple": 1127,
+        "Asus": 1042,
+        "Dell": 984,
+        "Toshiba": 559,
+        "Samsung": 269
+      }
+    },
+    "Other": {
+      "total_incidents": 127153,
+      "repair_status_distribution": {
+        "Fixed": 75636,
+        "End of life": 27659,
+        "Repairable": 20247,
+        "Unknown": 3611
+      },
+      "empirical_fix_rate": 0.5948,
+      "empirical_repairable_rate": 0.1592,
+      "empirical_end_of_life_rate": 0.2175,
+      "average_device_age_years": 13.9,
+      "median_device_age_years": 10.0,
+      "top_failure_modes": [
+        {
+          "cluster": "GENERAL_DEFECT",
+          "count": 92001,
+          "frequency": 0.7235
+        },
+        {
+          "cluster": "CABLE_CONNECTION",
+          "count": 9100,
+          "frequency": 0.0716
+        },
+        {
+          "cluster": "BATTERY_CHARGING",
+          "count": 5821,
+          "frequency": 0.0458
+        },
+        {
+          "cluster": "SWITCH_BUTTON",
+          "count": 5052,
+          "frequency": 0.0397
+        },
+        {
+          "cluster": "MECHANICAL_WEAR",
+          "count": 3886,
+          "frequency": 0.0306
+        },
+        {
+          "cluster": "MOTOR_DRIVE",
+          "count": 3684,
+          "frequency": 0.029
+        },
+        {
+          "cluster": "POWER_FAILURE",
+          "count": 3671,
+          "frequency": 0.0289
+        },
+        {
+          "cluster": "COMPONENT_SHORT",
+          "count": 1936,
+          "frequency": 0.0152
+        }
+      ],
+      "top_repair_barriers": [
+        {
+          "barrier": "Spare parts not available",
+          "count": 3562,
+          "frequency": 0.1288
+        },
+        {
+          "barrier": "Product too worn out",
+          "count": 2384,
+          "frequency": 0.0862
+        },
+        {
+          "barrier": "Repair information not available",
+          "count": 2075,
+          "frequency": 0.075
+        },
+        {
+          "barrier": "No way to open product",
+          "count": 1863,
+          "frequency": 0.0674
+        },
+        {
+          "barrier": "Spare parts too expensive",
+          "count": 1485,
+          "frequency": 0.0537
+        }
+      ],
+      "top_brands": {
+        "Bosch": 3923,
+        "Sony": 1685,
+        "Kärcher": 1211,
+        "Philips": 1120,
+        "Black & Decker": 875,
+        "Black+Decker": 871,
+        "Karcher": 848,
+        "Makita": 650
+      }
+    },
+    "Printer": {
+      "total_incidents": 7269,
+      "repair_status_distribution": {
+        "Fixed": 2964,
+        "End of life": 2543,
+        "Repairable": 1526,
+        "Unknown": 236
+      },
+      "empirical_fix_rate": 0.4078,
+      "empirical_repairable_rate": 0.2099,
+      "empirical_end_of_life_rate": 0.3498,
+      "average_device_age_years": 7.6,
+      "median_device_age_years": 6.0,
+      "top_failure_modes": [
+        {
+          "cluster": "GENERAL_DEFECT",
+          "count": 6144,
+          "frequency": 0.8452
+        },
+        {
+          "cluster": "PAPER_FEED",
+          "count": 609,
+          "frequency": 0.0838
+        },
+        {
+          "cluster": "POWER_FAILURE",
+          "count": 127,
+          "frequency": 0.0175
+        },
+        {
+          "cluster": "MECHANICAL_WEAR",
+          "count": 116,
+          "frequency": 0.016
+        },
+        {
+          "cluster": "CABLE_CONNECTION",
+          "count": 99,
+          "frequency": 0.0136
+        },
+        {
+          "cluster": "SCREEN_DISPLAY",
+          "count": 58,
+          "frequency": 0.008
+        },
+        {
+          "cluster": "SWITCH_BUTTON",
+          "count": 36,
+          "frequency": 0.005
+        },
+        {
+          "cluster": "COMPONENT_SHORT",
+          "count": 29,
+          "frequency": 0.004
+        }
+      ],
+      "top_repair_barriers": [
+        {
+          "barrier": "Repair information not available",
+          "count": 301,
+          "frequency": 0.1184
+        },
+        {
+          "barrier": "Spare parts not available",
+          "count": 208,
+          "frequency": 0.0818
+        },
+        {
+          "barrier": "Product too worn out",
+          "count": 146,
+          "frequency": 0.0574
+        },
+        {
+          "barrier": "Spare parts too expensive",
+          "count": 132,
+          "frequency": 0.0519
+        },
+        {
+          "barrier": "No way to open product",
+          "count": 88,
+          "frequency": 0.0346
+        }
+      ],
+      "top_brands": {
+        "HP": 1789,
+        "Canon": 1583,
+        "Epson": 868,
+        "Brother": 517,
+        "Samsung": 177,
+        "canon": 57,
+        "hp": 39,
+        "Lexmark": 32
+      }
+    },
+    "Smart TV": {
+      "total_incidents": 4790,
+      "repair_status_distribution": {
+        "End of life": 1839,
+        "Fixed": 1489,
+        "Repairable": 1330,
+        "Unknown": 132
+      },
+      "empirical_fix_rate": 0.3109,
+      "empirical_repairable_rate": 0.2777,
+      "empirical_end_of_life_rate": 0.3839,
+      "average_device_age_years": 9.0,
+      "median_device_age_years": 8.0,
+      "top_failure_modes": [
+        {
+          "cluster": "GENERAL_DEFECT",
+          "count": 3728,
+          "frequency": 0.7783
+        },
+        {
+          "cluster": "POWER_FAILURE",
+          "count": 345,
+          "frequency": 0.072
+        },
+        {
+          "cluster": "SCREEN_DISPLAY",
+          "count": 319,
+          "frequency": 0.0666
+        },
+        {
+          "cluster": "COMPONENT_SHORT",
+          "count": 147,
+          "frequency": 0.0307
+        },
+        {
+          "cluster": "CABLE_CONNECTION",
+          "count": 109,
+          "frequency": 0.0228
+        },
+        {
+          "cluster": "SWITCH_BUTTON",
+          "count": 74,
+          "frequency": 0.0154
+        },
+        {
+          "cluster": "MECHANICAL_WEAR",
+          "count": 43,
+          "frequency": 0.009
+        },
+        {
+          "cluster": "BATTERY_CHARGING",
+          "count": 9,
+          "frequency": 0.0019
+        }
+      ],
+      "top_repair_barriers": [
+        {
+          "barrier": "Spare parts too expensive",
+          "count": 202,
+          "frequency": 0.1098
+        },
+        {
+          "barrier": "Repair information not available",
+          "count": 192,
+          "frequency": 0.1044
+        },
+        {
+          "barrier": "Spare parts not available",
+          "count": 173,
+          "frequency": 0.0941
+        },
+        {
+          "barrier": "Product too worn out",
+          "count": 51,
+          "frequency": 0.0277
+        },
+        {
+          "barrier": "No way to open product",
+          "count": 36,
+          "frequency": 0.0196
+        }
+      ],
+      "top_brands": {
+        "Samsung": 920,
+        "Philips": 373,
+        "LG": 332,
+        "Sony": 159,
+        "Phillips": 154,
+        "Panasonic": 136,
+        "Toshiba": 107,
+        "Sharp": 65
+      }
+    },
+    "Smartphone": {
+      "total_incidents": 6290,
+      "repair_status_distribution": {
+        "Fixed": 3552,
+        "Repairable": 1547,
+        "End of life": 962,
+        "Unknown": 229
+      },
+      "empirical_fix_rate": 0.5647,
+      "empirical_repairable_rate": 0.2459,
+      "empirical_end_of_life_rate": 0.1529,
+      "average_device_age_years": 5.2,
+      "median_device_age_years": 4.0,
+      "top_failure_modes": [
+        {
+          "cluster": "GENERAL_DEFECT",
+          "count": 4110,
+          "frequency": 0.6534
+        },
+        {
+          "cluster": "SCREEN_DISPLAY",
+          "count": 973,
+          "frequency": 0.1547
+        },
+        {
+          "cluster": "BATTERY_CHARGING",
+          "count": 705,
+          "frequency": 0.1121
+        },
+        {
+          "cluster": "POWER_FAILURE",
+          "count": 160,
+          "frequency": 0.0254
+        },
+        {
+          "cluster": "SWITCH_BUTTON",
+          "count": 102,
+          "frequency": 0.0162
+        },
+        {
+          "cluster": "CABLE_CONNECTION",
+          "count": 99,
+          "frequency": 0.0157
+        },
+        {
+          "cluster": "MECHANICAL_WEAR",
+          "count": 70,
+          "frequency": 0.0111
+        },
+        {
+          "cluster": "LIQUID_LEAK",
+          "count": 46,
+          "frequency": 0.0073
+        }
+      ],
+      "top_repair_barriers": [
+        {
+          "barrier": "Spare parts not available",
+          "count": 88,
+          "frequency": 0.0915
+        },
+        {
+          "barrier": "Repair information not available",
+          "count": 70,
+          "frequency": 0.0728
+        },
+        {
+          "barrier": "Spare parts too expensive",
+          "count": 58,
+          "frequency": 0.0603
+        },
+        {
+          "barrier": "Lack of equipment",
+          "count": 56,
+          "frequency": 0.0582
+        },
+        {
+          "barrier": "No way to open product",
+          "count": 40,
+          "frequency": 0.0416
+        }
+      ],
+      "top_brands": {
+        "Apple": 1278,
+        "Samsung": 1067,
+        "Huawei": 189,
+        "Nokia": 163,
+        "Motorola": 125,
+        "Sony": 92,
+        "Xiaomi": 84,
+        "Fairphone": 57
+      }
+    },
+    "Tablet": {
+      "total_incidents": 4689,
+      "repair_status_distribution": {
+        "Fixed": 2024,
+        "Repairable": 1301,
+        "End of life": 1182,
+        "Unknown": 182
+      },
+      "empirical_fix_rate": 0.4316,
+      "empirical_repairable_rate": 0.2775,
+      "empirical_end_of_life_rate": 0.2521,
+      "average_device_age_years": 6.6,
+      "median_device_age_years": 5.0,
+      "top_failure_modes": [
+        {
+          "cluster": "GENERAL_DEFECT",
+          "count": 3248,
+          "frequency": 0.6927
+        },
+        {
+          "cluster": "BATTERY_CHARGING",
+          "count": 593,
+          "frequency": 0.1265
+        },
+        {
+          "cluster": "SCREEN_DISPLAY",
+          "count": 388,
+          "frequency": 0.0827
+        },
+        {
+          "cluster": "POWER_FAILURE",
+          "count": 167,
+          "frequency": 0.0356
+        },
+        {
+          "cluster": "CABLE_CONNECTION",
+          "count": 131,
+          "frequency": 0.0279
+        },
+        {
+          "cluster": "SWITCH_BUTTON",
+          "count": 76,
+          "frequency": 0.0162
+        },
+        {
+          "cluster": "MECHANICAL_WEAR",
+          "count": 58,
+          "frequency": 0.0124
+        },
+        {
+          "cluster": "COMPONENT_SHORT",
+          "count": 11,
+          "frequency": 0.0023
+        }
+      ],
+      "top_repair_barriers": [
+        {
+          "barrier": "Spare parts not available",
+          "count": 89,
+          "frequency": 0.0753
+        },
+        {
+          "barrier": "Repair information not available",
+          "count": 85,
+          "frequency": 0.0719
+        },
+        {
+          "barrier": "No way to open product",
+          "count": 70,
+          "frequency": 0.0592
+        },
+        {
+          "barrier": "Spare parts too expensive",
+          "count": 63,
+          "frequency": 0.0533
+        },
+        {
+          "barrier": "Product too worn out",
+          "count": 62,
+          "frequency": 0.0525
+        }
+      ],
+      "top_brands": {
+        "Samsung": 662,
+        "Apple": 610,
+        "Kobo": 202,
+        "TomTom": 165,
+        "Lenovo": 148,
+        "Amazon": 140,
+        "Garmin": 106,
+        "Asus": 91
+      }
+    }
+  }
+}
