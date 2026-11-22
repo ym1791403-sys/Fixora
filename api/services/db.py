@@ -61,18 +61,38 @@ def init_db():
     CREATE TABLE IF NOT EXISTS repair_guides (
         guide_id INTEGER PRIMARY KEY,
         title TEXT NOT NULL,
+        file_source TEXT,
+        device_category TEXT NOT NULL,
+        device_model TEXT,
+        component TEXT,
+        repair_type TEXT,
         category TEXT NOT NULL,
         subject TEXT,
         url TEXT,
         difficulty TEXT,
         time_required TEXT,
+        summary TEXT,
         tools_json TEXT,
         steps_json TEXT,
         ancestors_json TEXT,
         step_count INTEGER DEFAULT 0
     );
+    CREATE INDEX IF NOT EXISTS idx_guides_devcat ON repair_guides(device_category);
+    CREATE INDEX IF NOT EXISTS idx_guides_model ON repair_guides(device_model);
+    CREATE INDEX IF NOT EXISTS idx_guides_component ON repair_guides(component);
     CREATE INDEX IF NOT EXISTS idx_guides_category ON repair_guides(category);
     CREATE INDEX IF NOT EXISTS idx_guides_subject ON repair_guides(subject);
+
+    -- Full-Text Search (FTS5) for fast natural-language guide retrieval
+    CREATE VIRTUAL TABLE IF NOT EXISTS repair_guides_fts USING fts5(
+        guide_id UNINDEXED,
+        title,
+        device_category,
+        device_model,
+        component,
+        repair_type,
+        instructions_text
+    );
 
     -- 3. Backblaze Telemetry & Failure Predictions
     CREATE TABLE IF NOT EXISTS drive_telemetry (

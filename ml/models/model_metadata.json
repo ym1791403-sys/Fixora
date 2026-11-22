@@ -1,0 +1,48 @@
+{
+  "model_id": "backblaze_rf_v1",
+  "task": "Hard Drive Failure Prediction (Binary Classification)",
+  "dataset": "Backblaze Q2 2026 Telemetry (data_Q2_2026.zip)",
+  "validation_strategy": "Chronological (April 1 - May 20 vs May 21 - June 30) with Serial Number Isolation",
+  "leakage_prevention": "Strict serial-number isolation between train/test; imputation medians derived solely from train split.",
+  "training_samples": 7041,
+  "testing_samples": 5312,
+  "metrics": {
+    "precision": 0.5338,
+    "recall": 0.786,
+    "f1_score": 0.6358,
+    "roc_auc": 0.9117,
+    "pr_auc": 0.7144,
+    "confusion_matrix": [
+      [
+        4516,
+        324
+      ],
+      [
+        101,
+        371
+      ]
+    ]
+  },
+  "feature_importances": {
+    "smart_5_raw": 0.2756,
+    "smart_9_raw": 0.0878,
+    "smart_187_raw": 0.1015,
+    "smart_188_raw": 0.0165,
+    "smart_194_raw": 0.0262,
+    "smart_197_raw": 0.3374,
+    "smart_198_raw": 0.111,
+    "capacity_tb": 0.044
+  },
+  "feature_columns": [
+    "smart_5_raw",
+    "smart_9_raw",
+    "smart_187_raw",
+    "smart_188_raw",
+    "smart_194_raw",
+    "smart_197_raw",
+    "smart_198_raw",
+    "capacity_tb"
+  ],
+  "trained_at": "2026-11-22T23:48:40.264933Z",
+  "device_scope": "Storage Devices (HDD/SSD) ONLY. Not applicable to non-storage categories."
+}

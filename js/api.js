@@ -423,8 +423,12 @@ class ApiClient {
     const params = new URLSearchParams();
     if (category) params.append("category", category);
     if (difficulty) params.append("difficulty", difficulty);
-    if (search) params.append("search", search);
-    return await this.request(`/guides?${params.toString()}`);
+    if (search) {
+      params.append("q", search);
+      params.append("search", search);
+    }
+    const res = await this.request(`/guides?${params.toString()}`);
+    return Array.isArray(res) ? res : (res && res.guides ? res.guides : []);
   }
 
   async getGuide(guideId) {
