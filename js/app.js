@@ -2192,9 +2192,6 @@ class FixoraApp {
   showSafetyModal() {
     this.showTermsModal();
   }
-    `;
-    this.openModal(html);
-  }
 
   showAuthModal(mode = "login", defaultRole = "user") {
     const isAr = window.i18n.currentLang === "ar";
