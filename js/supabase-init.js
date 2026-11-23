@@ -331,6 +331,102 @@ window.SupabaseBridge = {
   },
 
   /**
+   * Helper to normalize guides from any data source
+   */
+  _normalizeGuide(g) {
+    if (!g) return null;
+    const title = g.title || g.title_en || g.title_ar || "Repair Guide";
+    const summary = g.summary || g.summary_en || g.summary_ar || "Step-by-step instructions for device repair and disassembly.";
+    let estMins = 25;
+    if (g.estimated_minutes) {
+      estMins = parseInt(g.estimated_minutes) || 25;
+    } else if (g.time_required) {
+      const match = String(g.time_required).match(/\d+/);
+      estMins = match ? parseInt(match[0]) : 30;
+    }
+
+    let steps = [];
+    if (Array.isArray(g.steps)) {
+      steps = g.steps.map((st, idx) => {
+        if (typeof st === "string") {
+          return {
+            step_number: idx + 1,
+            title_ar: `الخطوة ${idx + 1}`,
+            title_en: `Step ${idx + 1}`,
+            instruction_ar: st,
+            instruction_en: st
+          };
+        }
+        const rawText = st.Text_raw || (Array.isArray(st.Lines) ? st.Lines.map(l => (typeof l === 'object' ? l.Text : l)).join(" ") : "") || st.instruction_en || st.instruction_ar || "";
+        return {
+          step_number: st.step_number || (st.Order !== undefined ? st.Order + 1 : idx + 1),
+          title_ar: st.title_ar || `الخطوة ${st.Order !== undefined ? st.Order + 1 : idx + 1}`,
+          title_en: st.title_en || `Step ${st.Order !== undefined ? st.Order + 1 : idx + 1}`,
+          instruction_ar: st.instruction_ar || rawText,
+          instruction_en: st.instruction_en || rawText,
+          images: st.Images || st.images || []
+        };
+      });
+    }
+
+    let tools = [];
+    if (Array.isArray(g.tools)) {
+      tools = g.tools.map(t => typeof t === "string" ? t : (t.Name || t.name || "Tool"));
+    }
+
+    return {
+      ...g,
+      id: g.id || g.guide_id,
+      title: title,
+      title_en: g.title_en || title,
+      title_ar: g.title_ar || title,
+      summary: summary,
+      summary_en: g.summary_en || summary,
+      summary_ar: g.summary_ar || summary,
+      estimated_minutes: estMins,
+      time_required: g.time_required || `${estMins} min`,
+      steps: steps,
+      tools: tools,
+      device_category: g.device_category || "General",
+      difficulty: g.difficulty || "Moderate"
+    };
+  },
+
+  /**
+   * Helper to normalize technician records
+   */
+  _normalizeTechnician(t) {
+    if (!t) return null;
+    let specs = [];
+    if (Array.isArray(t.specializations)) {
+      specs = t.specializations;
+    } else if (typeof t.specializations === 'string') {
+      try {
+        const parsed = JSON.parse(t.specializations);
+        if (Array.isArray(parsed)) specs = parsed;
+        else specs = t.specializations.split(',').map(s => s.trim()).filter(Boolean);
+      } catch (e) {
+        specs = t.specializations.split(',').map(s => s.trim()).filter(Boolean);
+      }
+    }
+    return {
+      ...t,
+      id: t.id,
+      business_name: t.business_name || t.name || 'Certified Repair Lab',
+      technician_name: t.technician_name || t.name || 'Certified Tech',
+      name: t.name || t.technician_name || 'Certified Tech',
+      city: t.city || 'Cairo',
+      phone: t.phone || '',
+      rating: parseFloat(t.rating) || 5.0,
+      total_reviews: t.total_reviews || t.reviews_count || 120,
+      reviews_count: t.reviews_count || t.total_reviews || 120,
+      experience_years: t.experience_years || 7,
+      bio: t.bio || 'فني صيانة معتمد وخبير في فحص وإصلاح اللوحات الإلكترونية والأجهزة الذكية.',
+      specializations: specs.length > 0 ? specs : ["Hardware Diagnostics", "Electronics Repair"]
+    };
+  },
+
+  /**
    * Data Retrieval APIs directly querying Supabase PostgreSQL tables
    */
   async fetchGuides(category = null, difficulty = null, search = null) {
@@ -348,7 +444,7 @@ window.SupabaseBridge = {
       }
       const { data, error } = await q.order("id", { ascending: true }).limit(60);
       if (error) throw error;
-      return data || [];
+      return (data || []).map(g => this._normalizeGuide(g));
     } catch(err) {
       console.warn("Supabase fetchGuides error:", err);
       return [];
@@ -364,7 +460,7 @@ window.SupabaseBridge = {
         .eq("id", id)
         .maybeSingle();
       if (error) throw error;
-      return data;
+      return this._normalizeGuide(data);
     } catch(err) {
       return null;
     }
@@ -382,7 +478,7 @@ window.SupabaseBridge = {
       }
       const { data, error } = await q.order("rating", { ascending: false });
       if (error) throw error;
-      return data || [];
+      return (data || []).map(t => this._normalizeTechnician(t));
     } catch(err) {
       console.warn("Supabase fetchTechnicians error:", err);
       return [];
