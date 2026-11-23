@@ -17,6 +17,25 @@ from api.routers.diagnosis import router as diagnosis_router
 
 app = FastAPI(title="Fixora AI Platform", version="2.0.0")
 
+@app.middleware("http")
+async def vercel_path_rewrite_middleware(request: Request, call_next):
+    # If Vercel rewrote the incoming request to /api/index.py, restore original subpath
+    path = request.scope.get("path", "")
+    if path == "/api/index.py" or path == "/api" or path.endswith("/index.py"):
+        # 1. Check query param __path
+        sub_path = request.query_params.get("__path")
+        if sub_path:
+            clean_sub = sub_path.lstrip("/")
+            request.scope["path"] = f"/api/{clean_sub}"
+        else:
+            # 2. Check Vercel headers
+            matched = request.headers.get("x-matched-path") or request.headers.get("x-invoke-path")
+            if matched and matched != "/api/index.py":
+                request.scope["path"] = matched
+
+    response = await call_next(request)
+    return response
+
 # Mount genuine dataset status, empirical analysis, verified guides, prediction, and diagnosis routers
 app.include_router(datasets_router)
 app.include_router(analysis_router)
