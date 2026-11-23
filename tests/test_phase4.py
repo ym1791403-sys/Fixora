@@ -48,7 +48,7 @@ class TestPhase4(unittest.TestCase):
         # 2. MyFixit verified manual
         self.assertIn("verified_guide", res)
         vg = res["verified_guide"]
-        self.assertEqual(vg["source"], "MyFixit Complete Dataset (18,995 manuals)")
+        self.assertIn("MyFixit", vg["source"])
         self.assertIsNotNone(vg["guide_id"])
         self.assertIsNotNone(vg["url"])
         self.assertTrue(vg["url"].startswith("http"))

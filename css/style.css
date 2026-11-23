@@ -370,7 +370,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* Rotating Seal from ByteFix - Strictly LTR in all languages so circle text never collapses */
-.experience-badge {
+.experience-badge,
+[dir="rtl"] .experience-badge {
   position: relative;
   width: 145px;
   height: 145px;
@@ -383,7 +384,8 @@ h1, h2, h3, h4, h5, h6 {
   unicode-bidi: isolate !important;
 }
 
-.badge-svg {
+.badge-svg,
+[dir="rtl"] .badge-svg {
   position: absolute;
   width: 100%;
   height: 100%;
@@ -403,14 +405,20 @@ h1, h2, h3, h4, h5, h6 {
   100% { transform: rotate(360deg); }
 }
 
-.badge-text {
+.badge-text,
+[dir="rtl"] .badge-text,
+.badge-text textPath,
+[dir="rtl"] .badge-text textPath,
+textPath {
   font-size: 9.5px;
   font-weight: 700;
   letter-spacing: 2px;
   fill: #94A3B8;
   text-transform: uppercase;
   direction: ltr !important;
-  unicode-bidi: normal !important;
+  unicode-bidi: bidi-override !important;
+  text-anchor: start !important;
+  writing-mode: horizontal-tb !important;
 }
 
 .badge-center-icon {

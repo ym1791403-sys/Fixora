@@ -14,10 +14,11 @@ from api.routers.analysis import router as analysis_router
 from api.routers.guides import router as guides_router
 from api.routers.prediction import router as prediction_router
 from api.routers.diagnosis import router as diagnosis_router
+from api.services.db import DatabaseUnavailableError, get_table_count, postgrest_request
 
 from urllib.parse import parse_qs
 
-app = FastAPI(title="Fixora AI Platform", version="2.0.0")
+app = FastAPI(title="Fixora AI Platform", version="3.0.0")
 
 class VercelPathRewriter:
     """Pure ASGI middleware that modifies scope['path'] before FastAPI route matching."""
@@ -44,15 +45,24 @@ class VercelPathRewriter:
 
 app.add_middleware(VercelPathRewriter)
 
+@app.exception_handler(DatabaseUnavailableError)
+async def db_unavailable_exception_handler(request: Request, exc: DatabaseUnavailableError):
+    return JSONResponse(
+        status_code=503,
+        content={
+            "error": "Dataset unavailable",
+            "status_code": 503,
+            "detail": str(exc),
+            "message": "The production database or dataset service is currently unavailable. No synthetic data will be returned."
+        }
+    )
+
 # Mount genuine dataset status, empirical analysis, verified guides, prediction, and diagnosis routers
 app.include_router(datasets_router)
 app.include_router(analysis_router)
 app.include_router(guides_router)
 app.include_router(prediction_router)
 app.include_router(diagnosis_router)
-
-# Active Users Database (In-Memory Session Store)
-USERS_DB = []
 
 def get_content_type(path: str) -> str:
     ext = os.path.splitext(path)[1].lower()
@@ -72,105 +82,34 @@ def get_content_type(path: str) -> str:
 @app.api_route("/api/health", methods=["GET", "HEAD"])
 @app.api_route("/api/v1/health", methods=["GET", "HEAD"])
 def health_check():
-    return {"status": "healthy", "service": "Fixora AI Platform", "version": "2.8"}
+    return {
+        "status": "healthy",
+        "service": "Fixora AI Platform",
+        "version": "3.0.0",
+        "database": "Supabase PostgreSQL",
+        "policy": "Strict empirical evidence only; zero synthetic records or mock fallback."
+    }
 
-# Authentication Endpoints
-@app.api_route("/api/auth/login", methods=["POST", "GET"])
-@app.api_route("/api/v1/auth/login", methods=["POST", "GET"])
-async def login(request: Request):
+# Admin / System Statistics Endpoint (derived from real Supabase table counts)
+@app.api_route("/api/admin/stats", methods=["GET"])
+@app.api_route("/api/v1/admin/stats", methods=["GET"])
+def get_admin_stats():
     try:
-        body = await request.json()
-    except Exception:
-        body = {}
-    email = body.get("email", "").strip().lower()
-    if not email:
-        return JSONResponse(status_code=400, content={"detail": "Email is required"})
-    user = next((u for u in USERS_DB if u.get("email", "").lower() == email), None)
-    if not user:
-        name = email.split("@")[0].replace(".", " ").title()
-        user = {
-            "id": len(USERS_DB) + 1,
-            "email": email,
-            "full_name": name,
-            "role": "admin" if "admin" in email else "user",
-            "avatar_initial": email[0].upper(),
-            "is_active": True
+        guides = get_table_count("repair_guides")
+        incidents = get_table_count("repair_incidents")
+        techs = get_table_count("technicians")
+        requests = get_table_count("repair_requests")
+        return {
+            "verified_guides_count": guides,
+            "repair_incidents_count": incidents,
+            "active_technicians_count": techs,
+            "repair_requests_count": requests,
+            "source": "Supabase Production Database"
         }
-        USERS_DB.append(user)
-    return {
-        "access_token": f"fixora_token_{user['id']}_jwt_valid",
-        "token_type": "bearer",
-        "user": user
-    }
+    except DatabaseUnavailableError as e:
+        return JSONResponse(status_code=503, content={"error": "Dataset unavailable", "detail": str(e)})
 
-@app.api_route("/api/auth/register", methods=["POST"])
-@app.api_route("/api/v1/auth/register", methods=["POST"])
-async def register(request: Request):
-    try:
-        body = await request.json()
-    except Exception:
-        body = {}
-    email = body.get("email", "").strip().lower()
-    if not email:
-        return JSONResponse(status_code=400, content={"detail": "Email is required"})
-    full_name = body.get("full_name", "").strip() or email.split("@")[0].title()
-    role = body.get("role", "user")
-    user = {
-        "id": len(USERS_DB) + 1,
-        "email": email,
-        "full_name": full_name,
-        "role": role,
-        "avatar_initial": full_name[0].upper() if full_name else "U",
-        "phone": body.get("phone", None),
-        "is_active": True
-    }
-    USERS_DB.append(user)
-    return {
-        "access_token": f"fixora_token_{user['id']}_jwt_valid",
-        "token_type": "bearer",
-        "user": user
-    }
-
-@app.api_route("/api/auth/google", methods=["POST", "GET"])
-@app.api_route("/api/v1/auth/google", methods=["POST", "GET"])
-async def google_auth(request: Request):
-    try:
-        body = await request.json()
-    except Exception:
-        body = {}
-    email = body.get("email", "").strip().lower()
-    if not email:
-        return JSONResponse(status_code=400, content={"detail": "Email is required"})
-    name = body.get("name", "").strip() or email.split("@")[0].title()
-    user = next((u for u in USERS_DB if u.get("email", "").lower() == email), None)
-    if not user:
-        user = {
-            "id": len(USERS_DB) + 1,
-            "email": email,
-            "full_name": name,
-            "role": "user",
-            "provider": "google",
-            "avatar_initial": name[0].upper() if name else "G",
-            "is_active": True
-        }
-        USERS_DB.append(user)
-    return {
-        "status": "authenticated",
-        "provider": "google",
-        "message": "Google Account linked successfully",
-        "access_token": f"google_oauth_{user['id']}_valid",
-        "token": f"google_oauth_{user['id']}_valid",
-        "user": user
-    }
-
-@app.api_route("/api/auth/me", methods=["GET"])
-@app.api_route("/api/v1/auth/me", methods=["GET"])
-def get_me():
-    if USERS_DB:
-        return USERS_DB[0]
-    return {"id": 0, "full_name": "Guest", "role": "guest", "is_active": False}
-
-# Fallback for API routes (Returns JSON instead of HTML so client fetch does not crash)
+# Fallback for unmatched API routes
 @app.api_route("/api/{full_path:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE"])
 def api_fallback(full_path: str):
     return JSONResponse(status_code=404, content={"error": "Endpoint not found", "path": full_path})

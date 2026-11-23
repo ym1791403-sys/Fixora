@@ -2,14 +2,13 @@
 """
 Datasets Status Router
 Reports authentic, database-backed dataset integration status.
-Queries SQLite `dataset_imports` table and inspects live file integrity.
+Queries Supabase production PostgreSQL tables and verifies live counts.
 Never returns hardcoded or fabricated status strings.
 """
 
-import os
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from typing import Dict, Any
-from api.services.db import get_all_dataset_statuses, get_db_path
+from api.services.db import get_all_dataset_statuses, DatabaseUnavailableError, SUPABASE_URL
 
 router = APIRouter(tags=["datasets"])
 
@@ -17,24 +16,28 @@ router = APIRouter(tags=["datasets"])
 @router.get("/api/v1/datasets/status")
 def get_dataset_status() -> Dict[str, Any]:
     """
-    Returns authentic integration status, record counts, and file sizes
-    derived directly from the database and file system.
+    Returns authentic integration status, live record counts, and verified metadata
+    derived directly from Supabase production PostgreSQL.
     """
-    statuses = get_all_dataset_statuses()
-    db_path = get_db_path()
-    db_size_bytes = os.path.getsize(db_path) if os.path.exists(db_path) else 0
-
-    total_indexed = sum(d.get("total_indexed_records", 0) for d in statuses.values())
-
-    return {
-        "status": "operational" if statuses else "initializing",
-        "database_storage": {
-            "engine": "SQLite WAL Mode",
-            "db_path": db_path,
-            "db_size_bytes": db_size_bytes,
-            "db_size_mb": round(db_size_bytes / (1024 * 1024), 2),
-            "total_indexed_records": total_indexed
-        },
-        "datasets": statuses,
-        "verification_policy": "Strict empirical evidence only; zero synthetic records or fabricated probabilities."
-    }
+    try:
+        statuses = get_all_dataset_statuses()
+        live_counts = statuses.pop("live_counts", {})
+        
+        return {
+            "status": "operational" if statuses else "initializing",
+            "database_storage": {
+                "engine": "Supabase PostgreSQL (EU-West-1)",
+                "database_url": SUPABASE_URL,
+                "schema": "public",
+                "live_tables": {
+                    "repair_guides": live_counts.get("repair_guides_imported", 0),
+                    "repair_incidents": live_counts.get("repair_incidents_imported", 0),
+                    "openrepair_statistics": live_counts.get("categories_computed", 0),
+                    "backblaze_models": live_counts.get("models_registered", 0)
+                }
+            },
+            "datasets": statuses,
+            "verification_policy": "Strict empirical evidence only; zero synthetic records or fabricated probabilities."
+        }
+    except DatabaseUnavailableError as e:
+        raise HTTPException(status_code=503, detail=f"Database or dataset service unavailable: {str(e)}")

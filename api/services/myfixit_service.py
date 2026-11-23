@@ -1,16 +1,21 @@
 # -*- coding: utf-8 -*-
 """
 MyFixitGuideRetrievalService
-Provides authentic guide search, filtering, and retrieval
-powered by SQLite FTS5 index over 18,995 verified MyFixit repair manuals.
+Provides authentic repair manual search, filtering, and retrieval
+powered by Supabase production PostgreSQL table over verified MyFixit repair manuals.
 Never fabricates repair instructions or attributes synthetic records.
 """
 
 import os
 import json
-import sqlite3
 from typing import Dict, Any, List, Optional
-from api.services.db import get_connection
+from api.services.db import (
+    search_repair_guides,
+    get_repair_guide_by_id,
+    postgrest_request,
+    get_table_count,
+    DatabaseUnavailableError
+)
 
 class MyFixitGuideRetrievalService:
     def __init__(self):
@@ -26,270 +31,171 @@ class MyFixitGuideRetrievalService:
         offset: int = 0
     ) -> Dict[str, Any]:
         """
-        Executes full-text or filtered search across 18,995 verified MyFixit repair guides.
+        Executes verified guide search in Supabase.
         """
-        conn = get_connection()
-        cursor = conn.cursor()
+        try:
+            res = search_repair_guides(
+                query=query,
+                category=category,
+                component=component,
+                difficulty=difficulty,
+                limit=limit,
+                offset=offset
+            )
+            raw_guides = res.get("guides", [])
+            formatted = []
+            for r in raw_guides:
+                time_req = r.get("time_required")
+                mins = 30
+                if time_req:
+                    digits = [int(s) for s in str(time_req).split() if s.isdigit()]
+                    if digits:
+                        mins = digits[0]
+                else:
+                    mins = max(15, (r.get("step_count") or 5) * 4)
 
-        cleaned_query = (query or "").strip()
-        conditions = []
-        params = []
+                g_id = r.get("id") or r.get("guide_id")
+                formatted.append({
+                    "id": g_id,
+                    "guide_id": g_id,
+                    "title": r.get("title", ""),
+                    "title_en": r.get("title", ""),
+                    "title_ar": r.get("title", ""),
+                    "device_category": r.get("device_category", "Hardware"),
+                    "device_model": r.get("device_model", ""),
+                    "component": r.get("component", ""),
+                    "repair_type": r.get("repair_type", "Repair"),
+                    "difficulty": (r.get("difficulty") or "moderate").lower(),
+                    "time_required": r.get("time_required") or f"{mins} min",
+                    "estimated_minutes": mins,
+                    "summary": r.get("summary", ""),
+                    "summary_en": r.get("summary", ""),
+                    "summary_ar": r.get("summary", ""),
+                    "url": r.get("url") or f"https://www.ifixit.com/Guide/{g_id}",
+                    "step_count": r.get("step_count", 0)
+                })
 
-        if cleaned_query:
-            try:
-                # Prepare FTS query with prefix wildcard support
-                # Escape double quotes to prevent syntax error
-                safe_query = cleaned_query.replace('"', '""')
-                tokens = [f'"{t}"*' for t in safe_query.split() if t]
-                fts_match_expr = " AND ".join(tokens) if tokens else f'"{safe_query}"*'
+            total_matching = get_table_count("repair_guides") if not (query or component or difficulty) else len(formatted)
+            return {
+                "total_matching": total_matching,
+                "limit": limit,
+                "offset": offset,
+                "guides": formatted,
+                "matched": len(formatted) > 0
+            }
+        except DatabaseUnavailableError:
+            raise
+        except Exception as e:
+            raise DatabaseUnavailableError(f"MyFixit guide search error: {str(e)}")
 
-                sql = """
-                SELECT g.guide_id, g.title, g.device_category, g.device_model,
-                       g.component, g.repair_type, g.difficulty, g.time_required,
-                       g.summary, g.url, g.step_count, bm25(repair_guides_fts) AS rank
-                FROM repair_guides_fts f
-                JOIN repair_guides g ON g.guide_id = f.guide_id
-                WHERE repair_guides_fts MATCH ?
-                """
-                params.append(fts_match_expr)
+    def get_guide_by_id(self, guide_id: int) -> Optional[Dict[str, Any]]:
+        """Retrieves a single verified guide with full instructions, images, and tools from Supabase."""
+        try:
+            row = get_repair_guide_by_id(guide_id)
+            if not row:
+                return None
 
-                if category:
-                    sql += " AND g.device_category = ?"
-                    params.append(category)
-                if component:
-                    sql += " AND g.component LIKE ?"
-                    params.append(f"%{component}%")
-                if difficulty:
-                    sql += " AND g.difficulty = ?"
-                    params.append(difficulty)
+            raw_tools = row.get("tools") or []
+            if isinstance(raw_tools, str):
+                try:
+                    tools = json.loads(raw_tools)
+                except Exception:
+                    tools = []
+            else:
+                tools = raw_tools
 
-                sql += " ORDER BY rank LIMIT ? OFFSET ?"
-                params.extend([limit, offset])
+            raw_steps = row.get("steps") or []
+            if isinstance(raw_steps, str):
+                try:
+                    steps = json.loads(raw_steps)
+                except Exception:
+                    steps = []
+            else:
+                steps = raw_steps
 
-                cursor.execute(sql, params)
-                rows = cursor.fetchall()
+            formatted_steps = []
+            for s in steps:
+                lines = s.get("lines", [])
+                txt = " ".join([l.get("text", "") for l in lines]) if lines else s.get("text_raw", "")
+                formatted_steps.append({
+                    "step_number": s.get("order", len(formatted_steps) + 1),
+                    "title_en": s.get("title") or f"Step {s.get('order', len(formatted_steps) + 1)}",
+                    "title_ar": s.get("title") or f"الخطوة {s.get('order', len(formatted_steps) + 1)}",
+                    "instruction_en": txt or "Follow disassembly steps carefully.",
+                    "instruction_ar": txt or "اتبع خطوات الفك والتركيب الموضحة بالدليل المعتمد.",
+                    "lines": lines,
+                    "images": s.get("images", [])
+                })
 
-                # Count total
-                count_sql = """
-                SELECT COUNT(*) FROM repair_guides_fts f
-                JOIN repair_guides g ON g.guide_id = f.guide_id
-                WHERE repair_guides_fts MATCH ?
-                """
-                count_params = [fts_match_expr]
-                if category:
-                    count_sql += " AND g.device_category = ?"
-                    count_params.append(category)
-                if component:
-                    count_sql += " AND g.component LIKE ?"
-                    count_params.append(f"%{component}%")
-                if difficulty:
-                    count_sql += " AND g.difficulty = ?"
-                    count_params.append(difficulty)
-
-                cursor.execute(count_sql, count_params)
-                total_count = cursor.fetchone()[0]
-            except Exception:
-                # Safe fallback to standard SQL LIKE query
-                like_term = f"%{cleaned_query}%"
-                where_clauses = ["(g.title LIKE ? OR g.device_model LIKE ? OR g.component LIKE ?)"]
-                fb_params = [like_term, like_term, like_term]
-                if category:
-                    where_clauses.append("g.device_category = ?")
-                    fb_params.append(category)
-                if component:
-                    where_clauses.append("g.component LIKE ?")
-                    fb_params.append(f"%{component}%")
-                if difficulty:
-                    where_clauses.append("g.difficulty = ?")
-                    fb_params.append(difficulty)
-
-                where_str = " WHERE " + " AND ".join(where_clauses)
-                count_sql = f"SELECT COUNT(*) FROM repair_guides g {where_str}"
-                cursor.execute(count_sql, fb_params)
-                total_count = cursor.fetchone()[0]
-
-                sql = f"""
-                SELECT g.guide_id, g.title, g.device_category, g.device_model,
-                       g.component, g.repair_type, g.difficulty, g.time_required,
-                       g.summary, g.url, g.step_count
-                FROM repair_guides g {where_str}
-                ORDER BY g.guide_id ASC
-                LIMIT ? OFFSET ?
-                """
-                cursor.execute(sql, fb_params + [limit, offset])
-                rows = cursor.fetchall()
-
-        else:
-            # Filter-only query
-            where_clauses = []
-            if category:
-                where_clauses.append("device_category = ?")
-                params.append(category)
-            if component:
-                where_clauses.append("component LIKE ?")
-                params.append(f"%{component}%")
-            if difficulty:
-                where_clauses.append("difficulty = ?")
-                params.append(difficulty)
-
-            where_str = (" WHERE " + " AND ".join(where_clauses)) if where_clauses else ""
-
-            count_sql = f"SELECT COUNT(*) FROM repair_guides{where_str}"
-            cursor.execute(count_sql, params)
-            total_count = cursor.fetchone()[0]
-
-            sql = f"""
-            SELECT guide_id, title, device_category, device_model,
-                   component, repair_type, difficulty, time_required,
-                   summary, url, step_count
-            FROM repair_guides{where_str}
-            ORDER BY guide_id ASC
-            LIMIT ? OFFSET ?
-            """
-            params.extend([limit, offset])
-            cursor.execute(sql, params)
-            rows = cursor.fetchall()
-
-        conn.close()
-
-        guides = []
-        for r in rows:
-            time_req = r["time_required"]
+            time_req = row.get("time_required")
             mins = 30
             if time_req:
-                digits = [int(s) for s in time_req.split() if s.isdigit()]
+                digits = [int(s) for s in str(time_req).split() if s.isdigit()]
                 if digits:
                     mins = digits[0]
             else:
-                mins = max(15, (r["step_count"] or 5) * 4)
+                mins = max(15, (row.get("step_count") or 5) * 4)
 
-            guides.append({
-                "id": r["guide_id"],
-                "guide_id": r["guide_id"],
-                "title": r["title"],
-                "title_en": r["title"],
-                "title_ar": r["title"],
-                "device_category": r["device_category"],
-                "device_model": r["device_model"],
-                "component": r["component"],
-                "repair_type": r["repair_type"],
-                "difficulty": (r["difficulty"] or "moderate").lower(),
-                "time_required": r["time_required"] or f"{mins} min",
+            g_id = row.get("id") or row.get("guide_id")
+            return {
+                "id": g_id,
+                "guide_id": g_id,
+                "title": row.get("title", ""),
+                "title_en": row.get("title", ""),
+                "title_ar": row.get("title", ""),
+                "file_source": row.get("file_source", "myfixit_dataset"),
+                "device_category": row.get("device_category", "Hardware"),
+                "device_model": row.get("device_model", ""),
+                "component": row.get("component", ""),
+                "repair_type": row.get("repair_type", "Repair"),
+                "difficulty": (row.get("difficulty") or "moderate").lower(),
+                "time_required": row.get("time_required") or f"{mins} min",
                 "estimated_minutes": mins,
-                "summary": r["summary"],
-                "summary_en": r["summary"],
-                "summary_ar": r["summary"],
-                "url": r["url"],
-                "step_count": r["step_count"]
-            })
-
-        return {
-            "total_matching": total_count,
-            "limit": limit,
-            "offset": offset,
-            "guides": guides
-        }
-
-    def get_guide_by_id(self, guide_id: int) -> Optional[Dict[str, Any]]:
-        """Retrieves a single verified guide with full instructions, images, and tools."""
-        conn = get_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM repair_guides WHERE guide_id = ?", (guide_id,))
-        row = cursor.fetchone()
-        conn.close()
-
-        if not row:
-            return None
-
-        tools = json.loads(row["tools_json"]) if row["tools_json"] else []
-        steps = json.loads(row["steps_json"]) if row["steps_json"] else []
-        ancestors = json.loads(row["ancestors_json"]) if row["ancestors_json"] else []
-
-        formatted_steps = []
-        for s in steps:
-            lines = s.get("lines", [])
-            txt = " ".join([l.get("text", "") for l in lines]) if lines else ""
-            formatted_steps.append({
-                "step_number": s.get("step_number", len(formatted_steps) + 1),
-                "title_en": s.get("title") or f"Step {s.get('step_number', len(formatted_steps) + 1)}",
-                "title_ar": s.get("title") or f"الخطوة {s.get('step_number', len(formatted_steps) + 1)}",
-                "instruction_en": txt or "Follow disassembly steps carefully.",
-                "instruction_ar": txt or "اتبع خطوات الفك والتركيب الموضحة بالدليل المعتمد.",
-                "lines": lines,
-                "media": s.get("media", {})
-            })
-
-        time_req = row["time_required"]
-        mins = 30
-        if time_req:
-            digits = [int(s) for s in time_req.split() if s.isdigit()]
-            if digits:
-                mins = digits[0]
-        else:
-            mins = max(15, row["step_count"] * 4)
-
-        return {
-            "id": row["guide_id"],
-            "guide_id": row["guide_id"],
-            "title": row["title"],
-            "title_en": row["title"],
-            "title_ar": row["title"],
-            "file_source": row["file_source"],
-            "device_category": row["device_category"],
-            "device_model": row["device_model"],
-            "component": row["component"],
-            "repair_type": row["repair_type"],
-            "category": row["category"],
-            "subject": row["subject"],
-            "url": row["url"],
-            "difficulty": (row["difficulty"] or "moderate").lower(),
-            "time_required": row["time_required"] or f"{mins} min",
-            "estimated_minutes": mins,
-            "summary": row["summary"],
-            "summary_en": row["summary"],
-            "summary_ar": row["summary"],
-            "step_count": row["step_count"],
-            "toolbox": tools,
-            "required_tools": [t if isinstance(t, str) else t.get("name", "Tool") for t in tools],
-            "steps": formatted_steps,
-            "safety_precautions": [
-                "Disconnect all power cables and remove batteries before disassembly.",
-                "Wear an ESD wrist strap to protect delicate microchips from electrostatic discharge.",
-                "Organize screws by size and thread length to avoid logic board damage."
-            ],
-            "ancestors": ancestors
-        }
+                "summary": row.get("summary", ""),
+                "summary_en": row.get("summary", ""),
+                "summary_ar": row.get("summary", ""),
+                "url": row.get("url") or f"https://www.ifixit.com/Guide/{g_id}",
+                "step_count": row.get("step_count", len(formatted_steps)),
+                "toolbox": tools,
+                "required_tools": [t if isinstance(t, str) else t.get("name", "Tool") for t in tools],
+                "steps": formatted_steps,
+                "safety_precautions": [
+                    "Disconnect all power cables and remove batteries before disassembly.",
+                    "Wear an ESD wrist strap to protect delicate microchips from electrostatic discharge.",
+                    "Organize screws by size and thread length to avoid logic board damage."
+                ]
+            }
+        except DatabaseUnavailableError:
+            raise
+        except Exception as e:
+            raise DatabaseUnavailableError(f"Failed to fetch guide #{guide_id}: {str(e)}")
 
     def get_categories_summary(self) -> List[Dict[str, Any]]:
-        """Returns categories with guide counts."""
-        conn = get_connection()
-        cursor = conn.cursor()
-        cursor.execute("""
-        SELECT device_category, COUNT(*) as guide_count
-        FROM repair_guides
-        GROUP BY device_category
-        ORDER BY guide_count DESC
-        """)
-        rows = cursor.fetchall()
-        conn.close()
-
-        return [{"category": r["device_category"], "guide_count": r["guide_count"]} for r in rows]
+        """Returns categories with guide counts from Supabase."""
+        try:
+            # Query all distinct device_category counts
+            rows = postgrest_request("repair_guides", {"select": "device_category"})
+            counts = {}
+            for r in (rows or []):
+                cat = r.get("device_category") or "Other"
+                counts[cat] = counts.get(cat, 0) + 1
+            return [{"category": k, "guide_count": v} for k, v in sorted(counts.items(), key=lambda x: -x[1])]
+        except Exception:
+            return []
 
     def find_matching_guide(self, category: str, component_or_keyword: str) -> Optional[Dict[str, Any]]:
-        """
-        Retrieves the most relevant real MyFixit repair manual for a diagnosed issue.
-        """
+        """Retrieves the most relevant real MyFixit repair manual for a diagnosed issue."""
         res = self.search_guides(
             query=component_or_keyword,
             category=category,
             limit=1
         )
-        if res["guides"]:
+        if res.get("guides"):
             return self.get_guide_by_id(res["guides"][0]["guide_id"])
         
         # Fallback to category search without keyword
         res_cat = self.search_guides(category=category, limit=1)
-        if res_cat["guides"]:
+        if res_cat.get("guides"):
             return self.get_guide_by_id(res_cat["guides"][0]["guide_id"])
 
         return None

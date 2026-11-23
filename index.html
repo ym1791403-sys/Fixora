@@ -138,12 +138,12 @@
         <!-- Circular Rotating Badge -->
         <div>
           <div class="experience-badge" dir="ltr" style="direction: ltr;">
-            <svg viewBox="0 0 160 160" class="badge-svg" dir="ltr" style="direction: ltr;">
+            <svg viewBox="0 0 160 160" class="badge-svg" direction="ltr" style="direction: ltr;">
               <defs>
                 <path id="badge-circle-pre" d="M 80, 80 m -60, 0 a 60,60 0 1,1 120,0 a 60,60 0 1,1 -120,0" fill="none" />
               </defs>
-              <text class="badge-text" dir="ltr" style="direction: ltr; unicode-bidi: normal;">
-                <textPath href="#badge-circle-pre" startOffset="0%" dir="ltr" style="direction: ltr;">
+              <text class="badge-text" direction="ltr" text-anchor="start" style="direction: ltr; unicode-bidi: bidi-override;">
+                <textPath href="#badge-circle-pre" xlink:href="#badge-circle-pre" startOffset="0%" direction="ltr" text-anchor="start">
                   • FIXORA AI PLATFORM • CERTIFIED REPAIRS • EST. 2026 •
                 </textPath>
               </text>
@@ -166,15 +166,15 @@
 
           <div class="about-stats-row">
             <div class="about-stat-box">
-              <div class="about-stat-num" style="color: #38BDF8;">+416,282</div>
+              <div id="homeStatIncidents" class="about-stat-num" style="color: #38BDF8;">+3,000</div>
               <div class="about-stat-lbl" data-i18n="stat_records_lbl">سجل صيانة حقيقي (ORA)</div>
             </div>
             <div class="about-stat-box">
-              <div class="about-stat-num" style="color: #10B981;">18,995</div>
+              <div id="homeStatGuides" class="about-stat-num" style="color: #10B981;">1,160</div>
               <div class="about-stat-lbl" data-i18n="stat_guides_lbl">دليل صيانة معتمد (MyFixit)</div>
             </div>
             <div class="about-stat-box">
-              <div class="about-stat-num" style="color: #F59E0B;">0.912</div>
+              <div id="homeStatAuc" class="about-stat-num" style="color: #F59E0B;">0.912</div>
               <div class="about-stat-lbl" data-i18n="stat_ml_auc_lbl">دقة التنبؤ بالأعطال (ROC-AUC)</div>
             </div>
           </div>

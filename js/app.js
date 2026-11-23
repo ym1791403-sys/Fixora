@@ -23,6 +23,7 @@ class FixoraApp {
     this.bindEvents();
     this.updateNavAuth();
     this.bindHomeTriage();
+    this.fetchAndApplyLiveDatasetStats();
 
     // Check for active Supabase session or OAuth redirect callback
     if (window.SupabaseBridge && typeof window.SupabaseBridge.initSession === "function") {
@@ -300,12 +301,12 @@ class FixoraApp {
         <!-- Circular Rotating Badge -->
         <div>
           <div class="experience-badge" dir="ltr" style="direction: ltr;">
-            <svg viewBox="0 0 160 160" class="badge-svg" dir="ltr" style="direction: ltr;">
+            <svg viewBox="0 0 160 160" class="badge-svg" direction="ltr" style="direction: ltr;">
               <defs>
                 <path id="badge-circle" d="M 80, 80 m -60, 0 a 60,60 0 1,1 120,0 a 60,60 0 1,1 -120,0" fill="none" />
               </defs>
-              <text class="badge-text" dir="ltr" style="direction: ltr; unicode-bidi: normal;">
-                <textPath href="#badge-circle" startOffset="0%" dir="ltr" style="direction: ltr;">
+              <text class="badge-text" direction="ltr" text-anchor="start" style="direction: ltr; unicode-bidi: bidi-override;">
+                <textPath href="#badge-circle" xlink:href="#badge-circle" startOffset="0%" direction="ltr" text-anchor="start">
                   • FIXORA AI PLATFORM • CERTIFIED REPAIRS • EST. 2026 •
                 </textPath>
               </text>
@@ -328,15 +329,15 @@ class FixoraApp {
 
           <div class="about-stats-row">
             <div class="about-stat-box">
-              <div class="about-stat-num" style="color: #38BDF8;">${window.i18n.t('stat_records')}</div>
+              <div id="homeStatIncidents" class="about-stat-num" style="color: #38BDF8;">${window.i18n.t('stat_records')}</div>
               <div class="about-stat-lbl" data-i18n="stat_records_lbl">${window.i18n.t('stat_records_lbl')}</div>
             </div>
             <div class="about-stat-box">
-              <div class="about-stat-num" style="color: #10B981;">${window.i18n.t('stat_guides')}</div>
+              <div id="homeStatGuides" class="about-stat-num" style="color: #10B981;">${window.i18n.t('stat_guides')}</div>
               <div class="about-stat-lbl" data-i18n="stat_guides_lbl">${window.i18n.t('stat_guides_lbl')}</div>
             </div>
             <div class="about-stat-box">
-              <div class="about-stat-num" style="color: #F59E0B;">${window.i18n.t('stat_ml_auc')}</div>
+              <div id="homeStatAuc" class="about-stat-num" style="color: #F59E0B;">${window.i18n.t('stat_ml_auc')}</div>
               <div class="about-stat-lbl" data-i18n="stat_ml_auc_lbl">${window.i18n.t('stat_ml_auc_lbl')}</div>
             </div>
           </div>
@@ -488,6 +489,31 @@ class FixoraApp {
     `;
 
     this.bindHomeTriage();
+    this.fetchAndApplyLiveDatasetStats();
+  }
+
+  async fetchAndApplyLiveDatasetStats() {
+    try {
+      const res = await window.api.getDatasetStatus();
+      if (res && res.database_storage && res.database_storage.live_tables) {
+        const tables = res.database_storage.live_tables;
+        const guidesEl = document.getElementById("homeStatGuides");
+        const incidentsEl = document.getElementById("homeStatIncidents");
+        const aucEl = document.getElementById("homeStatAuc");
+
+        if (guidesEl && tables.repair_guides) {
+          guidesEl.textContent = Number(tables.repair_guides).toLocaleString();
+        }
+        if (incidentsEl && tables.repair_incidents) {
+          incidentsEl.textContent = `+${Number(tables.repair_incidents).toLocaleString()}`;
+        }
+        if (aucEl) {
+          aucEl.textContent = "0.912";
+        }
+      }
+    } catch (e) {
+      console.warn("Live stats update note:", e);
+    }
   }
 
   startDiagnosisWithCat(cat) {

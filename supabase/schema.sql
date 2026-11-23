@@ -140,7 +140,7 @@ on conflict (dataset_key) do update set
   status = excluded.status,
   last_verified_at = now();
 
--- 6. Repair Guides Table (MyFixit Verified Seed)
+-- 6. Repair Guides Table (MyFixit Verified Manuals)
 create table if not exists public.repair_guides (
   id integer primary key,
   title text not null,
@@ -155,8 +155,13 @@ create table if not exists public.repair_guides (
   tools jsonb default '[]'::jsonb,
   steps jsonb default '[]'::jsonb,
   step_count integer default 0,
+  file_source text,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
+create index if not exists idx_repair_guides_cat on public.repair_guides(device_category);
+create index if not exists idx_repair_guides_diff on public.repair_guides(difficulty);
+create index if not exists idx_repair_guides_comp on public.repair_guides(component);
+
 alter table public.repair_guides enable row level security;
 create policy "Allow public read repair_guides" on public.repair_guides for select using (true);
 
@@ -165,15 +170,44 @@ create table if not exists public.openrepair_statistics (
   category_name text primary key,
   sample_size integer not null,
   repair_rate numeric(5,2) not null,
+  repairable_rate numeric(5,2),
+  end_of_life_rate numeric(5,2),
+  average_age_years numeric(4,1),
   top_faults jsonb default '[]'::jsonb,
   barriers jsonb default '[]'::jsonb,
   source_info text,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 alter table public.openrepair_statistics enable row level security;
 create policy "Allow public read openrepair_statistics" on public.openrepair_statistics for select using (true);
 
--- 8. Backblaze Models Table
+-- 8. Open Repair Incidents Table (Individual empirical repair events from Open Repair Alliance)
+create table if not exists public.repair_incidents (
+  id text primary key,
+  data_provider text,
+  country text,
+  partner_category text,
+  normalized_category text not null,
+  brand text,
+  product_age numeric(5,1),
+  repair_status text not null,
+  repair_barrier text,
+  problem text,
+  problem_cluster text,
+  event_date text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+create index if not exists idx_repair_incidents_cat on public.repair_incidents(normalized_category);
+create index if not exists idx_repair_incidents_brand on public.repair_incidents(brand);
+create index if not exists idx_repair_incidents_status on public.repair_incidents(repair_status);
+create index if not exists idx_repair_incidents_cluster on public.repair_incidents(problem_cluster);
+
+alter table public.repair_incidents enable row level security;
+create policy "Allow public read repair_incidents" on public.repair_incidents for select using (true);
+create policy "Allow service write repair_incidents" on public.repair_incidents for all using (true);
+
+-- 9. Backblaze Models Table
 create table if not exists public.backblaze_models (
   model_id text primary key,
   task text not null,
