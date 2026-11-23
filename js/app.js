@@ -19,10 +19,26 @@ class FixoraApp {
     this.init();
   }
 
-  init() {
+  async init() {
     this.bindEvents();
     this.updateNavAuth();
     this.bindHomeTriage();
+
+    // Check for active Supabase session or OAuth redirect callback
+    if (window.SupabaseBridge && typeof window.SupabaseBridge.initSession === "function") {
+      try {
+        const session = await window.SupabaseBridge.initSession();
+        if (session) {
+          this.updateNavAuth();
+          // If returning from Google OAuth redirect, route smoothly to dashboard
+          if (window.location.hash.includes("access_token") || window.location.search.includes("code=")) {
+            this.navigate("dashboard");
+          }
+        }
+      } catch (e) {
+        console.warn("Session check note:", e);
+      }
+    }
   }
 
   bindEvents() {
@@ -92,9 +108,13 @@ class FixoraApp {
     if (isLoggedIn && user) {
       if (guestLinks) guestLinks.style.display = "none";
       if (userLinks) userLinks.style.display = "flex";
-      if (userNameEl) userNameEl.textContent = user.full_name;
+      if (userNameEl) userNameEl.textContent = user.full_name || user.email;
       if (userAvatarEl) {
-        userAvatarEl.textContent = user.avatar_initial || (user.full_name ? user.full_name.charAt(0).toUpperCase() : "U");
+        if (user.avatar_url) {
+          userAvatarEl.innerHTML = `<img src="${user.avatar_url}" alt="${user.full_name || 'User'}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block;" onerror="this.parentElement.textContent='${user.avatar_initial || 'U'}'">`;
+        } else {
+          userAvatarEl.textContent = user.avatar_initial || (user.full_name ? user.full_name.charAt(0).toUpperCase() : "U");
+        }
       }
       if (dashLink) dashLink.style.display = "block";
       if (adminLink) {
@@ -167,9 +187,20 @@ class FixoraApp {
         this.renderTechnicians(mainContainer);
         break;
       case "dashboard":
+        if (!window.api.isLoggedIn()) {
+          this.showAuthModal("login");
+          return;
+        }
         this.renderDashboard(mainContainer);
         break;
       case "admin":
+        const adminUser = window.api.getUser();
+        if (!window.api.isLoggedIn() || adminUser?.role !== "admin") {
+          const isAr = window.i18n.currentLang === "ar";
+          alert(isAr ? "قسم الإدارة يتطلب تسجيل الدخول بحساب مسؤول (Admin)" : "Admin dashboard requires administrator privileges");
+          this.navigate("home");
+          return;
+        }
         this.renderAdmin(mainContainer);
         break;
       case "privacy":
@@ -1805,23 +1836,44 @@ class FixoraApp {
   // ==========================================
   // AUTH MODALS & GOOGLE SIGN-IN
   // ==========================================
-  async triggerGoogleSignIn() {
+  async triggerGoogleSignIn(btn) {
     const isAr = window.i18n.currentLang === "ar";
-    if (window.SupabaseBridge && window.SupabaseBridge.isReady()) {
-      try {
-        await window.SupabaseBridge.signInWithGoogle();
-        return;
-      } catch (err) {
-        console.warn("Supabase Google Sign-In note:", err);
-        alert(isAr 
-          ? "لتسجيل الدخول بحساب Google، يرجى تفعيل مزود Google Provider في لوحة تحكم Supabase للمشروع، أو تسجيل الدخول بالبريد الإلكتروني وكلمة المرور مباشرة." 
-          : "Google Sign-In requires configuring the Google OAuth provider in your Supabase project dashboard. Please sign in with email and password.");
-        return;
-      }
+    const originalHtml = btn ? btn.innerHTML : "";
+    if (btn) {
+      btn.disabled = true;
+      btn.style.opacity = "0.8";
+      btn.style.cursor = "wait";
+      btn.innerHTML = `
+        <div style="width: 18px; height: 18px; border: 2px solid #4285F4; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; vertical-align: middle; margin-inline-end: 8px;"></div>
+        <span>${isAr ? 'جاري الاتصال بـ Google...' : 'Connecting to Google...'}</span>
+      `;
     }
-    alert(isAr 
-      ? "جاري تهيئة خدمات المصادقة في Supabase. يرجى تسجيل الدخول بالبريد وكلمة المرور." 
-      : "Supabase authentication is initializing. Please sign in with email and password.");
+
+    try {
+      if (!window.SupabaseBridge || !window.SupabaseBridge.isReady()) {
+        throw new Error(isAr 
+          ? "خدمة المصادقة السحابية Supabase قيد التهيئة. يرجى المحاولة مجدداً." 
+          : "Supabase client is initializing. Please try again.");
+      }
+
+      await window.SupabaseBridge.signInWithGoogle();
+      // Supabase automatically performs page redirect
+    } catch (err) {
+      console.error("Supabase Google Sign-In error:", err);
+      if (btn) {
+        btn.disabled = false;
+        btn.style.opacity = "1";
+        btn.style.cursor = "pointer";
+        btn.innerHTML = originalHtml;
+      }
+      let msg = err.message || (isAr ? "تعذر إتمام تسجيل الدخول عبر Google" : "Google Sign-In failed");
+      if (msg.includes("provider is not enabled")) {
+        msg = isAr 
+          ? "يرجى تفعيل زر (Enable Google provider) داخل لوحة تحكم Supabase للمشروع في صفحة: Authentication -> Providers -> Google وحفظ التعديل." 
+          : "Please enable the Google provider toggle inside Supabase: Authentication -> Providers -> Google and save.";
+      }
+      alert((isAr ? "فشل تسجيل الدخول عبر Google: " : "Google Sign-In Error: ") + msg);
+    }
   }
 
   showDatasetsModal() {
@@ -2030,7 +2082,7 @@ class FixoraApp {
         </p>
 
         <!-- Official Google Sign-In Button -->
-        <button class="btn-google" id="googleSignInBtn" type="button" onclick="app.triggerGoogleSignIn()">
+        <button class="btn-google" id="googleSignInBtn" type="button" onclick="app.triggerGoogleSignIn(this)">
           <svg viewBox="0 0 24 24" width="20" height="20">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
             <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -2072,7 +2124,7 @@ class FixoraApp {
         </p>
 
         <!-- Official Google Sign-In Button -->
-        <button class="btn-google" id="googleSignUpBtn" type="button" onclick="app.triggerGoogleSignIn()">
+        <button class="btn-google" id="googleSignUpBtn" type="button" onclick="app.triggerGoogleSignIn(this)">
           <svg viewBox="0 0 24 24" width="20" height="20">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
             <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>

@@ -11,30 +11,36 @@ create table if not exists public.profiles (
   role text default 'user',
   phone text,
   avatar_initial text,
+  avatar_url text,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
+
+alter table public.profiles add column if not exists avatar_url text;
 
 alter table public.profiles enable row level security;
 create policy "Allow public read access to profiles" on public.profiles for select using (true);
 create policy "Allow authenticated users to insert own profile" on public.profiles for insert with check (auth.uid() = id);
 create policy "Allow users to update own profile" on public.profiles for update using (auth.uid() = id);
 
--- Trigger for auto-creating profile when user signs up via Supabase Auth (Email / Google)
+-- Trigger for auto-creating profile when user signs up via Supabase Auth (Email / Google OAuth)
 create or replace function public.handle_new_user()
 returns trigger as $$
 begin
-  insert into public.profiles (id, email, full_name, role, avatar_initial)
+  insert into public.profiles (id, email, full_name, role, avatar_initial, avatar_url)
   values (
     new.id,
     new.email,
-    coalesce(new.raw_user_meta_data->>'full_name', split_part(new.email, '@', 1)),
+    coalesce(new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'name', split_part(new.email, '@', 1)),
     coalesce(new.raw_user_meta_data->>'role', 'user'),
-    upper(substring(coalesce(new.raw_user_meta_data->>'full_name', new.email) from 1 for 1))
+    upper(substring(coalesce(new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'name', new.email) from 1 for 1)),
+    coalesce(new.raw_user_meta_data->>'avatar_url', new.raw_user_meta_data->>'picture', null)
   )
   on conflict (id) do update set
     email = excluded.email,
-    full_name = coalesce(excluded.full_name, profiles.full_name);
+    full_name = coalesce(excluded.full_name, profiles.full_name),
+    avatar_url = coalesce(excluded.avatar_url, profiles.avatar_url),
+    updated_at = timezone('utc'::text, now());
   return new;
 end;
 $$ language plpgsql security definer;

@@ -16,6 +16,8 @@ class ApiClient {
     this.currentUser = user;
     localStorage.setItem("techrepair_token", token);
     localStorage.setItem("techrepair_user", JSON.stringify(user));
+    localStorage.setItem("fixora_token", token);
+    localStorage.setItem("fixora_user", JSON.stringify(user));
   }
 
   clearSession() {
@@ -23,6 +25,8 @@ class ApiClient {
     this.currentUser = null;
     localStorage.removeItem("techrepair_token");
     localStorage.removeItem("techrepair_user");
+    localStorage.removeItem("fixora_token");
+    localStorage.removeItem("fixora_user");
   }
 
   isLoggedIn() {
