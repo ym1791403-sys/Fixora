@@ -55,8 +55,8 @@ class FixoraApp {
     const logoutBtn = document.getElementById("navLogoutBtn");
     if (logoutBtn) {
       logoutBtn.addEventListener("click", async () => {
-        if (window.FirebaseBridge && typeof window.FirebaseBridge.signOut === "function") {
-          try { await window.FirebaseBridge.signOut(); } catch(e) {}
+        if (window.SupabaseBridge && typeof window.SupabaseBridge.signOut === "function") {
+          try { await window.SupabaseBridge.signOut(); } catch(e) {}
         }
         window.api.clearSession();
         this.updateNavAuth();
@@ -1807,21 +1807,12 @@ class FixoraApp {
   // ==========================================
   async triggerGoogleSignIn() {
     const isAr = window.i18n.currentLang === "ar";
-    if (window.FirebaseBridge && window.FirebaseBridge.isReady()) {
+    if (window.SupabaseBridge && window.SupabaseBridge.isReady()) {
       try {
-        const fbUser = await window.FirebaseBridge.signInWithGoogle();
-        if (fbUser) {
-          window.api.setSession("fb_token_" + Date.now(), fbUser);
-          this.closeModal();
-          this.updateNavAuth();
-          this.navigate("dashboard");
-          return;
-        }
+        await window.SupabaseBridge.signInWithGoogle();
+        return;
       } catch (err) {
-        console.warn("Firebase Google Sign-In error:", err);
-        if (err.code === "auth/popup-closed-by-user" || err.code === "auth/cancelled-popup-request") {
-          return;
-        }
+        console.warn("Supabase Google Sign-In error:", err);
       }
     }
     // Fallback to Google Account Chooser
@@ -2307,19 +2298,19 @@ class FixoraApp {
 
         try {
           let userProfile = null;
-          // Try Firebase Auth
-          if (window.FirebaseBridge && window.FirebaseBridge.isReady()) {
+          // Try Supabase Auth
+          if (window.SupabaseBridge && window.SupabaseBridge.isReady()) {
             try {
-              userProfile = await window.FirebaseBridge.login(email, pwd);
-            } catch (fbErr) {
-              console.warn("Firebase sign-in message:", fbErr);
-              let msg = fbErr.message;
-              if (fbErr.code === "auth/user-not-found" || fbErr.code === "auth/wrong-password" || fbErr.code === "auth/invalid-credential") {
+              userProfile = await window.SupabaseBridge.login(email, pwd);
+            } catch (sbErr) {
+              console.warn("Supabase sign-in message:", sbErr);
+              let msg = sbErr.message || "";
+              if (msg.includes("Invalid login credentials") || sbErr.code === "invalid_credentials") {
                 msg = isAr ? "البريد الإلكتروني أو كلمة المرور غير صحيحة" : "Invalid email or password";
-              } else if (fbErr.code === "auth/invalid-email") {
-                msg = isAr ? "صيغة البريد الإلكتروني غير صحيحة" : "Invalid email address";
+              } else if (msg.includes("Email not confirmed") || sbErr.code === "email_not_confirmed") {
+                msg = isAr ? "يرجى تأكيد حسابك عبر البريد الإلكتروني أولاً" : "Please confirm your email address first";
               }
-              alert((isAr ? "فشل تسجيل الدخول: " : "Login failed: ") + msg);
+              alert((isAr ? "فشل تسجيل الدخول عبر Supabase: " : "Supabase Login failed: ") + msg);
               submitBtn.disabled = false;
               submitBtn.innerHTML = originalText;
               return;
@@ -2365,21 +2356,24 @@ class FixoraApp {
 
         try {
           let userProfile = null;
-          // Try Firebase Auth
-          if (window.FirebaseBridge && window.FirebaseBridge.isReady()) {
+          // Try Supabase Auth
+          if (window.SupabaseBridge && window.SupabaseBridge.isReady()) {
             try {
-              userProfile = await window.FirebaseBridge.register(name, email, pwd, role);
-            } catch (fbErr) {
-              console.warn("Firebase register message:", fbErr);
-              let msg = fbErr.message;
-              if (fbErr.code === "auth/email-already-in-use") {
-                msg = isAr ? "هذا البريد مسجل بالفعل، يرجى تسجيل الدخول" : "Email already registered. Please sign in";
-              } else if (fbErr.code === "auth/weak-password") {
-                msg = isAr ? "كلمة المرور ضعيفة، يجب ألا تقل عن 6 أحرف" : "Password should be at least 6 characters";
-              } else if (fbErr.code === "auth/invalid-email") {
-                msg = isAr ? "صيغة البريد الإلكتروني غير صحيحة" : "Invalid email address";
+              userProfile = await window.SupabaseBridge.register(name, email, pwd, role);
+              if (userProfile && !userProfile.session) {
+                alert(isAr 
+                  ? "تم إنشاء الحساب في Supabase بنجاح! إذا كانت خاصية تأكيد البريد مفعلة، يرجى مراجعة صندوق الوارد."
+                  : "Account created successfully in Supabase! Please check your inbox if email confirmation is required.");
               }
-              alert((isAr ? "فشل إنشاء الحساب: " : "Registration failed: ") + msg);
+            } catch (sbErr) {
+              console.warn("Supabase register message:", sbErr);
+              let msg = sbErr.message || "";
+              if (msg.includes("already registered") || msg.includes("already in use") || sbErr.code === "user_already_exists") {
+                msg = isAr ? "هذا البريد مسجل بالفعل في Supabase، يرجى تسجيل الدخول" : "Email already registered in Supabase. Please sign in";
+              } else if (msg.includes("at least 6 characters") || msg.includes("weak")) {
+                msg = isAr ? "كلمة المرور ضعيفة، يجب ألا تقل عن 6 أحرف" : "Password should be at least 6 characters";
+              }
+              alert((isAr ? "فشل إنشاء الحساب عبر Supabase: " : "Supabase Registration failed: ") + msg);
               submitBtn.disabled = false;
               submitBtn.innerHTML = originalText;
               return;
