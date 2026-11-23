@@ -51,17 +51,8 @@ app.include_router(guides_router)
 app.include_router(prediction_router)
 app.include_router(diagnosis_router)
 
-# Active Users Database (Clean Enterprise System)
-USERS_DB = [
-    {
-        "id": 1,
-        "email": "platform@fixora.com",
-        "full_name": "Fixora Systems",
-        "role": "admin",
-        "avatar_initial": "F",
-        "is_active": True
-    }
-]
+# Active Users Database (In-Memory Session Store)
+USERS_DB = []
 
 def get_content_type(path: str) -> str:
     ext = os.path.splitext(path)[1].lower()
@@ -92,16 +83,20 @@ async def login(request: Request):
     except Exception:
         body = {}
     email = body.get("email", "").strip().lower()
-    user = next((u for u in USERS_DB if u["email"].lower() == email), None)
+    if not email:
+        return JSONResponse(status_code=400, content={"detail": "Email is required"})
+    user = next((u for u in USERS_DB if u.get("email", "").lower() == email), None)
     if not user:
+        name = email.split("@")[0].replace(".", " ").title()
         user = {
             "id": len(USERS_DB) + 1,
-            "email": email or "user@fixora.com",
-            "full_name": email.split("@")[0].capitalize() if email else "Fixora User",
+            "email": email,
+            "full_name": name,
             "role": "admin" if "admin" in email else "user",
-            "avatar_initial": (email[0] if email else "U").upper(),
+            "avatar_initial": email[0].upper(),
             "is_active": True
         }
+        USERS_DB.append(user)
     return {
         "access_token": f"fixora_token_{user['id']}_jwt_valid",
         "token_type": "bearer",
@@ -115,15 +110,21 @@ async def register(request: Request):
         body = await request.json()
     except Exception:
         body = {}
+    email = body.get("email", "").strip().lower()
+    if not email:
+        return JSONResponse(status_code=400, content={"detail": "Email is required"})
+    full_name = body.get("full_name", "").strip() or email.split("@")[0].title()
+    role = body.get("role", "user")
     user = {
         "id": len(USERS_DB) + 1,
-        "email": body.get("email", "newuser@fixora.com"),
-        "full_name": body.get("full_name", "New User"),
-        "role": body.get("role", "user"),
-        "avatar_initial": (body.get("full_name", "U")[0]).upper(),
+        "email": email,
+        "full_name": full_name,
+        "role": role,
+        "avatar_initial": full_name[0].upper() if full_name else "U",
         "phone": body.get("phone", None),
         "is_active": True
     }
+    USERS_DB.append(user)
     return {
         "access_token": f"fixora_token_{user['id']}_jwt_valid",
         "token_type": "bearer",
@@ -137,30 +138,37 @@ async def google_auth(request: Request):
         body = await request.json()
     except Exception:
         body = {}
-    email = body.get("email", "hosopa.fixora@gmail.com")
-    name = body.get("name", "Hosopa Tech")
-    user = {
-        "id": 99,
-        "email": email,
-        "full_name": name,
-        "role": "user",
-        "provider": "google",
-        "avatar_initial": name[0].upper() if name else "G",
-        "is_active": True
-    }
+    email = body.get("email", "").strip().lower()
+    if not email:
+        return JSONResponse(status_code=400, content={"detail": "Email is required"})
+    name = body.get("name", "").strip() or email.split("@")[0].title()
+    user = next((u for u in USERS_DB if u.get("email", "").lower() == email), None)
+    if not user:
+        user = {
+            "id": len(USERS_DB) + 1,
+            "email": email,
+            "full_name": name,
+            "role": "user",
+            "provider": "google",
+            "avatar_initial": name[0].upper() if name else "G",
+            "is_active": True
+        }
+        USERS_DB.append(user)
     return {
         "status": "authenticated",
         "provider": "google",
         "message": "Google Account linked successfully",
-        "access_token": f"google_oauth_{email}_valid",
-        "token": f"google_oauth_{email}_valid",
+        "access_token": f"google_oauth_{user['id']}_valid",
+        "token": f"google_oauth_{user['id']}_valid",
         "user": user
     }
 
 @app.api_route("/api/auth/me", methods=["GET"])
 @app.api_route("/api/v1/auth/me", methods=["GET"])
 def get_me():
-    return USERS_DB[0]
+    if USERS_DB:
+        return USERS_DB[0]
+    return {"id": 0, "full_name": "Guest", "role": "guest", "is_active": False}
 
 # Fallback for API routes (Returns JSON instead of HTML so client fetch does not crash)
 @app.api_route("/api/{full_path:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE"])

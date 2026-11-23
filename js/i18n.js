@@ -182,8 +182,7 @@ const TRANSLATIONS = {
     auth_login_btn: "Sign In",
     auth_register_btn: "Create Account",
     auth_switch_to_reg: "Don't have an account? Sign up with Fixora",
-    auth_switch_to_login: "Already have an account? Sign in",
-    auth_quick_demo: "Quick Demo Logins:"
+    auth_switch_to_login: "Already have an account? Sign in"
   },
 
   ar: {
@@ -363,8 +362,7 @@ const TRANSLATIONS = {
     auth_login_btn: "دخول Fixora",
     auth_register_btn: "إنشاء حساب Fixora",
     auth_switch_to_reg: "ليس لديك حساب؟ انضم إلى Fixora الآن",
-    auth_switch_to_login: "لديك حساب بالفعل؟ سجل دخولك",
-    auth_quick_demo: "حسابات تجريبية سريعة بنقرة واحدة:"
+    auth_switch_to_login: "لديك حساب بالفعل؟ سجل دخولك"
   }
 };
 

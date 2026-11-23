@@ -1812,180 +1812,16 @@ class FixoraApp {
         await window.SupabaseBridge.signInWithGoogle();
         return;
       } catch (err) {
-        console.warn("Supabase Google Sign-In error:", err);
+        console.warn("Supabase Google Sign-In note:", err);
+        alert(isAr 
+          ? "لتسجيل الدخول بحساب Google، يرجى تفعيل مزود Google Provider في لوحة تحكم Supabase للمشروع، أو تسجيل الدخول بالبريد الإلكتروني وكلمة المرور مباشرة." 
+          : "Google Sign-In requires configuring the Google OAuth provider in your Supabase project dashboard. Please sign in with email and password.");
+        return;
       }
     }
-    // Fallback to Google Account Chooser
-    this.showGoogleChooser();
-  }
-
-  showGoogleChooser() {
-    const isAr = window.i18n.currentLang === "ar";
-    const googleChooserHtml = `
-      <div>
-        <div style="text-align: center; margin-bottom: 22px;">
-          <svg viewBox="0 0 24 24" width="38" height="38" style="margin-bottom: 10px;">
-            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
-            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
-          </svg>
-          <h3 style="font-size: 20px; font-weight: 700; color: #FFFFFF; margin-bottom: 6px;">
-            ${isAr ? 'اختيار حساب Google للمتابعة إلى Fixora' : 'Choose an account to continue to Fixora'}
-          </h3>
-          <p style="font-size: 13px; color: #94A3B8;">
-            ${isAr ? 'ستقوم Google بمشاركة اسمك وبريدك الإلكتروني مع خوادم Fixora بأمان.' : 'To continue, Google will securely share your profile and email with Fixora.'}
-          </p>
-        </div>
-
-        <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px;">
-          <div class="google-account-item" onclick="app.selectGoogleAccount('Hosopa Tech', 'hosopa.fixora@gmail.com', 'H')">
-            <div class="google-avatar">H</div>
-            <div style="flex: 1; text-align: ${isAr ? 'right' : 'left'};">
-              <strong style="display: block; font-size: 14px; color: #FFFFFF;">Hosopa Tech</strong>
-              <span style="font-size: 12px; color: #94A3B8;">hosopa.fixora@gmail.com</span>
-            </div>
-            <i class="fas fa-check-circle" style="color: var(--color-success); font-size: 16px;"></i>
-          </div>
-
-          <div class="google-account-item" onclick="app.selectGoogleAccount('Ahmed Mansour', 'ahmed.mansour.dev@gmail.com', 'A')">
-            <div class="google-avatar" style="background: #10B981;">A</div>
-            <div style="flex: 1; text-align: ${isAr ? 'right' : 'left'};">
-              <strong style="display: block; font-size: 14px; color: #FFFFFF;">Ahmed Mansour</strong>
-              <span style="font-size: 12px; color: #94A3B8;">ahmed.mansour.dev@gmail.com</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Custom Account Entry Box -->
-        <div style="background: #0A0D14; border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 20px;">
-          <label style="display: block; font-size: 12px; color: #94A3B8; margin-bottom: 6px; font-weight: 600;">
-            ${isAr ? 'أو أدخل أي بريد Gmail مخصص:' : 'Or enter custom Gmail:'}
-          </label>
-          <div style="display: flex; gap: 8px;">
-            <input type="email" id="customGoogleEmail" class="form-control" style="font-size: 13px; padding: 8px 12px;" placeholder="user@gmail.com">
-            <button class="btn btn-primary btn-sm" onclick="app.submitCustomGoogleAccount()" style="white-space: nowrap;">
-              ${isAr ? 'دخول' : 'Sign In'}
-            </button>
-          </div>
-        </div>
-
-        <div style="text-align: center;">
-          <button class="btn btn-outline btn-sm" onclick="app.closeModal()">
-            ${isAr ? 'إلغاء' : 'Cancel'}
-          </button>
-        </div>
-      </div>
-    `;
-    this.openModal(googleChooserHtml);
-  }
-
-  submitCustomGoogleAccount() {
-    const input = document.getElementById("customGoogleEmail");
-    const email = input ? input.value.trim() : "";
-    if (!email || !email.includes("@")) {
-      const isAr = window.i18n.currentLang === "ar";
-      alert(isAr ? "يرجى إدخال بريد إلكتروني صحيح" : "Please enter a valid Gmail address");
-      return;
-    }
-    const name = email.split("@")[0].replace(/[._]/g, ' ');
-    const formattedName = name.charAt(0).toUpperCase() + name.slice(1);
-    this.selectGoogleAccount(formattedName, email, formattedName.charAt(0).toUpperCase());
-  }
-
-  async selectGoogleAccount(name, email, initial) {
-    const isAr = window.i18n.currentLang === "ar";
-    const modalBody = document.getElementById("modalBody");
-    if (modalBody) {
-      modalBody.innerHTML = `
-        <div style="text-align: center; padding: 36px 16px;">
-          <div style="width: 44px; height: 44px; border: 3px solid rgba(255,255,255,0.15); border-top-color: #38BDF8; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 18px;"></div>
-          <h4 style="color: #FFFFFF; font-size: 17px; margin-bottom: 8px;">${isAr ? 'الاتصال بخوادم Google...' : 'Connecting to Google Authentication...'}</h4>
-          <p style="font-size: 13px; color: #94A3B8;">${isAr ? 'جاري التحقق من حساب ' + email : 'Verifying ' + email}</p>
-        </div>
-      `;
-    }
-
-    try {
-      await window.api.request("/auth/google", {
-        method: "POST",
-        body: JSON.stringify({ email: email, name: name })
-      });
-    } catch(err) {
-      // Offline fallback
-    }
-
-    const googleUser = {
-      id: Date.now(),
-      full_name: name,
-      email: email,
-      role: "user",
-      provider: "google",
-      avatar_initial: initial || name.charAt(0).toUpperCase(),
-      is_active: true
-    };
-
-    window.api.setSession("google_oauth_" + Date.now(), googleUser);
-    localStorage.setItem("fixora_user", JSON.stringify(googleUser));
-    localStorage.setItem("fixora_token", "google_oauth_" + Date.now());
-
-    setTimeout(() => {
-      this.closeModal();
-      this.updateNavAuth();
-      this.navigate("dashboard");
-    }, 450);
-  }
-
-  async quickLogin(role) {
-    const creds = {
-      admin: { email: "admin@fixora.com", pwd: "Admin123456!", name: "Platform Administrator", initial: "A" },
-      technician: { email: "cairo.fix@fixora.com", pwd: "Tech123456!", name: "Eng. Tarek Mahmoud (Certified Lab)", initial: "T" },
-      user: { email: "user@fixora.com", pwd: "User123456!", name: "Ahmed Mansour", initial: "A" }
-    };
-    const c = creds[role] || creds.user;
-    const isAr = window.i18n.currentLang === "ar";
-    
-    const modalBody = document.getElementById("modalBody");
-    if (modalBody) {
-      modalBody.innerHTML = `
-        <div style="text-align: center; padding: 36px 16px;">
-          <div style="width: 44px; height: 44px; border: 3px solid rgba(255,255,255,0.15); border-top-color: #38BDF8; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 18px;"></div>
-          <h4 style="color: #FFFFFF; font-size: 17px; margin-bottom: 8px;">${isAr ? 'جاري تسجيل الدخول...' : 'Logging in...'}</h4>
-          <p style="font-size: 13px; color: #94A3B8;">${c.name} (${c.email})</p>
-        </div>
-      `;
-    }
-
-    try {
-      if (window.api && typeof window.api.login === "function") {
-        await window.api.login(c.email, c.pwd);
-      } else {
-        throw new Error("Client API not initialized");
-      }
-    } catch(err) {
-      const mockUser = {
-        id: Date.now(),
-        email: c.email,
-        full_name: c.name,
-        role: role === 'technician' ? 'technician' : (role === 'admin' ? 'admin' : 'user'),
-        avatar_initial: c.initial,
-        is_active: true
-      };
-      if (window.api && typeof window.api.setSession === "function") {
-        window.api.setSession("fixora_token_" + Date.now(), mockUser);
-      } else {
-        localStorage.setItem("techrepair_token", "fixora_token_" + Date.now());
-        localStorage.setItem("techrepair_user", JSON.stringify(mockUser));
-      }
-      localStorage.setItem("fixora_user", JSON.stringify(mockUser));
-      localStorage.setItem("fixora_token", "fixora_token_" + Date.now());
-    }
-
-    setTimeout(() => {
-      this.closeModal();
-      this.updateNavAuth();
-      this.navigate("dashboard");
-    }, 350);
+    alert(isAr 
+      ? "جاري تهيئة خدمات المصادقة في Supabase. يرجى تسجيل الدخول بالبريد وكلمة المرور." 
+      : "Supabase authentication is initializing. Please sign in with email and password.");
   }
 
   showDatasetsModal() {
@@ -2405,15 +2241,6 @@ class FixoraApp {
           submitBtn.innerHTML = originalText;
         }
       });
-    }
-  }
-
-  quickFillLogin(email, password) {
-    const emailInput = document.getElementById("loginEmail");
-    const pwdInput = document.getElementById("loginPassword");
-    if (emailInput && pwdInput) {
-      emailInput.value = email;
-      pwdInput.value = password;
     }
   }
 

@@ -72,41 +72,11 @@ class ApiClient {
   // ==========================================
   initMockStorage() {
     if (!localStorage.getItem("techrepair_users")) {
-      const initialUsers = [
-        {
-          id: 1,
-          email: "admin@fixora.com",
-          full_name: "Platform Administrator",
-          role: "admin",
-          phone: "+201000000000",
-          is_active: true
-        },
-        {
-          id: 2,
-          email: "user@fixora.com",
-          full_name: "Ahmed Mansour",
-          role: "user",
-          phone: "+201012345678",
-          is_active: true
-        }
-      ];
-      localStorage.setItem("techrepair_users", JSON.stringify(initialUsers));
+      localStorage.setItem("techrepair_users", JSON.stringify([]));
     }
 
     if (!localStorage.getItem("techrepair_devices")) {
-      const initialDevices = [
-        {
-          id: 1,
-          user_id: 2,
-          category: "Laptop",
-          brand: "Dell",
-          model: "XPS 15 9500",
-          serial: "DELL-9500-2022",
-          year: 2022,
-          os_v: "Windows 11 Pro"
-        }
-      ];
-      localStorage.setItem("techrepair_devices", JSON.stringify(initialDevices));
+      localStorage.setItem("techrepair_devices", JSON.stringify([]));
     }
 
     if (!localStorage.getItem("techrepair_reports")) {
@@ -131,7 +101,7 @@ class ApiClient {
         id: 1,
         user_id: 3,
         name: "Eng. Mahmoud Hassan",
-        email: "cairo.fix@fixora.com",
+        phone: "+20 100 248 1190",
         business_name: "Apex Laptop & Board Diagnostics",
         city: "Cairo",
         specializations: "Laptops, Motherboard Repair, Micro-soldering, MacBooks",
@@ -144,7 +114,7 @@ class ApiClient {
         id: 2,
         user_id: 4,
         name: "Sarah Al-Ghamdi",
-        email: "alex.tech@fixora.com",
+        phone: "+20 112 559 3841",
         business_name: "SmartFix Mobile & Tablet Lab",
         city: "Alexandria",
         specializations: "Smartphones, Tablets, Screen Refurbishing, Water Damage Recovery",
@@ -157,7 +127,7 @@ class ApiClient {
         id: 3,
         user_id: 5,
         name: "Khaled El-Sayed",
-        email: "giza.pc@fixora.com",
+        phone: "+20 120 771 9023",
         business_name: "ProBuild Workstations & Data Recovery",
         city: "Giza",
         specializations: "Desktop Computers, Data Recovery, NVMe SSDs, Custom PCs",
@@ -238,13 +208,13 @@ class ApiClient {
     // Auth
     if (endpoint === "/auth/login") {
       const users = JSON.parse(localStorage.getItem("techrepair_users") || "[]");
-      const user = users.find(u => u.email === body.email) || {
+      const user = users.find(u => u.email && u.email.toLowerCase() === (body.email || "").toLowerCase()) || {
         id: Date.now(),
-        email: body.email,
-        full_name: body.email.split("@")[0],
-        role: body.email.includes("admin") ? "admin" : "user"
+        email: body.email || "",
+        full_name: (body.email || "User").split("@")[0],
+        role: "user"
       };
-      const token = "mock_token_" + Date.now();
+      const token = "session_token_" + Date.now();
       this.setSession(token, user);
       return { access_token: token, token_type: "bearer", user };
     }
@@ -253,14 +223,14 @@ class ApiClient {
       const user = {
         id: Date.now(),
         email: body.email,
-        full_name: body.full_name,
+        full_name: body.full_name || (body.email ? body.email.split("@")[0] : "User"),
         role: body.role || "user",
         phone: body.phone || null
       };
       const users = JSON.parse(localStorage.getItem("techrepair_users") || "[]");
       users.push(user);
       localStorage.setItem("techrepair_users", JSON.stringify(users));
-      const token = "mock_token_" + Date.now();
+      const token = "session_token_" + Date.now();
       this.setSession(token, user);
       return { access_token: token, token_type: "bearer", user };
     }
