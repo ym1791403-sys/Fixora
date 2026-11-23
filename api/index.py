@@ -15,26 +15,34 @@ from api.routers.guides import router as guides_router
 from api.routers.prediction import router as prediction_router
 from api.routers.diagnosis import router as diagnosis_router
 
+from urllib.parse import parse_qs
+
 app = FastAPI(title="Fixora AI Platform", version="2.0.0")
 
-@app.middleware("http")
-async def vercel_path_rewrite_middleware(request: Request, call_next):
-    # If Vercel rewrote the incoming request to /api/index.py, restore original subpath
-    path = request.scope.get("path", "")
-    if path == "/api/index.py" or path == "/api" or path.endswith("/index.py"):
-        # 1. Check query param __path
-        sub_path = request.query_params.get("__path")
-        if sub_path:
-            clean_sub = sub_path.lstrip("/")
-            request.scope["path"] = f"/api/{clean_sub}"
-        else:
-            # 2. Check Vercel headers
-            matched = request.headers.get("x-matched-path") or request.headers.get("x-invoke-path")
-            if matched and matched != "/api/index.py":
-                request.scope["path"] = matched
+class VercelPathRewriter:
+    """Pure ASGI middleware that modifies scope['path'] before FastAPI route matching."""
+    def __init__(self, app):
+        self.app = app
 
-    response = await call_next(request)
-    return response
+    async def __call__(self, scope, receive, send):
+        if scope.get("type") == "http":
+            path = scope.get("path", "")
+            if "index.py" in path or path == "/api":
+                qs = scope.get("query_string", b"").decode("latin1", errors="ignore")
+                params = parse_qs(qs)
+                if "__path" in params:
+                    sub = params["__path"][0].lstrip("/")
+                    scope["path"] = f"/api/{sub}"
+                else:
+                    for k, v in scope.get("headers", []):
+                        if k.lower() == b"x-matched-path":
+                            matched = v.decode("latin1", errors="ignore")
+                            if matched and not matched.endswith("index.py"):
+                                scope["path"] = matched
+                            break
+        await self.app(scope, receive, send)
+
+app.add_middleware(VercelPathRewriter)
 
 # Mount genuine dataset status, empirical analysis, verified guides, prediction, and diagnosis routers
 app.include_router(datasets_router)
