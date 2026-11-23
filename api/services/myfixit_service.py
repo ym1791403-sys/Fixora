@@ -36,57 +36,88 @@ class MyFixitGuideRetrievalService:
         params = []
 
         if cleaned_query:
-            # Prepare FTS query with prefix wildcard support
-            # Escape double quotes to prevent syntax error
-            safe_query = cleaned_query.replace('"', '""')
-            tokens = [f'"{t}"*' for t in safe_query.split() if t]
-            fts_match_expr = " AND ".join(tokens) if tokens else f'"{safe_query}"*'
+            try:
+                # Prepare FTS query with prefix wildcard support
+                # Escape double quotes to prevent syntax error
+                safe_query = cleaned_query.replace('"', '""')
+                tokens = [f'"{t}"*' for t in safe_query.split() if t]
+                fts_match_expr = " AND ".join(tokens) if tokens else f'"{safe_query}"*'
 
-            sql = """
-            SELECT g.guide_id, g.title, g.device_category, g.device_model,
-                   g.component, g.repair_type, g.difficulty, g.time_required,
-                   g.summary, g.url, g.step_count, bm25(repair_guides_fts) AS rank
-            FROM repair_guides_fts f
-            JOIN repair_guides g ON g.guide_id = f.guide_id
-            WHERE repair_guides_fts MATCH ?
-            """
-            params.append(fts_match_expr)
+                sql = """
+                SELECT g.guide_id, g.title, g.device_category, g.device_model,
+                       g.component, g.repair_type, g.difficulty, g.time_required,
+                       g.summary, g.url, g.step_count, bm25(repair_guides_fts) AS rank
+                FROM repair_guides_fts f
+                JOIN repair_guides g ON g.guide_id = f.guide_id
+                WHERE repair_guides_fts MATCH ?
+                """
+                params.append(fts_match_expr)
 
-            if category:
-                sql += " AND g.device_category = ?"
-                params.append(category)
-            if component:
-                sql += " AND g.component LIKE ?"
-                params.append(f"%{component}%")
-            if difficulty:
-                sql += " AND g.difficulty = ?"
-                params.append(difficulty)
+                if category:
+                    sql += " AND g.device_category = ?"
+                    params.append(category)
+                if component:
+                    sql += " AND g.component LIKE ?"
+                    params.append(f"%{component}%")
+                if difficulty:
+                    sql += " AND g.difficulty = ?"
+                    params.append(difficulty)
 
-            sql += " ORDER BY rank LIMIT ? OFFSET ?"
-            params.extend([limit, offset])
+                sql += " ORDER BY rank LIMIT ? OFFSET ?"
+                params.extend([limit, offset])
 
-            cursor.execute(sql, params)
-            rows = cursor.fetchall()
+                cursor.execute(sql, params)
+                rows = cursor.fetchall()
 
-            # Count total
-            count_sql = """
-            SELECT COUNT(*) FROM repair_guides_fts f
-            JOIN repair_guides g ON g.guide_id = f.guide_id
-            WHERE repair_guides_fts MATCH ?
-            """
-            count_params = [fts_match_expr]
-            if category:
-                count_sql += " AND g.device_category = ?"
-                count_params.append(category)
-            if component:
-                count_sql += " AND g.component LIKE ?"
-                count_params.append(f"%{component}%")
-            if difficulty:
-                count_sql += " AND g.difficulty = ?"
-                count_params.append(difficulty)
+                # Count total
+                count_sql = """
+                SELECT COUNT(*) FROM repair_guides_fts f
+                JOIN repair_guides g ON g.guide_id = f.guide_id
+                WHERE repair_guides_fts MATCH ?
+                """
+                count_params = [fts_match_expr]
+                if category:
+                    count_sql += " AND g.device_category = ?"
+                    count_params.append(category)
+                if component:
+                    count_sql += " AND g.component LIKE ?"
+                    count_params.append(f"%{component}%")
+                if difficulty:
+                    count_sql += " AND g.difficulty = ?"
+                    count_params.append(difficulty)
 
-            cursor.execute(count_sql, count_params)
-            total_count = cursor.fetchone()[0]
+                cursor.execute(count_sql, count_params)
+                total_count = cursor.fetchone()[0]
+            except Exception:
+                # Safe fallback to standard SQL LIKE query
+                like_term = f"%{cleaned_query}%"
+                where_clauses = ["(g.title LIKE ? OR g.device_model LIKE ? OR g.component LIKE ?)"]
+                fb_params = [like_term, like_term, like_term]
+                if category:
+                    where_clauses.append("g.device_category = ?")
+                    fb_params.append(category)
+                if component:
+                    where_clauses.append("g.component LIKE ?")
+                    fb_params.append(f"%{component}%")
+                if difficulty:
+                    where_clauses.append("g.difficulty = ?")
+                    fb_params.append(difficulty)
+
+                where_str = " WHERE " + " AND ".join(where_clauses)
+                count_sql = f"SELECT COUNT(*) FROM repair_guides g {where_str}"
+                cursor.execute(count_sql, fb_params)
+                total_count = cursor.fetchone()[0]
+
+                sql = f"""
+                SELECT g.guide_id, g.title, g.device_category, g.device_model,
+                       g.component, g.repair_type, g.difficulty, g.time_required,
+                       g.summary, g.url, g.step_count
+                FROM repair_guides g {where_str}
+                ORDER BY g.guide_id ASC
+                LIMIT ? OFFSET ?
+                """
+                cursor.execute(sql, fb_params + [limit, offset])
+                rows = cursor.fetchall()
 
         else:
             # Filter-only query

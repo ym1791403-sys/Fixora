@@ -10,9 +10,16 @@ Never claims the model diagnoses smartphones, laptops, consoles, or other catego
 import os
 import sys
 import json
-import joblib
-import numpy as np
 from typing import Dict, Any, Optional
+
+try:
+    import joblib
+    import numpy as np
+    HAS_ML_DEPS = True
+except ImportError:
+    joblib = None
+    np = None
+    HAS_ML_DEPS = False
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 if PROJECT_ROOT not in sys.path:
@@ -28,6 +35,10 @@ class BackblazeFailurePredictionService:
         self._load_model()
 
     def _load_model(self):
+        if not HAS_ML_DEPS:
+            self.model_bundle = None
+            return
+
         if os.path.exists(MODEL_ARTIFACT):
             try:
                 self.model_bundle = joblib.load(MODEL_ARTIFACT)

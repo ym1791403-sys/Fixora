@@ -239,22 +239,29 @@ class UnifiedDiagnosisService:
             "matched_guide_id": matched_guide.get("guide_id") if matched_guide else None,
             "backblaze_prediction": backblaze_result
         }
-        cursor.execute("""
-        INSERT INTO diagnosis_reports (
-            report_id, device_category, brand, model, problem_category, description, evidence_json, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            report_id,
-            normalized_cat,
-            brand or "Standard",
-            model or "Standard",
-            prob_cat or "Hardware",
-            desc or "",
-            json.dumps(evidence_payload),
-            datetime.now().isoformat() + "Z"
-        ))
-        conn.commit()
-        conn.close()
+        try:
+            cursor.execute("""
+            INSERT INTO diagnosis_reports (
+                report_id, device_category, brand, model, problem_category, description, evidence_json, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                report_id,
+                normalized_cat,
+                brand or "Standard",
+                model or "Standard",
+                prob_cat or "Hardware",
+                desc or "",
+                json.dumps(evidence_payload),
+                datetime.now().isoformat() + "Z"
+            ))
+            conn.commit()
+            conn.close()
+        except Exception as log_err:
+            print(f"Audit log warning: {log_err}")
+            try:
+                conn.close()
+            except Exception:
+                pass
 
         return {
             "report_id": report_id,
