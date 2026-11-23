@@ -369,7 +369,7 @@ h1, h2, h3, h4, h5, h6 {
   align-items: center;
 }
 
-/* Rotating Seal from ByteFix */
+/* Rotating Seal from ByteFix - Strictly LTR in all languages so circle text never collapses */
 .experience-badge {
   position: relative;
   width: 145px;
@@ -379,6 +379,8 @@ h1, h2, h3, h4, h5, h6 {
   align-items: center;
   justify-content: center;
   border: 1px dashed rgba(255, 255, 255, 0.22);
+  direction: ltr !important;
+  unicode-bidi: isolate !important;
 }
 
 .badge-svg {
@@ -386,6 +388,9 @@ h1, h2, h3, h4, h5, h6 {
   width: 100%;
   height: 100%;
   animation: rotateBadge 20s linear infinite;
+  transform-origin: center center;
+  direction: ltr !important;
+  unicode-bidi: isolate !important;
 }
 
 @keyframes rotateBadge {
@@ -404,6 +409,8 @@ h1, h2, h3, h4, h5, h6 {
   letter-spacing: 2px;
   fill: #94A3B8;
   text-transform: uppercase;
+  direction: ltr !important;
+  unicode-bidi: normal !important;
 }
 
 .badge-center-icon {

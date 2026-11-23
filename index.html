@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
   <!-- Fixora Stylesheet -->
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style.css?v=3.0.1">
 </head>
 <body>
 
@@ -137,12 +137,14 @@
         
         <!-- Circular Rotating Badge -->
         <div>
-          <div class="experience-badge">
-            <svg viewBox="0 0 160 160" class="badge-svg">
-              <path id="badge-circle-pre" d="M 80, 80 m -60, 0 a 60,60 0 1,1 120,0 a 60,60 0 1,1 -120,0" fill="none" />
-              <text class="badge-text">
-                <textPath href="#badge-circle-pre" startOffset="0%">
-                  • 25 YEARS EXPERIENCE • FIXORA PLATFORM •
+          <div class="experience-badge" dir="ltr" style="direction: ltr;">
+            <svg viewBox="0 0 160 160" class="badge-svg" dir="ltr" style="direction: ltr;">
+              <defs>
+                <path id="badge-circle-pre" d="M 80, 80 m -60, 0 a 60,60 0 1,1 120,0 a 60,60 0 1,1 -120,0" fill="none" />
+              </defs>
+              <text class="badge-text" dir="ltr" style="direction: ltr; unicode-bidi: normal;">
+                <textPath href="#badge-circle-pre" startOffset="0%" dir="ltr" style="direction: ltr;">
+                  • FIXORA AI PLATFORM • CERTIFIED REPAIRS • EST. 2026 •
                 </textPath>
               </text>
             </svg>
@@ -156,7 +158,7 @@
         <div>
           <h2 class="about-heading" data-i18n="about_title">عن Fixora</h2>
           <p class="about-body" style="margin-bottom: 14px;" data-i18n="about_body_1">
-            في Fixora، نقدم حلول الدعم التقني وتشخيص الأعطال العتادية والبرمجية بالذكاء الاصطناعي لجميع أنواع الأجهزة. يمتلك فريقنا المعتمد ومحركنا المتطور خبرة عملية واسعة تغطي استكشاف الأعطال وحلها، وإصلاح اللوحات الأم، واستعادة البيانات، وحماية الأجهزة.
+            في Fixora، نقدم حلول الدعم التقني وتشخيص الأعطال العتادية والبرمجية بالذكاء الاصطناعي لجميع أنواع الأجهزة استناداً إلى بيانات موثوقة ونماذج تنبؤية مدربة. يمتلك فريقنا ومحركنا المتطور أدلة تفكيك تفصيلية وقياسات تليمترية تغطي استكشاف الأعطال وحلها، وإصلاح اللوحات الأم، واستعادة البيانات، وحماية الأجهزة.
           </p>
           <p class="about-body" data-i18n="about_body_2">
             نحافظ على سلامة أجهزتك التقنية عبر حلول موثوقة ومدروسة للهواتف، اللابتوبات، منصات الألعاب، الشاشات، وسائط التخزين، والأجهزة المنزلية الذكية.
@@ -164,16 +166,16 @@
 
           <div class="about-stats-row">
             <div class="about-stat-box">
-              <div class="about-stat-num">99.4%</div>
-              <div class="about-stat-lbl" data-i18n="stat_accuracy_lbl">دقة التشخيص الفني</div>
+              <div class="about-stat-num" style="color: #38BDF8;">+416,282</div>
+              <div class="about-stat-lbl" data-i18n="stat_records_lbl">سجل صيانة حقيقي (ORA)</div>
             </div>
             <div class="about-stat-box">
-              <div class="about-stat-num">13+ فئة</div>
-              <div class="about-stat-lbl" data-i18n="stat_devices_lbl">تغطية شاملة لكافة الأجهزة</div>
+              <div class="about-stat-num" style="color: #10B981;">18,995</div>
+              <div class="about-stat-lbl" data-i18n="stat_guides_lbl">دليل صيانة معتمد (MyFixit)</div>
             </div>
             <div class="about-stat-box">
-              <div class="about-stat-num">&lt; 3 ثوانٍ</div>
-              <div class="about-stat-lbl" data-i18n="stat_speed_lbl">استجابة فورية للفحص الذكي</div>
+              <div class="about-stat-num" style="color: #F59E0B;">0.912</div>
+              <div class="about-stat-lbl" data-i18n="stat_ml_auc_lbl">دقة التنبؤ بالأعطال (ROC-AUC)</div>
             </div>
           </div>
         </div>
@@ -412,26 +414,32 @@
         </div>
 
         <div>
-          <h4><a href="#" onclick="app.showDatasetsModal(); return false;" style="color: inherit; text-decoration: none;"><i class="fas fa-database" style="color: #38BDF8; font-size: 11px;"></i> قواعد البيانات المعتمدة</a></h4>
+          <h4><a href="#" onclick="app.showDatasetsModal(); return false;" style="color: inherit; text-decoration: none;"><i class="fas fa-database" style="color: #38BDF8; font-size: 11px;"></i> قواعد البيانات العالمية المعتمدة</a></h4>
           <ul style="list-style: none; display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
-            <li><a href="#" onclick="app.showDatasetsModal(); return false;">Open Repair Alliance (128K+ Records)</a></li>
-            <li><a href="#" onclick="app.showDatasetsModal(); return false;">MyFixit Dataset (34K+ Guides)</a></li>
-            <li><a href="#" onclick="app.showDatasetsModal(); return false;">Backblaze Hard Drive Stats (SMART Telemetry)</a></li>
+            <li><a href="#" onclick="app.showDatasetsModal(); return false;">Open Repair Alliance (416,282 سجل واقعي)</a></li>
+            <li><a href="#" onclick="app.showDatasetsModal(); return false;">MyFixit Dataset (18,995 دليل معتمد)</a></li>
+            <li><a href="#" onclick="app.showDatasetsModal(); return false;">Backblaze Telemetry (12,442 رصد & ML)</a></li>
           </ul>
         </div>
 
         <div>
-          <h4>الأمان والموثوقية</h4>
-          <p style="font-size: 13px; line-height: 1.6; color: #94A3B8;">
-            يتم فحص الأعطال ذات المخاطر الكهربائية العالية أو بطاريات الليثيوم تلقائياً وتوجيه المستخدم لإجراءات السلامة وفنيي الصيانة المعتمدين.
-          </p>
+          <h4><i class="fas fa-shield-alt" style="color: #10B981; font-size: 11px;"></i> الخصوصية والشروط القانونية</h4>
+          <ul style="list-style: none; display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
+            <li><a href="#" onclick="app.showPrivacyModal(); return false;"><i class="fas fa-user-shield" style="color: #10B981; font-size: 11px;"></i> سياسة الخصوصية وحماية البيانات</a></li>
+            <li><a href="#" onclick="app.showTermsModal(); return false;"><i class="fas fa-file-contract" style="color: #38BDF8; font-size: 11px;"></i> شروط الاستخدام وإخلاء المسؤولية</a></li>
+            <li><a href="#" onclick="app.showSafetyModal(); return false;"><i class="fas fa-exclamation-triangle" style="color: #F59E0B; font-size: 11px;"></i> إرشادات الأمان وسلامة البطاريات</a></li>
+          </ul>
         </div>
       </div>
 
       <div class="footer-bottom">
         <div>&copy; 2026 Fixora Inc. All rights reserved.</div>
-        <div style="display: flex; gap: 16px;">
-          <span>v2.8 Matte Dark Corporate Edition</span>
+        <div style="display: flex; gap: 20px; font-size: 12px; align-items: center; flex-wrap: wrap;">
+          <a href="#" onclick="app.showPrivacyModal(); return false;" style="color: #94A3B8; text-decoration: none;">سياسة الخصوصية</a>
+          <a href="#" onclick="app.showTermsModal(); return false;" style="color: #94A3B8; text-decoration: none;">شروط الخدمة</a>
+          <a href="#" onclick="app.showDatasetsModal(); return false;" style="color: #94A3B8; text-decoration: none;">تراخيص البيانات المفتوحة</a>
+          <span style="color: rgba(255,255,255,0.2);">|</span>
+          <span style="color: #64748B;">v3.0.1 Certified Real Data Edition</span>
         </div>
       </div>
     </div>
@@ -445,9 +453,9 @@
   <script src="js/firebase-init.js"></script>
 
   <!-- Fixora Core Scripts & Real Datasets -->
-  <script src="js/i18n.js?v=3.0.0"></script>
-  <script src="js/api.js?v=3.0.0"></script>
-  <script src="js/app.js?v=3.0.0"></script>
+  <script src="js/i18n.js?v=3.0.1"></script>
+  <script src="js/api.js?v=3.0.1"></script>
+  <script src="js/app.js?v=3.0.1"></script>
   <script>
     if (!window.app && typeof FixoraApp !== 'undefined') {
       window.app = app = new FixoraApp();

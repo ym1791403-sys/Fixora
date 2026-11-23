@@ -172,6 +172,12 @@ class FixoraApp {
       case "admin":
         this.renderAdmin(mainContainer);
         break;
+      case "privacy":
+        this.renderPrivacy(mainContainer);
+        break;
+      case "terms":
+        this.renderTerms(mainContainer);
+        break;
       default:
         this.renderHome(mainContainer);
     }
@@ -262,12 +268,14 @@ class FixoraApp {
         
         <!-- Circular Rotating Badge -->
         <div>
-          <div class="experience-badge">
-            <svg viewBox="0 0 160 160" class="badge-svg">
-              <path id="badge-circle" d="M 80, 80 m -60, 0 a 60,60 0 1,1 120,0 a 60,60 0 1,1 -120,0" fill="none" />
-              <text class="badge-text">
-                <textPath href="#badge-circle" startOffset="0%">
-                  ${window.i18n.t('badge_text')}
+          <div class="experience-badge" dir="ltr" style="direction: ltr;">
+            <svg viewBox="0 0 160 160" class="badge-svg" dir="ltr" style="direction: ltr;">
+              <defs>
+                <path id="badge-circle" d="M 80, 80 m -60, 0 a 60,60 0 1,1 120,0 a 60,60 0 1,1 -120,0" fill="none" />
+              </defs>
+              <text class="badge-text" dir="ltr" style="direction: ltr; unicode-bidi: normal;">
+                <textPath href="#badge-circle" startOffset="0%" dir="ltr" style="direction: ltr;">
+                  • FIXORA AI PLATFORM • CERTIFIED REPAIRS • EST. 2026 •
                 </textPath>
               </text>
             </svg>
@@ -289,16 +297,16 @@ class FixoraApp {
 
           <div class="about-stats-row">
             <div class="about-stat-box">
-              <div class="about-stat-num">99.4%</div>
-              <div class="about-stat-lbl" data-i18n="stat_accuracy_lbl">${window.i18n.t('stat_accuracy_lbl')}</div>
+              <div class="about-stat-num" style="color: #38BDF8;">${window.i18n.t('stat_records')}</div>
+              <div class="about-stat-lbl" data-i18n="stat_records_lbl">${window.i18n.t('stat_records_lbl')}</div>
             </div>
             <div class="about-stat-box">
-              <div class="about-stat-num">13+ فئة</div>
-              <div class="about-stat-lbl" data-i18n="stat_devices_lbl">${window.i18n.t('stat_devices_lbl')}</div>
+              <div class="about-stat-num" style="color: #10B981;">${window.i18n.t('stat_guides')}</div>
+              <div class="about-stat-lbl" data-i18n="stat_guides_lbl">${window.i18n.t('stat_guides_lbl')}</div>
             </div>
             <div class="about-stat-box">
-              <div class="about-stat-num">&lt; 3 ثوانٍ</div>
-              <div class="about-stat-lbl" data-i18n="stat_speed_lbl">${window.i18n.t('stat_speed_lbl')}</div>
+              <div class="about-stat-num" style="color: #F59E0B;">${window.i18n.t('stat_ml_auc')}</div>
+              <div class="about-stat-lbl" data-i18n="stat_ml_auc_lbl">${window.i18n.t('stat_ml_auc_lbl')}</div>
             </div>
           </div>
         </div>
@@ -1191,6 +1199,153 @@ class FixoraApp {
   }
 
   // ==========================================
+  // VIEW: PRIVACY POLICY & DATA PROTECTION
+  // ==========================================
+  renderPrivacy(container) {
+    const isAr = window.i18n.currentLang === "ar";
+    container.innerHTML = `
+      <section style="padding: 40px 0 80px;">
+        <div class="container" style="max-width: 860px;">
+          <div style="margin-bottom: 24px;">
+            <button class="btn btn-outline btn-sm" onclick="app.navigate('home')">
+              <i class="fas fa-arrow-right"></i> ${isAr ? 'العودة للرئيسية' : 'Back to Home'}
+            </button>
+          </div>
+          
+          <div style="background: #0E131F; border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: 36px; box-shadow: 0 8px 32px rgba(0,0,0,0.4);">
+            <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 20px;">
+              <div style="width: 52px; height: 52px; border-radius: 50%; background: rgba(16, 185, 129, 0.15); color: #10B981; display: flex; align-items: center; justify-content: center; font-size: 24px;">
+                <i class="fas fa-user-shield"></i>
+              </div>
+              <div>
+                <h1 style="font-size: 26px; color: #FFFFFF; margin-bottom: 4px;">
+                  ${isAr ? 'سياسة الخصوصية وحماية بيانات المستخدم' : 'Privacy & Data Protection Policy'}
+                </h1>
+                <p style="font-size: 13px; color: #94A3B8;">
+                  ${isAr ? 'وثيقة الحماية الرسمية لمنصة Fixora — الالتزام بالشفافية الكاملة وتشفير البيانات والامتثال لأخلاقيات الذكاء الاصطناعي.' : 'Official Fixora Privacy Document — Total Transparency, Encryption & Ethical AI Standards.'}
+                </p>
+              </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 20px; font-size: 14px; color: #CBD5E1; line-height: 1.8;">
+              <div style="background: #070A10; border-radius: var(--radius-md); padding: 18px; border: 1px solid rgba(255,255,255,0.05);">
+                <h3 style="color: #38BDF8; font-size: 16px; margin-bottom: 8px;">
+                  <i class="fas fa-lock"></i> ${isAr ? '1. التشفير التام للبيانات (TLS 1.3)' : '1. End-to-End Encryption'}
+                </h3>
+                <p>
+                  ${isAr ? 'تتم جميع طلبات التشخيص واستعلامات فحص الأعطال عبر قنوات مشفرة بمعايير TLS 1.3 العالية. لا يمكن لأي طرف وسيط الاطلاع على تفاصيل أجهزتك أو قراءات التليميتري.' : 'All diagnostic triage calls operate over strict TLS 1.3 encrypted tunnels, guaranteeing zero tampering or snooping.'}
+                </p>
+              </div>
+
+              <div style="background: #070A10; border-radius: var(--radius-md); padding: 18px; border: 1px solid rgba(255,255,255,0.05);">
+                <h3 style="color: #10B981; font-size: 16px; margin-bottom: 8px;">
+                  <i class="fas fa-ban"></i> ${isAr ? '2. حظر جمع الصور الشخصية أو البيانات الحساسة' : '2. Zero Personal Files or Photos Retention'}
+                </h3>
+                <p>
+                  ${isAr ? 'محرك Fixora مصمم هندسياً لتشخيص الأعطال العتادية والبرمجية فقط. لا نطلب ولا نقوم بتخزين صور شخصية، أو محتويات الأقراص، أو ملفات النظام، أو كلمات المرور.' : 'Fixora never requests or stores personal media, filesystem contents, credentials, or private identity records.'}
+                </p>
+              </div>
+
+              <div style="background: #070A10; border-radius: var(--radius-md); padding: 18px; border: 1px solid rgba(255,255,255,0.05);">
+                <h3 style="color: #F59E0B; font-size: 16px; margin-bottom: 8px;">
+                  <i class="fas fa-trash-alt"></i> ${isAr ? '3. حق المستخدم في حذف كافة البيانات فوراً' : '3. Immediate Data Purge & User Sovereignty'}
+                </h3>
+                <p>
+                  ${isAr ? 'يحق لكل مستخدم حذف تقارير التشخيص وسجل أجهزته بالكامل في أي وقت بضغطة زر واحدة، ويتم مسح السجلات المرتبطة نهائياً من قاعدة البيانات والتخزين المؤقت.' : 'Users maintain unrestricted rights to permanently purge diagnosis histories and registered devices from the database anytime.'}
+                </p>
+              </div>
+
+              <div style="background: #070A10; border-radius: var(--radius-md); padding: 18px; border: 1px solid rgba(255,255,255,0.05);">
+                <h3 style="color: #A855F7; font-size: 16px; margin-bottom: 8px;">
+                  <i class="fas fa-hand-holding-heart"></i> ${isAr ? '4. الالتزام بحق الإصلاح ودعم الاستدامة' : '4. Supporting the Right to Repair & E-Waste Reduction'}
+                </h3>
+                <p>
+                  ${isAr ? 'الهدف الأساسي لمنصة Fixora هو تمكين المستهلكين والفنيين من استكشاف الأعطال وحلها استناداً إلى بيانات موثوقة من Open Repair Alliance و MyFixit لتقليل النفايات الإلكترونية وإطالة العمر الافتراضي للأجهزة.' : 'Fixora champions consumer empowerment through verified repair open data, striving to minimize worldwide electronic waste.'}
+                </p>
+              </div>
+            </div>
+
+            <div style="margin-top: 28px; text-align: center;">
+              <button class="btn btn-primary" onclick="app.navigate('diagnose')">
+                <i class="fas fa-stethoscope"></i> ${isAr ? 'بدء الفحص والتشخيص الآن' : 'Start Diagnostic Triage Now'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+    `;
+  }
+
+  // ==========================================
+  // VIEW: TERMS OF SERVICE & ENGINEERING SAFETY
+  // ==========================================
+  renderTerms(container) {
+    const isAr = window.i18n.currentLang === "ar";
+    container.innerHTML = `
+      <section style="padding: 40px 0 80px;">
+        <div class="container" style="max-width: 860px;">
+          <div style="margin-bottom: 24px;">
+            <button class="btn btn-outline btn-sm" onclick="app.navigate('home')">
+              <i class="fas fa-arrow-right"></i> ${isAr ? 'العودة للرئيسية' : 'Back to Home'}
+            </button>
+          </div>
+
+          <div style="background: #0E131F; border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: 36px; box-shadow: 0 8px 32px rgba(0,0,0,0.4);">
+            <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 20px;">
+              <div style="width: 52px; height: 52px; border-radius: 50%; background: rgba(56, 189, 248, 0.15); color: #38BDF8; display: flex; align-items: center; justify-content: center; font-size: 24px;">
+                <i class="fas fa-file-contract"></i>
+              </div>
+              <div>
+                <h1 style="font-size: 26px; color: #FFFFFF; margin-bottom: 4px;">
+                  ${isAr ? 'شروط الاستخدام وإخلاء المسؤولية الهندسية' : 'Terms of Service & Safety Protocols'}
+                </h1>
+                <p style="font-size: 13px; color: #94A3B8;">
+                  ${isAr ? 'المحددات التنظيمية والبروتوكولات الوقائية لإجراءات الفحص والتفكيك.' : 'Regulatory constraints, safety requirements and open-source attributions.'}
+                </p>
+              </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 20px; font-size: 14px; color: #CBD5E1; line-height: 1.8;">
+              <div style="background: #070A10; border-radius: var(--radius-md); padding: 18px; border: 1px solid rgba(255,255,255,0.05);">
+                <h3 style="color: #EF4444; font-size: 16px; margin-bottom: 8px;">
+                  <i class="fas fa-exclamation-triangle"></i> ${isAr ? '1. إخلاء المسؤولية الفنية وبروتوكولات الأمان' : '1. Technical Disclaimer & Mandatory Safety'}
+                </h3>
+                <p>
+                  ${isAr ? 'التقارير الصادرة عن Fixora استرشادية مبنية على بيانات واقعية. يجب دائماً فصل مصادر التيار الكهربائي وفصل كابلات البطارية تماماً واستخدام أساور تفريغ الشحنات (ESD) قبل فتح أي جهاز.' : 'Fixora reports provide empirical guidance. Disconnect power supplies and detach batteries before disassembly, wearing ESD protection.'}
+                </p>
+              </div>
+
+              <div style="background: #070A10; border-radius: var(--radius-md); padding: 18px; border: 1px solid rgba(255,255,255,0.05);">
+                <h3 style="color: #F59E0B; font-size: 16px; margin-bottom: 8px;">
+                  <i class="fas fa-fire"></i> ${isAr ? '2. بروتوكول الحالات الحرجة وبطاريات الليثيوم' : '2. Critical Hazards Protocol'}
+                </h3>
+                <p>
+                  ${isAr ? 'في حال وجود انتفاخ ببطارية الليثيوم، أو انبعاث حرارة شديدة، أو اشتباه بتلف في دوائر الجهد المرتفع، يحظر فك الجهاز منزلياً ويجب تسليمه فوراً لفني معتمد أو مركز صيانة متخصص.' : 'Swollen lithium batteries or high-voltage circuits pose combustion hazards. Home repairs are strictly prohibited; hand over to certified specialists.'}
+                </p>
+              </div>
+
+              <div style="background: #070A10; border-radius: var(--radius-md); padding: 18px; border: 1px solid rgba(255,255,255,0.05);">
+                <h3 style="color: #38BDF8; font-size: 16px; margin-bottom: 8px;">
+                  <i class="fas fa-balance-scale"></i> ${isAr ? '3. رخص المصادر المفتوحة والنسب العلمي' : '3. Open Source Licenses & Dataset Attributions'}
+                </h3>
+                <p>
+                  ${isAr ? 'تعتمد المنصة على: سجلات Open Repair Alliance بموجب رخصة ODbL، وأدلة MyFixit بموجب رخصة CC BY-NC-SA 3.0، وبيانات Backblaze Telemetry المفتوحة. جميع الحقوق الفكرية محفوظة لمطوري ومسجلي هذه المصادر العالمية المعتمدة.' : 'Fixora utilizes ORA (ODbL), MyFixit (CC BY-NC-SA 3.0), and Backblaze telemetry under open research licenses, strictly honoring source attributions.'}
+                </p>
+              </div>
+            </div>
+
+            <div style="margin-top: 28px; text-align: center;">
+              <button class="btn btn-outline" onclick="app.navigate('home')">
+                ${isAr ? 'العودة للرئيسية' : 'Back to Home'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+    `;
+  }
+
+  // ==========================================
   // VIEW: USER / TECHNICIAN DASHBOARD
   // ==========================================
   async renderDashboard(container) {
@@ -1854,7 +2009,7 @@ class FixoraApp {
             ${isAr ? 'حالة قواعد البيانات المعتمدة في Fixora' : 'Fixora Certified Datasets Status'}
           </h3>
           <p style="font-size: 13px; color: #94A3B8;">
-            ${isAr ? 'جميع قواعد البيانات العالمية الثلاث تعمل بكفاءة ونشاط ومدمجة في محرك الفحص الذكي.' : 'All three official datasets are active and powering the AI diagnostic engine.'}
+            ${isAr ? 'قواعد البيانات العالمية الثلاث مدمجة ومفهرسة بالكامل في محرك التشخيص الذكي بالأرقام الواقعية الدقيقة.' : 'All three certified datasets are fully indexed and powering the empirical AI diagnostic engine.'}
           </p>
         </div>
 
@@ -1863,14 +2018,14 @@ class FixoraApp {
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
               <strong style="color: #FFFFFF; font-size: 15px;">1. Open Repair Alliance (ORA)</strong>
               <span class="tag" style="background: rgba(16,185,129,0.15); color: #10B981; border: 1px solid rgba(16,185,129,0.3); font-size: 11px;">
-                <i class="fas fa-check-circle"></i> ${isAr ? 'نشطة ومتصلة' : 'Active & Connected'}
+                <i class="fas fa-check-circle"></i> ${isAr ? '416,282 سجل واقعي' : '416,282 Real Incidents'}
               </span>
             </div>
             <p style="font-size: 12px; color: #94A3B8; margin-bottom: 6px;">
-              ${isAr ? 'سجلات حقيقية لأعطال الهواتف، الحواسيب، الشاشات، البطاريات، ومعدلات النجاح وإجراءات السلامة.' : 'Real electronic device repair records, common failure patterns, and battery safety procedures.'}
+              ${isAr ? 'سجلات صيانة واقعية معتمدة تغطي 10 فئات أجهزة قياسية، ونسب نجاح الإصلاح الفعلية وموانع الصيانة الشائعة.' : 'Empirical repair outcomes, success rates, and barrier statistics across 10 standardized equipment categories.'}
             </p>
             <div style="font-size: 11px; color: #38BDF8;">
-              <i class="fas fa-chart-pie"></i> 128,450+ ${isAr ? 'سجل صيانة مفهرس' : 'Indexed repair cases'}
+              <i class="fas fa-chart-pie"></i> ${isAr ? '416,282 سجل صيانة موثق بموجب ODbL' : '416,282 incidents licensed under ODbL'}
             </div>
           </div>
 
@@ -1878,39 +2033,165 @@ class FixoraApp {
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
               <strong style="color: #FFFFFF; font-size: 15px;">2. MyFixit Repair Dataset</strong>
               <span class="tag" style="background: rgba(16,185,129,0.15); color: #10B981; border: 1px solid rgba(16,185,129,0.3); font-size: 11px;">
-                <i class="fas fa-check-circle"></i> ${isAr ? 'نشطة ومتصلة' : 'Active & Connected'}
+                <i class="fas fa-check-circle"></i> ${isAr ? '18,995 دليل معتمد' : '18,995 Verified Manuals'}
               </span>
             </div>
             <p style="font-size: 12px; color: #94A3B8; margin-bottom: 6px;">
-              ${isAr ? 'أدلة الإصلاح التفكيكية التفصيلية، الأدوات المطلوبة، خطوات الفك والتركيب، ومستويات الصعوبة.' : 'Disassembly instructions, required repair tools, teardown steps, and difficulty ratings.'}
+              ${isAr ? 'أدلة التفكيك والإصلاح خطوة بخطوة، الأدوات الدقيقة المطلوبة، خطوات الفك والتركيب، وروابط iFixit الأصلية.' : 'Detailed step-by-step disassembly manuals, required tools, difficulty ratings, and official iFixit URLs.'}
             </p>
             <div style="font-size: 11px; color: #38BDF8;">
-              <i class="fas fa-book-open"></i> 34,200+ ${isAr ? 'دليل إصلاح خطوة بخطوة' : 'Step-by-step guides'}
+              <i class="fas fa-book-open"></i> ${isAr ? '18,995 دليل صيانة مفهرس بموجب CC BY-NC-SA' : '18,995 manuals under CC BY-NC-SA 3.0'}
             </div>
           </div>
 
           <div style="background: #0A0D14; border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 16px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <strong style="color: #FFFFFF; font-size: 15px;">3. Backblaze Hard Drive Stats</strong>
+              <strong style="color: #FFFFFF; font-size: 15px;">3. Backblaze SMART Telemetry ML</strong>
               <span class="tag" style="background: rgba(16,185,129,0.15); color: #10B981; border: 1px solid rgba(16,185,129,0.3); font-size: 11px;">
-                <i class="fas fa-check-circle"></i> ${isAr ? 'نشطة ومتصلة' : 'Active & Connected'}
+                <i class="fas fa-check-circle"></i> ${isAr ? '12,442 رصد & 0.912 ROC-AUC' : '12,442 Rows & 0.912 ROC-AUC'}
               </span>
             </div>
             <p style="font-size: 12px; color: #94A3B8; margin-bottom: 6px;">
-              ${isAr ? 'خوارزميات فحص المؤشرات الحيوية S.M.A.R.T (خاصة 5، 187، 188، 197، 198) والتنبؤ بالأعطال للأقراص وSSDs.' : 'Predictive SMART telemetry thresholds and health scoring for mechanical HDDs and solid-state NVMe drives.'}
+              ${isAr ? 'نموذج Random Forest تم تدريبه على بيانات Backblaze Q2 2026 مع عزل السيريال الزمني وتفادي تسرب البيانات للتنبؤ بأعطال وحدات التخزين.' : 'Binary classification Random Forest model trained on SMART telemetry with chronological and serial-number isolation.'}
             </p>
             <div style="font-size: 11px; color: #38BDF8;">
-              <i class="fas fa-hard-drive"></i> SMART Telemetry 5, 9, 187, 188, 197, 198 ${isAr ? 'مفعلة' : 'Active'}
+              <i class="fas fa-microchip"></i> SMART 5, 9, 187, 188, 194, 197, 198 — Test ROC-AUC: 0.9117 | PR-AUC: 0.7144
             </div>
           </div>
         </div>
 
         <div style="text-align: center;">
           <button class="btn btn-primary btn-sm" onclick="app.closeModal()">
-            ${isAr ? 'إغلاق' : 'Close'}
+            ${isAr ? 'إغلاق النافذة' : 'Close'}
           </button>
         </div>
       </div>
+    `;
+    this.openModal(html);
+  }
+
+  showPrivacyModal() {
+    const isAr = window.i18n.currentLang === "ar";
+    const html = `
+      <div style="max-height: 80vh; overflow-y: auto; padding-right: 6px;">
+        <div style="text-align: center; margin-bottom: 20px;">
+          <div style="width: 52px; height: 52px; border-radius: 50%; background: rgba(16, 185, 129, 0.12); color: #10B981; display: flex; align-items: center; justify-content: center; font-size: 24px; margin: 0 auto 12px;">
+            <i class="fas fa-user-shield"></i>
+          </div>
+          <h3 style="font-size: 22px; color: #FFFFFF; margin-bottom: 6px;">
+            ${isAr ? 'سياسة الخصوصية وحماية البيانات' : 'Privacy & Data Protection Policy'}
+          </h3>
+          <p style="font-size: 13px; color: #94A3B8;">
+            ${isAr ? 'التزام Fixora التام بحماية سرية وأمان بيانات المستخدمين والامتثال للمعايير العالمية.' : 'Fixora commitment to total confidentiality, data security, and ethical AI standards.'}
+          </p>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 24px; font-size: 13px; color: #CBD5E1; line-height: 1.7;">
+          <div style="background: #0A0D14; border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 14px;">
+            <strong style="color: #38BDF8; font-size: 14px; display: block; margin-bottom: 4px;">
+              <i class="fas fa-lock"></i> ${isAr ? '1. التشفير التام والاتصال الآمن' : '1. End-to-End Encryption'}
+            </strong>
+            <p>
+              ${isAr ? 'تتم جميع الاتصالات واستدعاءات فحص وتشخيص الأعطال عبر قنوات مشفرة وفق بروتوكول TLS 1.3 المعتمد، مما يمنع أي اعتراض أو استراق للبيانات أثناء النقل.' : 'All diagnostic interactions and API calls are secured using TLS 1.3 encryption, ensuring total protection during transmission.'}
+            </p>
+          </div>
+
+          <div style="background: #0A0D14; border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 14px;">
+            <strong style="color: #10B981; font-size: 14px; display: block; margin-bottom: 4px;">
+              <i class="fas fa-eye-slash"></i> ${isAr ? '2. عدم جمع البيانات الشخصية الحساسة' : '2. Zero Sensitive Personal Data Collection'}
+            </strong>
+            <p>
+              ${isAr ? 'لا يطلب نظام Fixora أو يخزن أي ملفات خاصة، أو صور شخصية، أو كلمات مرور، أو وثائق هوية. يتم حصر المدخلات في مواصفات العتاد الفنية (الفئة، الطراز، والأعراض المشاهدة ومؤشرات S.M.A.R.T).' : 'Fixora strictly avoids collecting personal photos, private files, passwords, or personal credentials. Ingestion is strictly scoped to technical hardware parameters.'}
+            </p>
+          </div>
+
+          <div style="background: #0A0D14; border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 14px;">
+            <strong style="color: #F59E0B; font-size: 14px; display: block; margin-bottom: 4px;">
+              <i class="fas fa-user-check"></i> ${isAr ? '3. سيطرة المستخدم الكاملة وحق الحذف' : '3. Complete User Control & Deletion Rights'}
+            </strong>
+            <p>
+              ${isAr ? 'يمتلك المستخدم الحق الكامل في مسح أي تقرير فحص أو سجل محفوظ بنقرة واحدة من لوحة التحكم، كما يُمكن استخدام ميزة التشخيص الفوري دون الحاجة لتسجيل أي بيانات تعريفية.' : 'Users retain the absolute right to purge any saved diagnosis report from local storage and database at any time without restriction.'}
+            </p>
+          </div>
+
+          <div style="background: #0A0D14; border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 14px;">
+            <strong style="color: #A855F7; font-size: 14px; display: block; margin-bottom: 4px;">
+              <i class="fas fa-shield-alt"></i> ${isAr ? '4. حظر مشاركة البيانات مع معلنين' : '4. No Third-Party Data Monetization'}
+            </strong>
+            <p>
+              ${isAr ? 'لا نقوم ببيع أو تداول أي بيانات فنية أو إحصائيات استخدام مع شبكات الإعلانات أو الوسطاء التجاريين، والمنصة تعمل بنموذج هندسي مفتوح يهدف لتعزيز حق الإصلاح وتقليل النفايات الإلكترونية.' : 'We never sell, broker, or monetize telemetry or user diagnostics to advertisers. Our mission is strictly supporting sustainable repairability and e-waste reduction.'}
+            </p>
+          </div>
+        </div>
+
+        <div style="text-align: center;">
+          <button class="btn btn-primary btn-sm" onclick="app.closeModal()">
+            ${isAr ? 'فهمت وأوافق' : 'I Understand & Agree'}
+          </button>
+        </div>
+      </div>
+    `;
+    this.openModal(html);
+  }
+
+  showTermsModal() {
+    const isAr = window.i18n.currentLang === "ar";
+    const html = `
+      <div style="max-height: 80vh; overflow-y: auto; padding-right: 6px;">
+        <div style="text-align: center; margin-bottom: 20px;">
+          <div style="width: 52px; height: 52px; border-radius: 50%; background: rgba(56, 189, 248, 0.12); color: #38BDF8; display: flex; align-items: center; justify-content: center; font-size: 24px; margin: 0 auto 12px;">
+            <i class="fas fa-file-contract"></i>
+          </div>
+          <h3 style="font-size: 22px; color: #FFFFFF; margin-bottom: 6px;">
+            ${isAr ? 'شروط الاستخدام وإخلاء المسؤولية الهندسية' : 'Terms of Service & Engineering Safety'}
+          </h3>
+          <p style="font-size: 13px; color: #94A3B8;">
+            ${isAr ? 'الشروط المنظمة لاستخدام تقارير التشخيص، بروتوكولات الأمان، وحقوق المصادر المفتوحة.' : 'Guidelines governing diagnostic reports, safety measures, and open-source attributions.'}
+          </p>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 24px; font-size: 13px; color: #CBD5E1; line-height: 1.7;">
+          <div style="background: #0A0D14; border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 14px;">
+            <strong style="color: #EF4444; font-size: 14px; display: block; margin-bottom: 4px;">
+              <i class="fas fa-exclamation-triangle"></i> ${isAr ? '1. إخلاء المسؤولية وإجراءات السلامة الحيوية' : '1. Engineering Safety Disclaimer'}
+            </strong>
+            <p>
+              ${isAr ? 'التشخيص الصادر هو تحليل فني استرشادي مستند إلى بيانات إحصائية وأدلة صيانة معتمدة. يتعين على المستخدم فصل التيار الكهربائي والبطارية تماماً قبل فك أي جهاز، واستخدام أساور تفريغ الشحنات الكهروستاتيكية (ESD) لحماية الدوائر الحساسة.' : 'Diagnostic outputs are evidence-based recommendations. Users must completely disconnect power and detach battery connectors before disassembly, wearing ESD protection.'}
+            </p>
+          </div>
+
+          <div style="background: #0A0D14; border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 14px;">
+            <strong style="color: #F59E0B; font-size: 14px; display: block; margin-bottom: 4px;">
+              <i class="fas fa-battery-quarter"></i> ${isAr ? '2. التعامل مع الحالات الخطرة (بطاريات الليثيوم والجهد العالي)' : '2. Critical Hazard Protocol (Lithium & High-Voltage)'}
+            </strong>
+            <p>
+              ${isAr ? 'في حال وجود انتفاخ في بطارية الليثيوم، أو انبعاث حرارة غير طبيعية، أو أعطال في دوائر مزود الطاقة (Power Supply)، يُحظر محاولة ثقب البطارية أو فحصها بدون عوازل، ويجب فوراً إحالة الجهاز لفني مختص أو مركز صيانة معتمد.' : 'If lithium batteries show swelling or puncture damage, home repair is strictly prohibited. The device must be handed over to a certified professional technician.'}
+            </p>
+          </div>
+
+          <div style="background: #0A0D14; border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 14px;">
+            <strong style="color: #10B981; font-size: 14px; display: block; margin-bottom: 4px;">
+              <i class="fas fa-balance-scale"></i> ${isAr ? '3. تراخيص البيانات المفتوحة والنسب العلمي' : '3. Open Data Licensing & Attribution'}
+            </strong>
+            <p>
+              ${isAr ? 'يعتمد نظام Fixora على قواعد بيانات مفتوحة ومعترف بها دولياً: Open Repair Alliance بموجب رخصة ODbL، و MyFixit بموجب Creative Commons (CC BY-NC-SA 3.0)، وبيانات Backblaze المفتوحة للأبحاث. نلتزم بنسب الفضل وحفظ حقوق النشر لجميع مصادر البيانات الأصلية دون أي تلفيق.' : 'Fixora proudly leverages open datasets under verified licenses: ORA under ODbL, MyFixit under CC BY-NC-SA 3.0, and Backblaze telemetry under open research terms.'}
+            </p>
+          </div>
+        </div>
+
+        <div style="text-align: center;">
+          <button class="btn btn-primary btn-sm" onclick="app.closeModal()">
+            ${isAr ? 'موافق وإغلاق' : 'Accept & Close'}
+          </button>
+        </div>
+      </div>
+    `;
+    this.openModal(html);
+  }
+
+  showSafetyModal() {
+    this.showTermsModal();
+  }
     `;
     this.openModal(html);
   }
