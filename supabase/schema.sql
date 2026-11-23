@@ -139,3 +139,68 @@ on conflict (dataset_key) do update set
   total_records = excluded.total_records,
   status = excluded.status,
   last_verified_at = now();
+
+-- 6. Repair Guides Table (MyFixit Verified Seed)
+create table if not exists public.repair_guides (
+  id integer primary key,
+  title text not null,
+  device_category text,
+  device_model text,
+  component text,
+  repair_type text,
+  difficulty text,
+  time_required text,
+  summary text,
+  url text,
+  tools jsonb default '[]'::jsonb,
+  steps jsonb default '[]'::jsonb,
+  step_count integer default 0,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.repair_guides enable row level security;
+create policy "Allow public read repair_guides" on public.repair_guides for select using (true);
+
+-- 7. Open Repair Statistics Table (Open Repair Alliance Real Records)
+create table if not exists public.openrepair_statistics (
+  category_name text primary key,
+  sample_size integer not null,
+  repair_rate numeric(5,2) not null,
+  top_faults jsonb default '[]'::jsonb,
+  barriers jsonb default '[]'::jsonb,
+  source_info text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.openrepair_statistics enable row level security;
+create policy "Allow public read openrepair_statistics" on public.openrepair_statistics for select using (true);
+
+-- 8. Backblaze Models Table
+create table if not exists public.backblaze_models (
+  model_id text primary key,
+  task text not null,
+  dataset text not null,
+  metrics jsonb not null,
+  feature_importances jsonb not null,
+  feature_columns jsonb not null,
+  device_scope text not null,
+  trained_at timestamp with time zone not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.backblaze_models enable row level security;
+create policy "Allow public read backblaze_models" on public.backblaze_models for select using (true);
+
+-- 9. Technicians Directory Table
+create table if not exists public.technicians (
+  id serial primary key,
+  name text not null,
+  business_name text not null,
+  city text not null,
+  phone text,
+  specializations text,
+  bio text,
+  rating numeric(3,1) default 5.0,
+  reviews_count integer default 0,
+  status text default 'approved',
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.technicians enable row level security;
+create policy "Allow public read technicians" on public.technicians for select using (true);

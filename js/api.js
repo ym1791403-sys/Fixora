@@ -152,6 +152,9 @@ class ApiClient {
       const reports = JSON.parse(localStorage.getItem("techrepair_reports") || "[]");
       reports.unshift(report);
       localStorage.setItem("techrepair_reports", JSON.stringify(reports));
+      if (window.SupabaseBridge && typeof window.SupabaseBridge.syncReport === "function") {
+        window.SupabaseBridge.syncReport(report);
+      }
       return report;
     }
 
@@ -383,6 +386,18 @@ class ApiClient {
     return await this.request("/diagnosis/reports");
   }
 
+  async getReports() {
+    if (window.SupabaseBridge && window.SupabaseBridge.isReady()) {
+      try {
+        const sbReports = await window.SupabaseBridge.fetchReports();
+        if (sbReports && sbReports.length > 0) return sbReports;
+      } catch (e) {}
+    }
+    const res = await this.request("/diagnosis/reports");
+    if (Array.isArray(res) && res.length > 0) return res;
+    return JSON.parse(localStorage.getItem("techrepair_reports") || "[]");
+  }
+
   async getReport(reportId) {
     return await this.request(`/diagnosis/reports/${reportId}`);
   }
@@ -394,6 +409,12 @@ class ApiClient {
   }
 
   async getGuides(category = null, difficulty = null, search = null) {
+    if (window.SupabaseBridge && window.SupabaseBridge.isReady()) {
+      try {
+        const sbGuides = await window.SupabaseBridge.fetchGuides(category, difficulty, search);
+        if (sbGuides && sbGuides.length > 0) return sbGuides;
+      } catch (e) {}
+    }
     const params = new URLSearchParams();
     if (category) params.append("category", category);
     if (difficulty) params.append("difficulty", difficulty);
@@ -402,18 +423,34 @@ class ApiClient {
       params.append("search", search);
     }
     const res = await this.request(`/guides?${params.toString()}`);
-    return Array.isArray(res) ? res : (res && res.guides ? res.guides : []);
+    const list = Array.isArray(res) ? res : (res && res.guides ? res.guides : []);
+    if (list.length > 0) return list;
+    return this.getPreseededGuides();
   }
 
   async getGuide(guideId) {
+    if (window.SupabaseBridge && window.SupabaseBridge.isReady()) {
+      try {
+        const sbGuide = await window.SupabaseBridge.fetchGuide(guideId);
+        if (sbGuide) return sbGuide;
+      } catch (e) {}
+    }
     return await this.request(`/guides/${guideId}`);
   }
 
   async getTechnicians(city = null, specialization = null) {
+    if (window.SupabaseBridge && window.SupabaseBridge.isReady()) {
+      try {
+        const sbTechs = await window.SupabaseBridge.fetchTechnicians(city, specialization);
+        if (sbTechs && sbTechs.length > 0) return sbTechs;
+      } catch (e) {}
+    }
     const params = new URLSearchParams();
     if (city) params.append("city", city);
     if (specialization) params.append("specialization", specialization);
-    return await this.request(`/technicians?${params.toString()}`);
+    const res = await this.request(`/technicians?${params.toString()}`);
+    if (Array.isArray(res) && res.length > 0) return res;
+    return this.getPreseededTechnicians();
   }
 
   async getTechnician(techId) {
@@ -421,14 +458,34 @@ class ApiClient {
   }
 
   async createRepairRequest(payload) {
-    return await this.request("/bookings/requests", {
-      method: "POST",
-      body: JSON.stringify(payload)
-    });
+    let result = payload;
+    if (window.SupabaseBridge && window.SupabaseBridge.isReady()) {
+      try {
+        result = await window.SupabaseBridge.createRepairRequest(payload);
+      } catch (e) {}
+    }
+    try {
+      await this.request("/bookings/requests", {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+    } catch (e) {}
+    const requests = JSON.parse(localStorage.getItem("techrepair_requests") || "[]");
+    requests.unshift(result);
+    localStorage.setItem("techrepair_requests", JSON.stringify(requests));
+    return result;
   }
 
   async getMyRequests() {
-    return await this.request("/bookings/requests");
+    if (window.SupabaseBridge && window.SupabaseBridge.isReady()) {
+      try {
+        const sbReqs = await window.SupabaseBridge.fetchRepairRequests();
+        if (sbReqs && sbReqs.length > 0) return sbReqs;
+      } catch (e) {}
+    }
+    const res = await this.request("/bookings/requests");
+    if (Array.isArray(res) && res.length > 0) return res;
+    return JSON.parse(localStorage.getItem("techrepair_requests") || "[]");
   }
 
   async updateRequestStatus(requestId, status, quote = null) {
@@ -439,14 +496,33 @@ class ApiClient {
   }
 
   async getMyDevices() {
-    return await this.request("/devices");
+    if (window.SupabaseBridge && window.SupabaseBridge.isReady()) {
+      try {
+        const sbDevs = await window.SupabaseBridge.fetchDevices();
+        if (sbDevs && sbDevs.length > 0) return sbDevs;
+      } catch (e) {}
+    }
+    const res = await this.request("/devices");
+    if (Array.isArray(res) && res.length > 0) return res;
+    return JSON.parse(localStorage.getItem("techrepair_devices") || "[]");
   }
 
   async addDevice(device) {
-    return await this.request("/devices", {
-      method: "POST",
-      body: JSON.stringify(device)
-    });
+    if (window.SupabaseBridge && window.SupabaseBridge.isReady()) {
+      try {
+        await window.SupabaseBridge.syncDevice(device);
+      } catch (e) {}
+    }
+    try {
+      await this.request("/devices", {
+        method: "POST",
+        body: JSON.stringify(device)
+      });
+    } catch(e) {}
+    const devices = JSON.parse(localStorage.getItem("techrepair_devices") || "[]");
+    devices.unshift(device);
+    localStorage.setItem("techrepair_devices", JSON.stringify(devices));
+    return device;
   }
 
   async deleteDevice(deviceId) {

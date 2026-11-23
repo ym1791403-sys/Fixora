@@ -301,7 +301,21 @@ window.SupabaseBridge = {
   async syncReport(report) {
     if (!this.isReady()) return;
     try {
-      await supabaseClient.from("diagnosis_reports").insert([report]);
+      const payload = {
+        report_code: report.report_id || `FIX-${Date.now().toString().slice(-4)}`,
+        device_category: report.device_category || "General",
+        brand: report.brand || "",
+        model: report.model || "",
+        problem_category: report.problem_category || "General Fault",
+        description: report.symptoms || report.description || "",
+        severity: report.severity || "medium",
+        empirical_statistics: report.empirical_statistics || null,
+        verified_guide: report.verified_guide || null,
+        possible_causes: report.possible_causes || [],
+        troubleshooting_steps: report.troubleshooting_steps || [],
+        required_tools: report.required_tools || []
+      };
+      await supabaseClient.from("diagnosis_reports").insert([payload]);
     } catch (e) {
       console.warn("Report sync to Supabase:", e);
     }
@@ -313,6 +327,126 @@ window.SupabaseBridge = {
       await supabaseClient.from("devices").insert([device]);
     } catch (e) {
       console.warn("Device sync to Supabase:", e);
+    }
+  },
+
+  /**
+   * Data Retrieval APIs directly querying Supabase PostgreSQL tables
+   */
+  async fetchGuides(category = null, difficulty = null, search = null) {
+    if (!this.isReady()) return [];
+    try {
+      let q = supabaseClient.from("repair_guides").select("*");
+      if (category && category !== "all") {
+        q = q.ilike("device_category", `%${category}%`);
+      }
+      if (difficulty && difficulty !== "all") {
+        q = q.eq("difficulty", difficulty);
+      }
+      if (search) {
+        q = q.or(`title.ilike.%${search}%,summary.ilike.%${search}%,device_model.ilike.%${search}%`);
+      }
+      const { data, error } = await q.order("id", { ascending: true }).limit(60);
+      if (error) throw error;
+      return data || [];
+    } catch(err) {
+      console.warn("Supabase fetchGuides error:", err);
+      return [];
+    }
+  },
+
+  async fetchGuide(id) {
+    if (!this.isReady()) return null;
+    try {
+      const { data, error } = await supabaseClient
+        .from("repair_guides")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    } catch(err) {
+      return null;
+    }
+  },
+
+  async fetchTechnicians(city = null, specialization = null) {
+    if (!this.isReady()) return [];
+    try {
+      let q = supabaseClient.from("technicians").select("*");
+      if (city && city !== "all") {
+        q = q.ilike("city", `%${city}%`);
+      }
+      if (specialization && specialization !== "all") {
+        q = q.ilike("specializations", `%${specialization}%`);
+      }
+      const { data, error } = await q.order("rating", { ascending: false });
+      if (error) throw error;
+      return data || [];
+    } catch(err) {
+      console.warn("Supabase fetchTechnicians error:", err);
+      return [];
+    }
+  },
+
+  async fetchReports() {
+    if (!this.isReady()) return [];
+    try {
+      const { data, error } = await supabaseClient
+        .from("diagnosis_reports")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data || [];
+    } catch(err) {
+      console.warn("Supabase fetchReports error:", err);
+      return [];
+    }
+  },
+
+  async fetchDevices() {
+    if (!this.isReady()) return [];
+    try {
+      const { data, error } = await supabaseClient
+        .from("devices")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data || [];
+    } catch(err) {
+      console.warn("Supabase fetchDevices error:", err);
+      return [];
+    }
+  },
+
+  async fetchRepairRequests() {
+    if (!this.isReady()) return [];
+    try {
+      const { data, error } = await supabaseClient
+        .from("repair_requests")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data || [];
+    } catch(err) {
+      console.warn("Supabase fetchRepairRequests error:", err);
+      return [];
+    }
+  },
+
+  async createRepairRequest(reqData) {
+    if (!this.isReady()) return reqData;
+    try {
+      const { data, error } = await supabaseClient
+        .from("repair_requests")
+        .insert([reqData])
+        .select()
+        .single();
+      if (error) throw error;
+      return data || reqData;
+    } catch(err) {
+      console.warn("Supabase createRepairRequest error:", err);
+      return reqData;
     }
   }
 };
