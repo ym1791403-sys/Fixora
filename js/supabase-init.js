@@ -551,6 +551,32 @@ window.SupabaseBridge = {
     }
   },
 
+  async bookTechnician(booking) {
+    if (!this.isReady()) return booking;
+    try {
+      const payload = {
+        technician_id: booking.technician_id || null,
+        technician_business: booking.technician_business || booking.technician_name || "Certified Technician",
+        device_info: booking.device_info || "Device",
+        problem_summary: booking.problem_summary || booking.description || "",
+        customer_name: booking.customer_name || (this.currentUser ? this.currentUser.full_name : "Customer"),
+        customer_phone: booking.customer_phone || "",
+        status: "NEW",
+        estimate: null,
+        final_cost: null,
+        actual_fault: "",
+        appointment: booking.appointment || null,
+        created_at: new Date().toISOString()
+      };
+      const { data, error } = await supabaseClient.from("repair_requests").insert([payload]).select().single();
+      if (error) throw error;
+      return data || payload;
+    } catch(err) {
+      console.warn("Supabase bookTechnician note:", err);
+      return booking;
+    }
+  },
+
   async createRepairRequest(reqData) {
     if (!this.isReady()) return reqData;
     try {

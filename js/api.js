@@ -259,6 +259,71 @@ class ApiClient {
   }
 
   // ==========================================
+  // REPAIR REQUESTS & LIFECYCLE (BYTEFORCE FULL SUITE)
+  // ==========================================
+  async getMyRequests() {
+    if (window.SupabaseBridge && window.SupabaseBridge.isReady()) {
+      return await window.SupabaseBridge.fetchRepairRequests();
+    }
+    try {
+      const stored = localStorage.getItem("byteforce_repair_requests");
+      return stored ? JSON.parse(stored) : [];
+    } catch(e) {
+      return [];
+    }
+  }
+
+  async createRepairRequest(reqData) {
+    if (window.SupabaseBridge && window.SupabaseBridge.isReady()) {
+      return await window.SupabaseBridge.createRepairRequest(reqData);
+    }
+    const stored = JSON.parse(localStorage.getItem("byteforce_repair_requests") || "[]");
+    const newReq = {
+      id: Date.now(),
+      status: "NEW",
+      created_at: new Date().toISOString(),
+      history: [{
+        at: new Date().toISOString().replace('T', ' ').slice(0, 19),
+        old: "",
+        new: "NEW",
+        actor: reqData.customer_name || "User",
+        note: "Initial request submitted"
+      }],
+      ...reqData
+    };
+    stored.unshift(newReq);
+    localStorage.setItem("byteforce_repair_requests", JSON.stringify(stored));
+    return newReq;
+  }
+
+  async updateRequestStatus(reqId, newStatus, updates = {}) {
+    if (window.SupabaseBridge && window.SupabaseBridge.isReady()) {
+      try {
+        await window.SupabaseBridge.getClient().from("repair_requests").update({ status: newStatus, ...updates }).eq("id", reqId);
+      } catch(e) {
+        console.warn("Supabase updateRequestStatus note:", e);
+      }
+    }
+    try {
+      const stored = JSON.parse(localStorage.getItem("byteforce_repair_requests") || "[]");
+      const idx = stored.findIndex(r => r.id == reqId);
+      if (idx !== -1) {
+        const hist = stored[idx].history || [];
+        hist.push({
+          at: new Date().toISOString().replace('T', ' ').slice(0, 19),
+          old: stored[idx].status,
+          new: newStatus,
+          actor: updates.actor || "User",
+          note: updates.note || ""
+        });
+        stored[idx] = { ...stored[idx], status: newStatus, ...updates, history: hist };
+        localStorage.setItem("byteforce_repair_requests", JSON.stringify(stored));
+      }
+    } catch(e) {}
+    return { ok: true };
+  }
+
+  // ==========================================
   // ADMIN SYSTEM METRICS (SUPABASE)
   // ==========================================
   async getAdminStats() {

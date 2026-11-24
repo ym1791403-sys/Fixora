@@ -828,7 +828,7 @@ textPath {
 /* Footer */
 .footer {
   background-color: #07090E;
-  border-top: 1px solid var(--color-border);
+  border-top: none;
   padding: 60px 0 30px;
   margin-top: auto;
 }
@@ -842,7 +842,7 @@ textPath {
 }
 
 .footer-bottom {
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid rgba(255, 255, 255, 0.03);
   margin-top: 40px;
   padding-top: 20px;
   display: flex;
@@ -1113,4 +1113,66 @@ textPath {
     grid-template-columns: repeat(2, 1fr);
     gap: 8px;
   }
+}
+
+/* Extra styles from ByteForce full feature suite */
+.notif-item {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 12px;
+  line-height: 1.4;
+  transition: all 0.2s ease;
+}
+.notif-item.unread {
+  background: rgba(56, 189, 248, 0.08);
+  border-color: rgba(56, 189, 248, 0.25);
+}
+.notif-item .notif-time {
+  font-size: 11px;
+  color: #64748B;
+  margin-top: 4px;
+}
+.req-action-box {
+  background: #111622;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 14px;
+  margin-top: 12px;
+}
+.req-timeline-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.star-rating-row {
+  display: inline-flex;
+  gap: 6px;
+  direction: ltr;
+  cursor: pointer;
+}
+.star-rating-row i {
+  color: #F59E0B;
+  font-size: 18px;
+  transition: transform 0.15s ease;
+}
+.star-rating-row i:hover {
+  transform: scale(1.2);
+}
+.tech-home-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(16, 185, 129, 0.12);
+  color: #10B981;
+  border: 1px solid rgba(16, 185, 129, 0.25);
 }

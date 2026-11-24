@@ -5,6 +5,7 @@
 class ByteForceApp {
   constructor() {
     this.currentView = "home";
+    this.notifications = [];
     this.wizardData = {
       device_category: "Laptop",
       brand: "",
@@ -24,6 +25,7 @@ class ByteForceApp {
     this.updateNavAuth();
     this.bindHomeTriage();
     this.fetchAndApplyLiveDatasetStats();
+    this.initNotifications();
 
     // Check for active Supabase session or OAuth redirect callback
     if (window.SupabaseBridge && typeof window.SupabaseBridge.initSession === "function") {
@@ -40,6 +42,114 @@ class ByteForceApp {
         console.warn("Session check note:", e);
       }
     }
+  }
+
+  // ==========================================
+  // NOTIFICATIONS SYSTEM (BYTEFORCE SUITE)
+  // ==========================================
+  initNotifications() {
+    try {
+      const stored = localStorage.getItem("byteforce_notifications");
+      if (stored) {
+        this.notifications = JSON.parse(stored);
+      } else {
+        const isAr = window.i18n.currentLang === "ar";
+        this.notifications = [
+          {
+            id: 1,
+            title: isAr ? "مرحباً بك في منصة ByteForce" : "Welcome to ByteForce",
+            message: isAr ? "تم ربط المنصة بقواعد بيانات الصيانة العالمية المعتمدة وشبكة الفنيين بنجاح." : "Connected to certified repair datasets and verified technician network.",
+            time: isAr ? "منذ قليل" : "Just now",
+            read: false,
+            type: "system"
+          }
+        ];
+      }
+    } catch(e) {
+      this.notifications = [];
+    }
+    this.updateNotifBadge();
+  }
+
+  updateNotifBadge() {
+    const badge = document.getElementById("notifBadge");
+    if (!badge) return;
+    const unread = (this.notifications || []).filter(n => !n.read).length;
+    if (unread > 0) {
+      badge.textContent = unread > 9 ? "9+" : unread;
+      badge.style.display = "inline-block";
+    } else {
+      badge.style.display = "none";
+    }
+  }
+
+  toggleNotifications() {
+    const dropdown = document.getElementById("notifDropdown");
+    if (!dropdown) return;
+    const isVisible = dropdown.style.display === "block";
+    dropdown.style.display = isVisible ? "none" : "block";
+    if (!isVisible) {
+      this.renderNotifications();
+    }
+  }
+
+  markAllNotifsRead() {
+    (this.notifications || []).forEach(n => n.read = true);
+    try {
+      localStorage.setItem("byteforce_notifications", JSON.stringify(this.notifications));
+    } catch(e) {}
+    this.updateNotifBadge();
+    this.renderNotifications();
+  }
+
+  markNotifRead(id) {
+    const n = (this.notifications || []).find(item => item.id === id);
+    if (n) {
+      n.read = true;
+      try {
+        localStorage.setItem("byteforce_notifications", JSON.stringify(this.notifications));
+      } catch(e) {}
+      this.updateNotifBadge();
+      this.renderNotifications();
+    }
+  }
+
+  addNotification(title, message, type = "info") {
+    const isAr = window.i18n.currentLang === "ar";
+    const newNotif = {
+      id: Date.now(),
+      title: title,
+      message: message,
+      time: isAr ? "الآن" : "Just now",
+      read: false,
+      type: type
+    };
+    this.notifications.unshift(newNotif);
+    if (this.notifications.length > 30) this.notifications.pop();
+    try {
+      localStorage.setItem("byteforce_notifications", JSON.stringify(this.notifications));
+    } catch(e) {}
+    this.updateNotifBadge();
+  }
+
+  renderNotifications() {
+    const list = document.getElementById("notifList");
+    if (!list) return;
+    const isAr = window.i18n.currentLang === "ar";
+    if (!this.notifications || this.notifications.length === 0) {
+      list.innerHTML = `<div style="text-align: center; padding: 24px 10px; color: #64748B; font-size: 13px;">${isAr ? 'لا توجد إشعارات بعد' : 'No notifications yet'}</div>`;
+      return;
+    }
+    list.innerHTML = this.notifications.map(n => `
+      <div class="notif-item ${n.read ? '' : 'unread'}" style="cursor: pointer;" onclick="app.markNotifRead(${n.id})">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+          <strong style="color: #FFFFFF; font-size: 13px;">${n.title}</strong>
+          ${!n.read ? '<span style="width: 8px; height: 8px; border-radius: 50%; background: #38BDF8; flex-shrink: 0; margin-top: 4px;"></span>' : ''}
+        </div>
+        <p style="color: #94A3B8; font-size: 12px; margin-top: 4px; line-height: 1.4;">${n.message}</p>
+        <div class="notif-time">${n.time}</div>
+      </div>
+    `).join("");
   }
 
   bindEvents() {
@@ -624,6 +734,7 @@ class ByteForceApp {
     `;
 
     this.fetchAndApplyLiveDatasetStats();
+    this.initNotifications();
   }
 
   async fetchAndApplyLiveDatasetStats() {
@@ -958,7 +1069,7 @@ class ByteForceApp {
                     <i class="fas fa-check-circle"></i> Open Repair Alliance (416k)
                   </span>
                   <span class="tag" style="background: rgba(168, 85, 247, 0.15); color: #C084FC; font-size: 11px;">
-                    <i class="fas fa-check-circle"></i> MyFixit (18,995 Manuals)
+                    <i class="fas fa-check-circle"></i> MyFixit (Verified Guides)
                   </span>
                   ${report.hard_drive_ml_prediction && report.hard_drive_ml_prediction.applicable ? `
                     <span class="tag" style="background: rgba(34, 197, 94, 0.15); color: #4ADE80; font-size: 11px;">
@@ -1319,33 +1430,61 @@ class ByteForceApp {
         <div class="container">
           
           <div style="text-align: center; max-width: 650px; margin: 0 auto 36px;">
-            <h1 style="font-size: 32px; margin-bottom: 10px;" data-i18n="tech_title">Certified Repair Technicians</h1>
+            <h1 style="font-size: 32px; margin-bottom: 10px;" data-i18n="tech_title">سوق الفنيين ومراكز الصيانة المعتمدة</h1>
             <p style="color: var(--color-text-muted); font-size: 15px;" data-i18n="tech_subtitle">
-              Connect with vetted hardware specialists in your city.
+              تواصل مع نخبة من الفنيين المعتمدين والموثقين في مختلف المحافظات مع تقدير المسافة والتقييمات الحقيقية.
             </p>
           </div>
 
-          <!-- Filters -->
-          <div class="card" style="margin-bottom: 30px; padding: 20px;">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
-              <select id="techCityFilter" class="form-control">
-                <option value="all">${window.i18n.t('tech_city_all')}</option>
-                <option value="Cairo">Cairo (القاهرة)</option>
-                <option value="Alexandria">Alexandria (الإسكندرية)</option>
-                <option value="Giza">Giza (الجيزة)</option>
-              </select>
-              <select id="techSpecFilter" class="form-control">
-                <option value="all">${window.i18n.t('tech_filter_spec')} (All)</option>
-                <option value="Laptop">Laptops & MacBooks</option>
-                <option value="Smartphone">Smartphones & Tablets</option>
-                <option value="Motherboard">Motherboards & Soldering</option>
-                <option value="Data Recovery">Data Recovery</option>
-              </select>
+          <!-- Enhanced Filter Bar (City, Specialty, Radius & Home Service) -->
+          <div class="card" style="margin-bottom: 30px; padding: 20px; background: #0E131F; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; align-items: center;">
+              <div>
+                <label style="font-size: 12px; color: #94A3B8; margin-bottom: 4px; display: block;">${isAr ? 'المدينة / المحافظة' : 'City / Governorate'}</label>
+                <select id="techCityFilter" class="form-control">
+                  <option value="all">${isAr ? 'جميع المدن (الكل)' : 'All Cities'}</option>
+                  <option value="Cairo">${isAr ? 'القاهرة' : 'Cairo'}</option>
+                  <option value="Giza">${isAr ? 'الجيزة' : 'Giza'}</option>
+                  <option value="Fayoum">${isAr ? 'الفيوم' : 'Fayoum'}</option>
+                  <option value="Alexandria">${isAr ? 'الإسكندرية' : 'Alexandria'}</option>
+                  <option value="6th of October">${isAr ? '6 أكتوبر' : '6th of October'}</option>
+                  <option value="Beni Suef">${isAr ? 'بني سويف' : 'Beni Suef'}</option>
+                </select>
+              </div>
+
+              <div>
+                <label style="font-size: 12px; color: #94A3B8; margin-bottom: 4px; display: block;">${isAr ? 'التخصص التقني' : 'Specialization'}</label>
+                <select id="techSpecFilter" class="form-control">
+                  <option value="all">${isAr ? 'جميع التخصصات' : 'All Specializations'}</option>
+                  <option value="Laptop">${isAr ? 'لابتوب وماك بوك' : 'Laptops & MacBooks'}</option>
+                  <option value="Smartphone">${isAr ? 'هواتف ذكية وألواح' : 'Smartphones & Tablets'}</option>
+                  <option value="Motherboard">${isAr ? 'صيانة ماذربورد ولحام دقيق' : 'Motherboards & Micro-soldering'}</option>
+                  <option value="Data Recovery">${isAr ? 'استعادة بيانات وتخزين' : 'Data Recovery'}</option>
+                </select>
+              </div>
+
+              <div>
+                <label style="font-size: 12px; color: #94A3B8; margin-bottom: 4px; display: block;">${isAr ? 'نطاق المسافة' : 'Radius Distance'}</label>
+                <select id="techRadiusFilter" class="form-control">
+                  <option value="all">${isAr ? 'أي مسافة' : 'Any Distance'}</option>
+                  <option value="5">5 ${isAr ? 'كم' : 'km'}</option>
+                  <option value="10">10 ${isAr ? 'كم' : 'km'}</option>
+                  <option value="20">20 ${isAr ? 'كم' : 'km'}</option>
+                  <option value="50">50 ${isAr ? 'كم' : 'km'}</option>
+                </select>
+              </div>
+
+              <div style="padding-top: 18px;">
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: #FFFFFF; font-size: 13px;">
+                  <input type="checkbox" id="techHomeOnly" style="width: auto; cursor: pointer;">
+                  <span><i class="fas fa-home" style="color: #10B981;"></i> ${isAr ? 'خدمة منزلية فقط' : 'Home Service Only'}</span>
+                </label>
+              </div>
             </div>
           </div>
 
           <!-- Technicians Grid -->
-          <div id="techGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 24px;">
+          <div id="techGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 24px;">
             <div style="text-align: center; grid-column: 1/-1; padding: 40px; color: var(--color-text-muted);">
               <i class="fas fa-spinner fa-spin fa-2x"></i>
             </div>
@@ -1358,12 +1497,16 @@ class ByteForceApp {
     const loadTechs = async () => {
       const city = container.querySelector("#techCityFilter").value;
       const spec = container.querySelector("#techSpecFilter").value;
+      const homeOnly = container.querySelector("#techHomeOnly").checked;
       const grid = container.querySelector("#techGrid");
 
       try {
-        const techs = await window.api.getTechnicians(city, spec);
+        let techs = await window.api.getTechnicians(city, spec);
+        if (homeOnly) {
+          techs = techs.filter(t => t.home || t.home_service || (t.bio && t.bio.includes("منزل")));
+        }
         if (techs.length === 0) {
-          grid.innerHTML = `<div style="text-align: center; grid-column: 1/-1; padding: 40px; color: var(--color-text-muted);">${isAr ? 'لا يوجد فنيين مطابقين للبحث حالياً' : 'No technicians matched this filter.'}</div>`;
+          grid.innerHTML = `<div style="text-align: center; grid-column: 1/-1; padding: 40px; color: var(--color-text-muted);">${isAr ? 'لا يوجد فنيين مطابقين لمعايير البحث حالياً' : 'No technicians matched this filter.'}</div>`;
           return;
         }
 
@@ -1375,27 +1518,30 @@ class ByteForceApp {
           const reviews = t.total_reviews || t.reviews_count || 120;
           const expYears = t.experience_years || 6;
           const specs = Array.isArray(t.specializations) ? t.specializations : (typeof t.specializations === 'string' ? t.specializations.split(',') : []);
+          const hasHome = t.home || t.home_service || (t.bio && t.bio.includes("منزل"));
 
           return `
-          <div class="tech-card">
+          <div class="tech-card" style="display: flex; flex-direction: column; justify-content: space-between;">
             <div>
-              <div style="display: flex; gap: 14px; align-items: center; margin-bottom: 14px;">
-                <div class="tech-avatar">
-                  ${bName.charAt(0)}
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                <div style="display: flex; gap: 12px; align-items: center;">
+                  <div class="tech-avatar">${bName.charAt(0)}</div>
+                  <div>
+                    <h4 style="font-size: 16px; margin-bottom: 2px; color: #FFFFFF;">${bName}</h4>
+                    <span style="font-size: 12px; color: var(--color-text-muted);"><i class="fas fa-user-check" style="color: var(--color-success);"></i> ${tName}</span>
+                  </div>
                 </div>
-                <div>
-                  <h4 style="font-size: 17px; margin-bottom: 2px;">${bName}</h4>
-                  <span style="font-size: 13px; color: var(--color-text-muted);"><i class="fas fa-user-check" style="color: var(--color-success);"></i> ${tName}</span>
-                </div>
+                ${hasHome ? `<span class="tech-home-badge"><i class="fas fa-home"></i> ${isAr ? 'خدمة منزلية' : 'Home'}</span>` : ''}
               </div>
 
-              <div style="display: flex; gap: 12px; font-size: 13px; color: var(--color-text-muted); margin-bottom: 12px; flex-wrap: wrap;">
-                <span><i class="fas fa-map-marker-alt" style="color: var(--color-secondary);"></i> ${city}</span>
+              <div style="display: flex; gap: 12px; font-size: 12px; color: var(--color-text-muted); margin-bottom: 12px; flex-wrap: wrap;">
+                <span><i class="fas fa-map-marker-alt" style="color: #38BDF8;"></i> ${city}</span>
                 <span><i class="fas fa-star" style="color: #F59E0B;"></i> ${rating} (${reviews})</span>
-                <span><i class="fas fa-award"></i> ${expYears} ${window.i18n ? window.i18n.t('tech_experience') : 'سنوات خبرة'}</span>
+                <span><i class="fas fa-award" style="color: #60A5FA;"></i> ${expYears} ${isAr ? 'سنوات خبرة' : 'years exp'}</span>
+                <span><i class="fas fa-clock" style="color: #94A3B8;"></i> 10:00 - 21:00</span>
               </div>
 
-              <p style="font-size: 13px; color: var(--color-text-main); margin-bottom: 14px; line-height: 1.5;">
+              <p style="font-size: 13px; color: #94A3B8; margin-bottom: 14px; line-height: 1.5;">
                 ${t.bio || (isAr ? 'فني صيانة معتمد وخبير في فحص وإصلاح اللوحات الإلكترونية والأجهزة الذكية.' : 'Certified hardware diagnostics and motherboard micro-soldering specialist.')}
               </p>
 
@@ -1404,9 +1550,9 @@ class ByteForceApp {
               </div>
             </div>
 
-            <button class="btn btn-primary btn-sm" style="width: 100%;" onclick="app.showBookingModal(${t.id}, '${bName.replace(/'/g, "\\'")}')">
-              <i class="fas fa-calendar-plus"></i>
-              <span data-i18n="tech_book_btn">${isAr ? 'حجز فحص وصيانة' : 'Book Repair'}</span>
+            <button class="btn btn-primary btn-sm" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;" onclick="app.showBookTechnicianModal(${t.id}, '${bName.replace(/'/g, "\'")}')">
+              <i class="fas fa-paper-plane"></i>
+              <span>${isAr ? 'طلب صيانة فوري' : 'Request Repair'}</span>
             </button>
           </div>
         `;
@@ -1418,6 +1564,7 @@ class ByteForceApp {
 
     container.querySelector("#techCityFilter").addEventListener("change", loadTechs);
     container.querySelector("#techSpecFilter").addEventListener("change", loadTechs);
+    container.querySelector("#techHomeOnly").addEventListener("change", loadTechs);
     loadTechs();
   }
 
@@ -1637,6 +1784,262 @@ class ByteForceApp {
   // ==========================================
   // VIEW: USER / TECHNICIAN DASHBOARD
   // ==========================================
+
+  // ==========================================
+  // REQUEST LIFECYCLE & APPOINTMENTS (BYTEFORCE SUITE)
+  // ==========================================
+  async techAcceptRequest(reqId) {
+    const isAr = window.i18n.currentLang === "ar";
+    const estInput = document.getElementById(`estInput_${reqId}`);
+    const estimate = estInput ? parseFloat(estInput.value) : null;
+    if (estimate === null || isNaN(estimate) || estimate <= 0) {
+      alert(isAr ? "يرجى تحديد التكلفة التقديرية المبدئية للإصلاح" : "Please provide an estimated cost");
+      return;
+    }
+    await window.api.updateRequestStatus(reqId, "ACCEPTED", {
+      estimate: estimate,
+      actor: "Technician",
+      note: isAr ? `تم قبول الطلب بتقدير مبدئي: ${estimate} ج.م` : `Accepted with estimate: ${estimate} EGP`
+    });
+    this.addNotification(
+      isAr ? "تم قبول طلب الصيانة" : "Repair Request Accepted",
+      isAr ? `تم قبول الطلب #${reqId} وتحديد التكلفة التقديرية (${estimate} ج.م)` : `Request #${reqId} accepted with estimate (${estimate} EGP)`,
+      "success"
+    );
+    this.renderDashboard(document.getElementById("mainContent"));
+  }
+
+  async techRejectRequest(reqId) {
+    const isAr = window.i18n.currentLang === "ar";
+    if (!confirm(isAr ? "هل أنت متأكد من الاعتذار عن هذا الطلب؟" : "Are you sure you want to decline this request?")) return;
+    await window.api.updateRequestStatus(reqId, "CANCELED", {
+      actor: "Technician",
+      note: isAr ? "تم الاعتذار عن الطلب من قِبل الفني" : "Declined by technician"
+    });
+    this.addNotification(
+      isAr ? "تم الاعتذار عن الطلب" : "Request Declined",
+      isAr ? `تم الاعتذار عن طلب الصيانة #${reqId}` : `Request #${reqId} was declined`,
+      "warning"
+    );
+    this.renderDashboard(document.getElementById("mainContent"));
+  }
+
+  async custBookAppointment(reqId) {
+    const isAr = window.i18n.currentLang === "ar";
+    const apptInput = document.getElementById(`apptInput_${reqId}`);
+    const apptVal = apptInput ? apptInput.value : "";
+    if (!apptVal) {
+      alert(isAr ? "يرجى اختيار تاريخ ووقت مناسب للموعد" : "Please select appointment date and time");
+      return;
+    }
+    await window.api.updateRequestStatus(reqId, "APPOINTMENT_CONFIRMED", {
+      appointment: apptVal,
+      actor: "Customer",
+      note: isAr ? `تم تأكيد موعد الصيانة: ${apptVal}` : `Appointment booked for ${apptVal}`
+    });
+    this.addNotification(
+      isAr ? "تم تأكيد موعد الصيانة" : "Appointment Confirmed",
+      isAr ? `تم تأكيد الموعد للطلب #${reqId} بتاريخ ${apptVal}` : `Appointment confirmed for #${reqId} at ${apptVal}`,
+      "success"
+    );
+    this.renderDashboard(document.getElementById("mainContent"));
+  }
+
+  async custCancelRequest(reqId) {
+    const isAr = window.i18n.currentLang === "ar";
+    if (!confirm(isAr ? "هل أنت متأكد من إلغاء هذا الطلب؟" : "Are you sure you want to cancel this request?")) return;
+    await window.api.updateRequestStatus(reqId, "CANCELED", {
+      actor: "Customer",
+      note: isAr ? "تم إلغاء الطلب من قِبل العميل" : "Cancelled by customer"
+    });
+    this.renderDashboard(document.getElementById("mainContent"));
+  }
+
+  async techReceiveDevice(reqId) {
+    const isAr = window.i18n.currentLang === "ar";
+    await window.api.updateRequestStatus(reqId, "DEVICE_RECEIVED", {
+      actor: "Technician",
+      note: isAr ? "تم استلام الجهاز فعلياً في مركز الصيانة" : "Device physically received"
+    });
+    this.addNotification(
+      isAr ? "تم استلام الجهاز" : "Device Received",
+      isAr ? `تم توثيق استلام جهاز الطلب #${reqId} في المركز` : `Device for #${reqId} received at lab`,
+      "info"
+    );
+    this.renderDashboard(document.getElementById("mainContent"));
+  }
+
+  async techStartDiagnosis(reqId) {
+    const isAr = window.i18n.currentLang === "ar";
+    await window.api.updateRequestStatus(reqId, "DIAGNOSIS_IN_PROGRESS", {
+      actor: "Technician",
+      note: isAr ? "بدء الفحص المخبري والتشخيص الفعلي" : "Hardware diagnostic inspection started"
+    });
+    this.renderDashboard(document.getElementById("mainContent"));
+  }
+
+  async techStartRepair(reqId) {
+    const isAr = window.i18n.currentLang === "ar";
+    await window.api.updateRequestStatus(reqId, "REPAIR_IN_PROGRESS", {
+      actor: "Technician",
+      note: isAr ? "بدء عملية الإصلاح وتغيير القطع" : "Repair and soldering in progress"
+    });
+    this.renderDashboard(document.getElementById("mainContent"));
+  }
+
+  async techRequestApproval(reqId) {
+    const isAr = window.i18n.currentLang === "ar";
+    const extraInput = document.getElementById(`extraEstInput_${reqId}`);
+    const extra = extraInput ? parseFloat(extraInput.value) : null;
+    if (extra === null || isNaN(extra) || extra <= 0) {
+      alert(isAr ? "يرجى كتابة التكلفة الإضافية المطلوبة" : "Please provide the additional required cost");
+      return;
+    }
+    await window.api.updateRequestStatus(reqId, "WAITING_FOR_CUSTOMER_APPROVAL", {
+      extra_cost: extra,
+      actor: "Technician",
+      note: isAr ? `مطلوب موافقة العميل على تكلفة إضافية: ${extra} ج.م` : `Approval requested for additional ${extra} EGP`
+    });
+    this.addNotification(
+      isAr ? "مطلوب موافقة العميل" : "Approval Requested",
+      isAr ? `تم طلب موافقة العميل للطلب #${reqId} على تكلفة إضافية (${extra} ج.م)` : `Approval requested for #${reqId} (${extra} EGP)`,
+      "warning"
+    );
+    this.renderDashboard(document.getElementById("mainContent"));
+  }
+
+  async custApproveExtra(reqId) {
+    const isAr = window.i18n.currentLang === "ar";
+    await window.api.updateRequestStatus(reqId, "REPAIR_IN_PROGRESS", {
+      actor: "Customer",
+      note: isAr ? "وافق العميل على التكلفة وبدء الإصلاح فوراً" : "Customer approved additional cost"
+    });
+    this.addNotification(
+      isAr ? "تمت موافقة العميل" : "Customer Approved",
+      isAr ? `وافق العميل على تكلفة الطلب #${reqId}` : `Customer approved cost for #${reqId}`,
+      "success"
+    );
+    this.renderDashboard(document.getElementById("mainContent"));
+  }
+
+  async techCompleteRepair(reqId) {
+    const isAr = window.i18n.currentLang === "ar";
+    const costInput = document.getElementById(`finalCostInput_${reqId}`);
+    const faultInput = document.getElementById(`actualFaultInput_${reqId}`);
+    const finalCost = costInput ? parseFloat(costInput.value) : null;
+    const actualFault = faultInput ? faultInput.value.trim() : "";
+    if (finalCost === null || isNaN(finalCost) || finalCost < 0) {
+      alert(isAr ? "يرجى تحديد التكلفة النهائية الفعلية" : "Please enter the final actual cost");
+      return;
+    }
+    await window.api.updateRequestStatus(reqId, "COMPLETED", {
+      final_cost: finalCost,
+      actual_fault: actualFault || (isAr ? "تم الإصلاح بنجاح" : "Repaired successfully"),
+      actor: "Technician",
+      note: isAr ? `اكتمل الإصلاح بنجاح. التكلفة: ${finalCost} ج.م` : `Repair completed. Final cost: ${finalCost} EGP`
+    });
+    this.addNotification(
+      isAr ? "اكتمل الإصلاح بنجاح! 🎉" : "Repair Completed! 🎉",
+      isAr ? `جهازك للطلب #${reqId} جاهز للاستلام. التكلفة النهائية: ${finalCost} ج.م` : `Device for #${reqId} is ready. Final cost: ${finalCost} EGP`,
+      "success"
+    );
+    this.renderDashboard(document.getElementById("mainContent"));
+  }
+
+  async custSubmitReview(reqId) {
+    const isAr = window.i18n.currentLang === "ar";
+    const starSelect = document.getElementById(`ratingSelect_${reqId}`);
+    const commentInput = document.getElementById(`reviewComment_${reqId}`);
+    const rating = starSelect ? parseInt(starSelect.value) : 5;
+    const comment = commentInput ? commentInput.value.trim() : "";
+    await window.api.updateRequestStatus(reqId, "COMPLETED", {
+      reviewed: true,
+      rating: rating,
+      comment: comment,
+      actor: "Customer",
+      note: isAr ? `تم تقييم الفني (${rating} نجوم)` : `Customer reviewed (${rating} stars)`
+    });
+    this.addNotification(
+      isAr ? "شكراً لتقييمك" : "Thank you for reviewing",
+      isAr ? `تم تسجيل تقييمك (${rating} نجوم) للطلب #${reqId}` : `Review recorded for #${reqId}`,
+      "info"
+    );
+    this.renderDashboard(document.getElementById("mainContent"));
+  }
+
+  showBookTechnicianModal(techId, techName) {
+    const isAr = window.i18n.currentLang === "ar";
+    if (!window.api.isLoggedIn()) {
+      this.showAuthModal("login", "user", isAr ? "يرجى تسجيل الدخول أولاً لتتمكن من حجز موعد مع الفني" : "Please sign in first to book a repair technician");
+      return;
+    }
+    const user = window.api.getUser();
+    const content = `
+      <div>
+        <h3 style="font-size: 20px; color: #FFFFFF; margin-bottom: 6px;">
+          ${isAr ? `طلب صيانة لدى: ${techName}` : `Request Repair: ${techName}`}
+        </h3>
+        <p style="font-size: 13px; color: #94A3B8; margin-bottom: 18px;">
+          ${isAr ? 'حدد جهازك واكتب وصف العطل وسيقوم الفني بتقديم التكلفة التقديرية فوراً.' : 'Describe the fault to receive an estimated quote directly from the technician.'}
+        </p>
+
+        <form id="directBookForm">
+          <div class="form-group">
+            <label class="form-label">${isAr ? 'نوع الجهاز وموديله' : 'Device Category & Model'}</label>
+            <input type="text" id="directBookDevice" class="form-control" required placeholder="${isAr ? 'مثال: iPhone 14 Pro أو Dell XPS 15' : 'e.g. iPhone 14 Pro or Dell XPS 15'}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">${isAr ? 'وصف المشكلة أو العطل' : 'Problem Description'}</label>
+            <textarea id="directBookProblem" class="form-control" rows="3" required placeholder="${isAr ? 'صف ما حدث للجهاز أو الأعراض الظاهرة...' : 'Describe what happened or symptoms...'}"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">${isAr ? 'رقم هاتفك للتواصل' : 'Contact Phone'}</label>
+            <input type="tel" id="directBookPhone" class="form-control" placeholder="+20 10 ...">
+          </div>
+          <button type="submit" class="btn btn-primary btn-lg" style="width: 100%; margin-top: 10px;">
+            <i class="fas fa-paper-plane"></i>
+            <span>${isAr ? 'إرسال طلب الصيانة للفني' : 'Submit Repair Request'}</span>
+          </button>
+        </form>
+      </div>
+    `;
+
+    this.openModal(content);
+
+    document.getElementById("directBookForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const dev = document.getElementById("directBookDevice").value.trim();
+      const prob = document.getElementById("directBookProblem").value.trim();
+      const phone = document.getElementById("directBookPhone").value.trim();
+      const submitBtn = e.target.querySelector("button[type='submit']");
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${isAr ? 'جاري إرسال الطلب...' : 'Submitting...'}`;
+
+      try {
+        await window.api.createRepairRequest({
+          technician_id: techId,
+          technician_business: techName,
+          device_info: dev,
+          problem_summary: prob,
+          customer_name: user.full_name || user.email,
+          customer_phone: phone,
+          status: "NEW"
+        });
+        this.closeModal();
+        this.addNotification(
+          isAr ? "تم إرسال طلب الصيانة" : "Repair Request Sent",
+          isAr ? `تم إرسال طلب صيانة لجهازك (${dev}) إلى ${techName}` : `Request for ${dev} sent to ${techName}`,
+          "success"
+        );
+        this.navigate("dashboard");
+      } catch(err) {
+        alert((isAr ? "فشل إرسال الطلب: " : "Failed to submit request: ") + err.message);
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `<i class="fas fa-paper-plane"></i> ${isAr ? 'إرسال طلب الصيانة للفني' : 'Submit Repair Request'}`;
+      }
+    });
+  }
+
   async renderDashboard(container) {
     const isAr = window.i18n.currentLang === "ar";
     if (!window.api.isLoggedIn()) {
@@ -1708,53 +2111,191 @@ class ByteForceApp {
     const isAr = window.i18n.currentLang === "ar";
     const user = window.api.getUser();
 
-    // 1. Load Requests
+    // 1. Load Requests (ByteForce Lifecycle Engine)
     try {
       const requests = await window.api.getMyRequests();
       const reqContainer = container.querySelector("#dashRequestsList");
       if (requests.length === 0) {
         reqContainer.innerHTML = `<p style="color: var(--color-text-muted); font-size: 14px;">${window.i18n.t('dash_no_requests')}</p>`;
       } else {
+        const isTech = user.role === 'technician';
         reqContainer.innerHTML = `
-          <div style="overflow-x: auto;">
-            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-              <thead>
-                <tr style="border-bottom: 2px solid var(--color-border); text-align: ${isAr ? 'right' : 'left'}; color: var(--color-text-muted);">
-                  <th style="padding: 10px;">ID</th>
-                  <th style="padding: 10px;">${isAr ? 'الجهاز' : 'Device'}</th>
-                  <th style="padding: 10px;">${isAr ? 'المشكلة' : 'Problem'}</th>
-                  <th style="padding: 10px;">${isAr ? 'الطرف الآخر' : 'Party'}</th>
-                  <th style="padding: 10px;">${isAr ? 'الحالة' : 'Status'}</th>
-                  ${user.role === 'technician' ? `<th style="padding: 10px;">${isAr ? 'الإجراء' : 'Action'}</th>` : ''}
-                </tr>
-              </thead>
-              <tbody>
-                ${requests.map(r => `
-                  <tr style="border-bottom: 1px solid var(--color-border);">
-                    <td style="padding: 12px 10px;">#${r.id}</td>
-                    <td style="padding: 12px 10px; font-weight: 600;">${r.device_info}</td>
-                    <td style="padding: 12px 10px;">${r.problem_summary}</td>
-                    <td style="padding: 12px 10px;">${user.role === 'technician' ? r.customer_name : r.technician_business}</td>
-                    <td style="padding: 12px 10px;">
-                      <span class="tag" style="background-color: ${r.status === 'completed' ? 'var(--color-success-bg)' : r.status === 'in_progress' ? 'var(--color-warning-bg)' : '#E2E8F0'}; color: ${r.status === 'completed' ? 'var(--color-success)' : r.status === 'in_progress' ? '#D97706' : 'var(--color-text-main)'};">
-                        ${r.status.toUpperCase()}
-                      </span>
-                    </td>
-                    ${user.role === 'technician' ? `
-                      <td style="padding: 12px 10px;">
-                        <select class="form-control" style="padding: 4px 8px; font-size: 12px; width: auto;" onchange="app.changeRequestStatus(${r.id}, this.value)">
-                          <option value="pending" ${r.status === 'pending' ? 'selected' : ''}>Pending</option>
-                          <option value="accepted" ${r.status === 'accepted' ? 'selected' : ''}>Accepted</option>
-                          <option value="in_progress" ${r.status === 'in_progress' ? 'selected' : ''}>In Progress</option>
-                          <option value="completed" ${r.status === 'completed' ? 'selected' : ''}>Completed</option>
-                          <option value="cancelled" ${r.status === 'cancelled' ? 'selected' : ''}>Cancelled</option>
-                        </select>
-                      </td>
-                    ` : ''}
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
+          <div style="display: flex; flex-direction: column; gap: 16px;">
+            ${requests.map(r => {
+              const st = (r.status || 'NEW').toUpperCase();
+              let badgeColor = '#64748B';
+              let badgeBg = 'rgba(100, 116, 139, 0.15)';
+              let statusLabel = st;
+
+              if (st === 'NEW' || st === 'PENDING') {
+                statusLabel = isAr ? 'طلب جديد / بانتظار الموافقة' : 'New / Awaiting Review';
+                badgeColor = '#38BDF8'; badgeBg = 'rgba(56, 189, 248, 0.15)';
+              } else if (st === 'ACCEPTED') {
+                statusLabel = isAr ? 'تم القبول (بانتظار تحديد الموعد)' : 'Accepted (Awaiting Appointment)';
+                badgeColor = '#60A5FA'; badgeBg = 'rgba(96, 165, 250, 0.15)';
+              } else if (st === 'APPOINTMENT_CONFIRMED') {
+                statusLabel = isAr ? 'موعد الصيانة مؤكد' : 'Appointment Confirmed';
+                badgeColor = '#10B981'; badgeBg = 'rgba(16, 185, 129, 0.15)';
+              } else if (st === 'DEVICE_RECEIVED') {
+                statusLabel = isAr ? 'تم استلام الجهاز بالورشة' : 'Device Received';
+                badgeColor = '#818CF8'; badgeBg = 'rgba(129, 140, 248, 0.15)';
+              } else if (st === 'DIAGNOSIS_IN_PROGRESS') {
+                statusLabel = isAr ? 'جاري الفحص المخبري والتشخيص' : 'Diagnosis In Progress';
+                badgeColor = '#F59E0B'; badgeBg = 'rgba(245, 158, 11, 0.15)';
+              } else if (st === 'WAITING_FOR_CUSTOMER_APPROVAL') {
+                statusLabel = isAr ? 'بانتظار موافقة العميل على تكلفة إضافية' : 'Waiting Customer Approval';
+                badgeColor = '#EF4444'; badgeBg = 'rgba(239, 68, 68, 0.15)';
+              } else if (st === 'REPAIR_IN_PROGRESS') {
+                statusLabel = isAr ? 'جاري الإصلاح واللحام' : 'Repair In Progress';
+                badgeColor = '#3B82F6'; badgeBg = 'rgba(59, 130, 246, 0.15)';
+              } else if (st === 'COMPLETED') {
+                statusLabel = isAr ? 'اكتمل الإصلاح بنجاح ✓' : 'Completed ✓';
+                badgeColor = '#10B981'; badgeBg = 'rgba(16, 185, 129, 0.2)';
+              } else if (st === 'CANCELED' || st === 'CANCELLED') {
+                statusLabel = isAr ? 'ملغي' : 'Canceled';
+                badgeColor = '#94A3B8'; badgeBg = 'rgba(148, 163, 184, 0.1)';
+              }
+
+              return `
+                <div class="card" style="padding: 18px; border: 1px solid rgba(255,255,255,0.08); background: #0F131C; border-radius: 10px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
+                    <div>
+                      <span style="font-weight: 700; color: #FFFFFF; font-size: 16px;">#${r.id} · ${r.device_info || 'Device'}</span>
+                      <span style="color: #64748B; font-size: 13px; margin-inline-start: 8px;">(${isTech ? (r.customer_name || 'Customer') : (r.technician_business || 'Technician')})</span>
+                    </div>
+                    <span class="tag" style="background: ${badgeBg}; color: ${badgeColor}; border: 1px solid ${badgeColor}40; font-weight: 600; font-size: 12px;">
+                      ${statusLabel}
+                    </span>
+                  </div>
+
+                  <p style="color: #94A3B8; font-size: 13px; margin-bottom: 10px; line-height: 1.5;">
+                    <i class="fas fa-info-circle" style="color: #38BDF8; margin-inline-end: 6px;"></i>${r.problem_summary || ''}
+                  </p>
+
+                  <div style="display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; color: #CBD5E1; margin-bottom: 12px; background: rgba(255,255,255,0.02); padding: 8px 12px; border-radius: 6px;">
+                    ${r.estimate ? `<div><span style="color: #64748B;">${isAr ? 'التقدير المبدئي: ' : 'Estimate: '}</span><b>${r.estimate} ج.م</b></div>` : ''}
+                    ${r.extra_cost ? `<div><span style="color: #F87171;">${isAr ? 'تكلفة إضافية مطلوبة: ' : 'Extra Cost: '}</span><b>${r.extra_cost} ج.م</b></div>` : ''}
+                    ${r.final_cost ? `<div><span style="color: #10B981;">${isAr ? 'التكلفة النهائية: ' : 'Final Cost: '}</span><b>${r.final_cost} ج.م</b></div>` : ''}
+                    ${r.actual_fault ? `<div><span style="color: #64748B;">${isAr ? 'العطل الفعلي: ' : 'Actual Fault: '}</span><b>${r.actual_fault}</b></div>` : ''}
+                    ${r.appointment ? `<div><span style="color: #38BDF8;"><i class="fas fa-calendar-alt"></i> ${isAr ? 'الموعد: ' : 'Appointment: '}</span><b dir="ltr">${r.appointment}</b></div>` : ''}
+                  </div>
+
+                  <!-- Dynamic Action Boxes based on role & status -->
+                  ${isTech && (st === 'NEW' || st === 'PENDING') ? `
+                    <div class="req-action-box" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                      <input type="number" id="estInput_${r.id}" placeholder="${isAr ? 'التكلفة التقديرية (ج.م)' : 'Estimated Cost (EGP)'}" class="form-control" style="max-width: 200px;">
+                      <button class="btn btn-primary btn-sm" onclick="app.techAcceptRequest(${r.id})">
+                        <i class="fas fa-check"></i> ${isAr ? 'قبول وتحديد التكلفة' : 'Accept with Estimate'}
+                      </button>
+                      <button class="btn btn-outline btn-sm" style="color: #EF4444; border-color: rgba(239,68,68,0.3);" onclick="app.techRejectRequest(${r.id})">
+                        ${isAr ? 'اعتذار عن الطلب' : 'Decline'}
+                      </button>
+                    </div>
+                  ` : ''}
+
+                  ${!isTech && st === 'ACCEPTED' ? `
+                    <div class="req-action-box" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                      <span style="font-size: 13px; color: #FFFFFF;">${isAr ? 'اختر موعد الصيانة:' : 'Select Appointment Slot:'}</span>
+                      <input type="datetime-local" id="apptInput_${r.id}" class="form-control" style="max-width: 240px;" dir="ltr">
+                      <button class="btn btn-primary btn-sm" onclick="app.custBookAppointment(${r.id})">
+                        <i class="fas fa-calendar-check"></i> ${isAr ? 'تأكيد حجز الموعد' : 'Confirm Slot'}
+                      </button>
+                      <button class="btn btn-outline btn-sm" style="color: #EF4444; border-color: rgba(239,68,68,0.3);" onclick="app.custCancelRequest(${r.id})">
+                        ${isAr ? 'إلغاء' : 'Cancel'}
+                      </button>
+                    </div>
+                  ` : ''}
+
+                  ${isTech && st === 'APPOINTMENT_CONFIRMED' ? `
+                    <div class="req-action-box">
+                      <button class="btn btn-primary btn-sm" onclick="app.techReceiveDevice(${r.id})">
+                        <i class="fas fa-box"></i> ${isAr ? 'تأكيد استلام الجهاز في المركز' : 'Confirm Device Received'}
+                      </button>
+                    </div>
+                  ` : ''}
+
+                  ${isTech && st === 'DEVICE_RECEIVED' ? `
+                    <div class="req-action-box">
+                      <button class="btn btn-primary btn-sm" onclick="app.techStartDiagnosis(${r.id})">
+                        <i class="fas fa-microscope"></i> ${isAr ? 'بدء الفحص والتشخيص الفعلي' : 'Start Diagnostic Inspection'}
+                      </button>
+                    </div>
+                  ` : ''}
+
+                  ${isTech && st === 'DIAGNOSIS_IN_PROGRESS' ? `
+                    <div class="req-action-box" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                      <button class="btn btn-primary btn-sm" onclick="app.techStartRepair(${r.id})">
+                        <i class="fas fa-tools"></i> ${isAr ? 'بدء الصيانة والإصلاح' : 'Start Repair'}
+                      </button>
+                      <input type="number" id="extraEstInput_${r.id}" placeholder="${isAr ? 'تكلفة إضافية مطلوبة (ج.م)' : 'Extra Cost (EGP)'}" class="form-control" style="max-width: 180px;">
+                      <button class="btn btn-outline btn-sm" style="color: #F59E0B; border-color: rgba(245,158,11,0.4);" onclick="app.techRequestApproval(${r.id})">
+                        ${isAr ? 'طلب موافقة العميل على تكلفة إضافية' : 'Request Customer Approval'}
+                      </button>
+                    </div>
+                  ` : ''}
+
+                  ${!isTech && st === 'WAITING_FOR_CUSTOMER_APPROVAL' ? `
+                    <div class="req-action-box" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                      <span style="font-size: 13px; color: #F87171;">${isAr ? 'طلب الفني تكلفة إضافية لمتابعة الإصلاح:' : 'Technician requested extra cost:'}</span>
+                      <button class="btn btn-primary btn-sm" onclick="app.custApproveExtra(${r.id})">
+                        <i class="fas fa-check"></i> ${isAr ? 'الموافقة على التكلفة ومتابعة الصيانة' : 'Approve & Proceed'}
+                      </button>
+                      <button class="btn btn-outline btn-sm" style="color: #EF4444; border-color: rgba(239,68,68,0.3);" onclick="app.custCancelRequest(${r.id})">
+                        ${isAr ? 'رفض واستلام الجهاز' : 'Reject & Cancel'}
+                      </button>
+                    </div>
+                  ` : ''}
+
+                  ${isTech && st === 'REPAIR_IN_PROGRESS' ? `
+                    <div class="req-action-box" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                      <input type="number" id="finalCostInput_${r.id}" placeholder="${isAr ? 'التكلفة النهائية (ج.م)' : 'Final Cost (EGP)'}" class="form-control" style="max-width: 170px;">
+                      <input type="text" id="actualFaultInput_${r.id}" placeholder="${isAr ? 'العطل الفعلي والقطع المستبدلة' : 'Actual Fault & Parts'}" class="form-control" style="flex: 1; min-width: 200px;">
+                      <button class="btn btn-primary btn-sm" onclick="app.techCompleteRepair(${r.id})">
+                        <i class="fas fa-check-circle"></i> ${isAr ? 'إتمام الإصلاح وتوثيق التكلفة' : 'Complete Repair'}
+                      </button>
+                    </div>
+                  ` : ''}
+
+                  ${!isTech && st === 'COMPLETED' ? `
+                    <div class="req-action-box">
+                      ${r.reviewed ? `
+                        <div style="color: #10B981; font-size: 13px; display: flex; align-items: center; gap: 8px;">
+                          <i class="fas fa-star" style="color: #F59E0B;"></i>
+                          <span>${isAr ? `تم تقييم هذه الخدمة (${r.rating || 5} نجوم). شكراً لمشاركتنا تجربتك!` : `You reviewed this repair (${r.rating || 5} stars). Thank you!`}</span>
+                        </div>
+                      ` : `
+                        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                          <span style="font-size: 13px; color: #FFFFFF;">${isAr ? 'تقييم الفني والخدمة:' : 'Rate this repair:'}</span>
+                          <select id="ratingSelect_${r.id}" class="form-control" style="width: auto; padding: 4px 10px;">
+                            <option value="5">★★★★★ (5/5)</option>
+                            <option value="4">★★★★☆ (4/5)</option>
+                            <option value="3">★★★☆☆ (3/5)</option>
+                            <option value="2">★★☆☆☆ (2/5)</option>
+                            <option value="1">★☆☆☆☆ (1/5)</option>
+                          </select>
+                          <input type="text" id="reviewComment_${r.id}" placeholder="${isAr ? 'اكتب رأيك أو تعليقك على جودة الصيانة...' : 'Review comment...'}" class="form-control" style="flex: 1; min-width: 180px;">
+                          <button class="btn btn-primary btn-sm" onclick="app.custSubmitReview(${r.id})">
+                            <i class="fas fa-star"></i> ${isAr ? 'إرسال التقييم' : 'Submit Review'}
+                          </button>
+                        </div>
+                      `}
+                    </div>
+                  ` : ''}
+
+                  <!-- Audit History Timeline -->
+                  <details style="margin-top: 10px; font-size: 12px; color: #64748B;">
+                    <summary style="cursor: pointer; color: #38BDF8; outline: none;">
+                      <i class="fas fa-history"></i> ${isAr ? 'سجل العمليات والجدول الزمني للطلب' : 'Audit Log & History Timeline'}
+                    </summary>
+                    <div style="padding: 8px 0; border-top: 1px solid rgba(255,255,255,0.05); margin-top: 6px; display: flex; flex-direction: column; gap: 4px;">
+                      ${(r.history || [{ at: r.created_at || 'Recently', new: st, actor: 'System', note: 'Created' }]).map(h => `
+                        <div style="color: #94A3B8;">• <span dir="ltr">${h.at || ''}</span> — <b>${h.new || h.status}</b> ${h.note ? `(${h.note})` : ''} <span style="color: #64748B;">[${h.actor || 'System'}]</span></div>
+                      `).join('')}
+                    </div>
+                  </details>
+                </div>
+              `;
+            }).join('')}
           </div>
         `;
       }
@@ -2143,10 +2684,10 @@ class ByteForceApp {
             <i class="fas fa-database"></i>
           </div>
           <h3 style="font-size: 22px; color: #FFFFFF; margin-bottom: 6px;">
-            ${isAr ? 'حالة قواعد البيانات المعتمدة في ByteForce' : 'ByteForce Certified Datasets Status'}
+            ${isAr ? 'قواعد البيانات المعتمدة في ByteForce' : 'ByteForce Certified Datasets'}
           </h3>
           <p style="font-size: 13px; color: #94A3B8;">
-            ${isAr ? 'قواعد البيانات العالمية الثلاث مدمجة ومفهرسة بالكامل في محرك التشخيص الذكي بالأرقام الواقعية الدقيقة.' : 'All three certified datasets are fully indexed and powering the empirical AI diagnostic engine.'}
+            ${isAr ? 'محرك التشخيص الذكي يعمل استناداً إلى مصادر البيانات العالمية المفتوحة المعتمدة عبر Supabase PostgreSQL.' : 'Empirical AI diagnostic engine powered by global open repair datasets via Supabase PostgreSQL.'}
           </p>
         </div>
 
@@ -2155,29 +2696,29 @@ class ByteForceApp {
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
               <strong style="color: #FFFFFF; font-size: 15px;">1. Open Repair Alliance (ORA)</strong>
               <span class="tag" style="background: rgba(16,185,129,0.15); color: #10B981; border: 1px solid rgba(16,185,129,0.3); font-size: 11px;">
-                <i class="fas fa-check-circle"></i> ${isAr ? '416,282 سجل واقعي' : '416,282 Real Incidents'}
+                <i class="fas fa-check-circle"></i> ${isAr ? 'بيانات معتمدة ومفهرسة' : 'Verified & Indexed'}
               </span>
             </div>
             <p style="font-size: 12px; color: #94A3B8; margin-bottom: 6px;">
-              ${isAr ? 'سجلات صيانة واقعية معتمدة تغطي 10 فئات أجهزة قياسية، ونسب نجاح الإصلاح الفعلية وموانع الصيانة الشائعة.' : 'Empirical repair outcomes, success rates, and barrier statistics across 10 standardized equipment categories.'}
+              ${isAr ? 'سجلات صيانة واقعية موثقة تغطي فئات الأجهزة المتنوعة، ونسب نجاح الإصلاح الفعلية وموانع الصيانة الشائعة.' : 'Empirical repair outcomes, success rates, and barrier statistics across standardized equipment categories.'}
             </p>
             <div style="font-size: 11px; color: #38BDF8;">
-              <i class="fas fa-chart-pie"></i> ${isAr ? '416,282 سجل صيانة موثق بموجب ODbL' : '416,282 incidents licensed under ODbL'}
+              <i class="fas fa-certificate"></i> Open Data Commons Open Database License (ODbL)
             </div>
           </div>
 
           <div style="background: #0A0D14; border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 16px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <strong style="color: #FFFFFF; font-size: 15px;">2. MyFixit Repair Dataset</strong>
+              <strong style="color: #FFFFFF; font-size: 15px;">2. MyFixit Repair Manuals</strong>
               <span class="tag" style="background: rgba(16,185,129,0.15); color: #10B981; border: 1px solid rgba(16,185,129,0.3); font-size: 11px;">
-                <i class="fas fa-check-circle"></i> ${isAr ? '18,995 دليل معتمد' : '18,995 Verified Manuals'}
+                <i class="fas fa-check-circle"></i> ${isAr ? 'أدلة إصلاح موثقة' : 'Verified Guides'}
               </span>
             </div>
             <p style="font-size: 12px; color: #94A3B8; margin-bottom: 6px;">
-              ${isAr ? 'أدلة التفكيك والإصلاح خطوة بخطوة، الأدوات الدقيقة المطلوبة، خطوات الفك والتركيب، وروابط iFixit الأصلية.' : 'Detailed step-by-step disassembly manuals, required tools, difficulty ratings, and official iFixit URLs.'}
+              ${isAr ? 'أدلة التفكيك والإصلاح خطوة بخطوة، الأدوات المطلوبة، خطوات الفك والتركيب، وصور إرشادية عالية الدقة.' : 'Step-by-step disassembly manuals, required tools, difficulty ratings, and official guidance.'}
             </p>
             <div style="font-size: 11px; color: #38BDF8;">
-              <i class="fas fa-book-open"></i> ${isAr ? '18,995 دليل صيانة مفهرس بموجب CC BY-NC-SA' : '18,995 manuals under CC BY-NC-SA 3.0'}
+              <i class="fas fa-book-open"></i> Creative Commons Attribution-NonCommercial-ShareAlike (CC BY-NC-SA 3.0)
             </div>
           </div>
 
@@ -2185,14 +2726,14 @@ class ByteForceApp {
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
               <strong style="color: #FFFFFF; font-size: 15px;">3. Backblaze SMART Telemetry ML</strong>
               <span class="tag" style="background: rgba(16,185,129,0.15); color: #10B981; border: 1px solid rgba(16,185,129,0.3); font-size: 11px;">
-                <i class="fas fa-check-circle"></i> ${isAr ? '12,442 رصد & 0.912 ROC-AUC' : '12,442 Rows & 0.912 ROC-AUC'}
+                <i class="fas fa-check-circle"></i> ${isAr ? 'نموذج تعلم آلة معتمد' : 'Verified ML Model'}
               </span>
             </div>
             <p style="font-size: 12px; color: #94A3B8; margin-bottom: 6px;">
-              ${isAr ? 'نموذج Random Forest تم تدريبه على بيانات Backblaze Q2 2026 مع عزل السيريال الزمني وتفادي تسرب البيانات للتنبؤ بأعطال وحدات التخزين.' : 'Binary classification Random Forest model trained on SMART telemetry with chronological and serial-number isolation.'}
+              ${isAr ? 'نموذج تصنيف احصائي مدرب على مؤشرات SMART الحقيقية مع عزل السيريال الزمني للتنبؤ بأعطال وحدات التخزين فقط.' : 'Binary classification Random Forest model trained on SMART telemetry for storage devices only.'}
             </p>
             <div style="font-size: 11px; color: #38BDF8;">
-              <i class="fas fa-microchip"></i> SMART 5, 9, 187, 188, 194, 197, 198 — Test ROC-AUC: 0.9117 | PR-AUC: 0.7144
+              <i class="fas fa-microchip"></i> SMART 5, 9, 187, 188, 194, 197, 198 â€” Strictly Storage Scoped
             </div>
           </div>
         </div>
@@ -2204,6 +2745,7 @@ class ByteForceApp {
         </div>
       </div>
     `;
+
     this.openModal(html);
   }
 
@@ -2390,6 +2932,24 @@ class ByteForceApp {
     this.openModal(html);
   }
 
+  setRegisterRole(role) {
+    const roleInput = document.getElementById("regRole");
+    const techFields = document.getElementById("techExtraFields");
+    const btnUser = document.getElementById("roleBtnUser");
+    const btnTech = document.getElementById("roleBtnTech");
+    if (roleInput) roleInput.value = role;
+    if (techFields) techFields.style.display = role === "technician" ? "block" : "none";
+    if (btnUser && btnTech) {
+      if (role === "technician") {
+        btnTech.className = "btn btn-sm btn-primary";
+        btnUser.className = "btn btn-sm btn-outline";
+      } else {
+        btnUser.className = "btn btn-sm btn-primary";
+        btnTech.className = "btn btn-sm btn-outline";
+      }
+    }
+  }
+
   showAuthModal(mode = "login", defaultRole = "user", noticeMessage = "") {
     const isAr = window.i18n.currentLang === "ar";
     const content = mode === "login" ? `
@@ -2472,7 +3032,18 @@ class ByteForceApp {
           <div style="flex: 1; height: 1px; background: rgba(255,255,255,0.1);"></div>
         </div>
 
+        <!-- Role Selection Tabs -->
+        <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+          <button type="button" id="roleBtnUser" class="btn btn-sm ${defaultRole === 'user' ? 'btn-primary' : 'btn-outline'}" style="flex: 1; border-radius: 8px;" onclick="app.setRegisterRole('user')">
+            <i class="fas fa-user"></i> <span>${isAr ? 'مالك جهاز' : 'Device Owner'}</span>
+          </button>
+          <button type="button" id="roleBtnTech" class="btn btn-sm ${defaultRole === 'technician' ? 'btn-primary' : 'btn-outline'}" style="flex: 1; border-radius: 8px;" onclick="app.setRegisterRole('technician')">
+            <i class="fas fa-tools"></i> <span>${isAr ? 'فني صيانة معتمد' : 'Certified Tech'}</span>
+          </button>
+        </div>
+
         <form id="registerForm">
+          <input type="hidden" id="regRole" value="${defaultRole}">
           <div class="form-group">
             <label class="form-label" data-i18n="auth_fullname">Full Name</label>
             <input type="text" id="regName" class="form-control" required placeholder="John Doe">
@@ -2485,13 +3056,29 @@ class ByteForceApp {
             <label class="form-label" data-i18n="auth_password">Password</label>
             <input type="password" id="regPassword" class="form-control" required minlength="6" placeholder="At least 6 characters">
           </div>
-          <div class="form-group">
-            <label class="form-label" data-i18n="auth_role_label">Account Type</label>
-            <select id="regRole" class="form-control">
-              <option value="user" ${defaultRole === 'user' ? 'selected' : ''}>${window.i18n.t('auth_role_user')}</option>
-              <option value="technician" ${defaultRole === 'technician' ? 'selected' : ''}>${window.i18n.t('auth_role_tech')}</option>
-            </select>
+
+          <!-- Dynamic Technician Profile Fields -->
+          <div id="techExtraFields" style="display: ${defaultRole === 'technician' ? 'block' : 'none'}; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 14px; margin-top: 14px;">
+            <div class="form-group">
+              <label class="form-label">${isAr ? 'اسم مركز / ورشة الصيانة' : 'Business / Lab Name'}</label>
+              <input type="text" id="regTechBusiness" class="form-control" placeholder="${isAr ? 'مثال: مركز النخبة للصيانة' : 'e.g. Apex Repair Lab'}">
+            </div>
+            <div class="form-group">
+              <label class="form-label">${isAr ? 'رقم الهاتف للتواصل المباشر' : 'Direct Phone'}</label>
+              <input type="tel" id="regTechPhone" class="form-control" placeholder="+20 10 ...">
+            </div>
+            <div class="form-group">
+              <label class="form-label">${isAr ? 'المدينة والمنطقة' : 'City & Address'}</label>
+              <input type="text" id="regTechCity" class="form-control" placeholder="${isAr ? 'القاهرة - وسط البلد' : 'Cairo, Downtown'}">
+            </div>
+            <div class="form-group" style="margin-top: 8px;">
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; color: #E2E8F0;">
+                <input type="checkbox" id="regTechHome" style="width: auto; cursor: pointer;">
+                <span>${isAr ? 'أقدم خدمة الصيانة المنزلية (Home Service)' : 'Offer Home Visit Service'}</span>
+              </label>
+            </div>
           </div>
+
           <button type="submit" class="btn btn-primary btn-lg" style="width: 100%; margin-top: 10px;">
             <span data-i18n="auth_register_btn">إنشاء الحساب</span>
           </button>
