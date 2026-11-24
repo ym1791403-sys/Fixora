@@ -1,3 +1,24 @@
+
+const CITY_COORDS = {
+  "Cairo": { lat: 30.0444, lng: 31.2357 },
+  "Giza": { lat: 30.0131, lng: 31.2089 },
+  "Fayoum": { lat: 29.3084, lng: 30.8428 },
+  "Alexandria": { lat: 31.2001, lng: 29.9187 },
+  "6th of October": { lat: 29.9285, lng: 30.9188 },
+  "Beni Suef": { lat: 29.0661, lng: 31.0994 }
+};
+
+function calculateHaversine(lat1, lon1, lat2, lon2) {
+  const R = 6371; // km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return Math.round(R * c * 10) / 10;
+}
+
 /**
  * ByteForce Core Single Page Application (SPA) Controller
  */
@@ -1483,6 +1504,20 @@ class ByteForceApp {
             </div>
           </div>
 
+          <!-- Interactive Centers & Technicians Map -->
+          <div class="card" style="margin-bottom: 24px; padding: 14px; background: #0E131F; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+              <span style="font-size: 14px; font-weight: 700; color: #FFFFFF;">
+                <i class="fas fa-map-marked-alt" style="color: #38BDF8; margin-inline-end: 6px;"></i>${isAr ? 'خريطة مراكز وفنيي الصيانة التفاعلية' : 'Interactive Repair Centers & Technicians Map'}
+              </span>
+              <button id="useLocationBtn" class="btn btn-outline btn-sm" style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px;">
+                <i class="fas fa-crosshairs" style="color: #10B981;"></i>
+                <span>${isAr ? 'تحديد موقعي الأقرب' : 'Find Nearest to Me'}</span>
+              </button>
+            </div>
+            <div id="techMap" style="height: 280px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); z-index: 1;"></div>
+          </div>
+
           <!-- Technicians Grid -->
           <div id="techGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 24px;">
             <div style="text-align: center; grid-column: 1/-1; padding: 40px; color: var(--color-text-muted);">
@@ -1562,10 +1597,104 @@ class ByteForceApp {
       }
     };
 
+    // Leaflet Map Controller
+    let leafMap = null;
+    let mapMarkers = [];
+
+    const updateMapMarkers = (techList, userLoc = null) => {
+      const mapEl = document.getElementById("techMap");
+      if (!mapEl || typeof L === "undefined") return;
+
+      if (!leafMap) {
+        leafMap = L.map("techMap").setView([30.0444, 31.2357], 11);
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          maxZoom: 18,
+          attribution: "&copy; OpenStreetMap"
+        }).addTo(leafMap);
+      }
+
+      mapMarkers.forEach(m => leafMap.removeLayer(m));
+      mapMarkers = [];
+
+      if (userLoc) {
+        const userIcon = L.circleMarker([userLoc.lat, userLoc.lng], {
+          radius: 8,
+          fillColor: "#10B981",
+          color: "#FFFFFF",
+          weight: 2,
+          opacity: 1,
+          fillOpacity: 0.9
+        }).addTo(leafMap).bindPopup(isAr ? "<b>موقعك الحالي</b>" : "<b>Your Current Location</b>").openPopup();
+        mapMarkers.push(userIcon);
+        leafMap.setView([userLoc.lat, userLoc.lng], 12);
+      }
+
+      techList.forEach(t => {
+        const coords = t.lat && t.lng ? { lat: t.lat, lng: t.lng } : (CITY_COORDS[t.city] || CITY_COORDS["Cairo"]);
+        // Add subtle jitter if overlapping
+        const jitterLat = coords.lat + (Math.sin(t.id || 1) * 0.015);
+        const jitterLng = coords.lng + (Math.cos(t.id || 1) * 0.015);
+        const bName = t.business_name || t.name || "Repair Center";
+        const marker = L.marker([jitterLat, jitterLng]).addTo(leafMap);
+        marker.bindPopup(`
+          <div style="font-family: inherit; font-size: 13px; min-width: 170px;">
+            <b style="color: #0F172A; font-size: 14px;">${bName}</b>
+            <div style="color: #64748B; font-size: 12px; margin: 3px 0;">${t.city || 'Cairo'} · ★ ${t.rating || 5.0}</div>
+            <button class="btn btn-primary btn-sm" style="width: 100%; margin-top: 6px; padding: 4px 8px; font-size: 12px;" onclick="app.showBookTechnicianModal(${t.id}, '${bName.replace(/'/g, "\\'")}')">
+              ${isAr ? 'طلب صيانة' : 'Book'}
+            </button>
+          </div>
+        `);
+        mapMarkers.push(marker);
+      });
+    };
+
     container.querySelector("#techCityFilter").addEventListener("change", loadTechs);
     container.querySelector("#techSpecFilter").addEventListener("change", loadTechs);
     container.querySelector("#techHomeOnly").addEventListener("change", loadTechs);
-    loadTechs();
+
+    const locBtn = container.querySelector("#useLocationBtn");
+    if (locBtn) {
+      locBtn.addEventListener("click", () => {
+        if (navigator.geolocation) {
+          locBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${isAr ? 'جاري التحديد...' : 'Locating...'}`;
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              locBtn.innerHTML = `<i class="fas fa-check" style="color: #10B981;"></i> ${isAr ? 'تم تحديد موقعك' : 'Located'}`;
+              const userLoc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+              window.api.getTechnicians().then(allTechs => {
+                allTechs.forEach(t => {
+                  const c = t.lat && t.lng ? { lat: t.lat, lng: t.lng } : (CITY_COORDS[t.city] || CITY_COORDS["Cairo"]);
+                  t.distance_km = calculateHaversine(userLoc.lat, userLoc.lng, c.lat, c.lng);
+                });
+                allTechs.sort((a, b) => (a.distance_km || 999) - (b.distance_km || 999));
+                updateMapMarkers(allTechs, userLoc);
+              });
+            },
+            (err) => {
+              // Default to downtown Cairo
+              const userLoc = CITY_COORDS["Cairo"];
+              updateMapMarkers(techsCached || [], userLoc);
+              locBtn.innerHTML = `<i class="fas fa-map-marker-alt"></i> ${isAr ? 'القاهرة (افتراضي)' : 'Cairo (Default)'}`;
+            }
+          );
+        }
+      });
+    }
+
+    let techsCached = [];
+    const origLoad = loadTechs;
+    const loadTechsWithMap = async () => {
+      await origLoad();
+      const city = container.querySelector("#techCityFilter").value;
+      const spec = container.querySelector("#techSpecFilter").value;
+      try {
+        techsCached = await window.api.getTechnicians(city, spec);
+        updateMapMarkers(techsCached);
+      } catch(e) {}
+    };
+
+    loadTechsWithMap();
   }
 
   showBookingModal(techId, techName) {
