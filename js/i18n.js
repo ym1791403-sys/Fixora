@@ -43,6 +43,25 @@ const TRANSLATIONS = {
     stat_ml_auc: "0.912",
     stat_ml_auc_lbl: "Backblaze ML ROC-AUC",
 
+    // Onboarding Showcase Section
+    onboarding_badge: "Certified Hardware Diagnostic Platform",
+    onboarding_title: "How Fixora Diagnoses & Solves Device Failures",
+    onboarding_subtitle: "Fixora combines advanced diagnostic models with the world's largest open repair datasets (Open Repair Alliance, MyFixit teardowns, and Backblaze SMART telemetry) to deliver evidence-based hardware troubleshooting without guesswork.",
+    onboarding_step1_h: "1. Select Device & Record Symptoms",
+    onboarding_step1_p: "Choose from 13 comprehensive hardware categories. Describe symptoms in natural English or Arabic with immediate safety triage.",
+    onboarding_step2_h: "2. Evidence Matching & ML Prediction",
+    onboarding_step2_p: "Fixora correlates observations against 416K+ real repair cases and trained telemetry classifiers (ROC-AUC 0.912) to rank root causes.",
+    onboarding_step3_h: "3. Step-by-Step Manuals or Certified Techs",
+    onboarding_step3_p: "Access illustrated teardowns with required toolboxes, or dispatch verified diagnostic reports directly to certified local technicians.",
+    auth_gate_title: "Diagnostic Tools & Reports are Reserved for Verified Accounts",
+    auth_gate_desc: "To safeguard technical records, maintain device repair histories, and generate certified PDF inspection reports, access to diagnostic tools requires signing in.",
+    auth_gate_locked_badge: "Authentication Required",
+    auth_gate_active_badge: "Verified Account Active",
+    auth_gate_signed_in_msg: "Welcome back! Diagnostic tools are unlocked and ready for your hardware inspection.",
+    auth_gate_start_btn: "Start Diagnostic Inspection",
+    safety_modal_title: "Electrical Safety & Hardware Handling Protocol",
+    safety_modal_subtitle: "Crucial precautions for safe electronics disassembly and hazard prevention.",
+
     // Device Categories
     cat_all: "All Devices",
     cat_laptop: "Laptop",
@@ -223,6 +242,25 @@ const TRANSLATIONS = {
     stat_ml_auc: "0.912",
     stat_ml_auc_lbl: "دقة التنبؤ بالأعطال (ROC-AUC)",
 
+    // Onboarding Showcase Section (Arabic)
+    onboarding_badge: "المنظومة الهندسية المعتمدة لتشخيص الأجهزة بالذكاء الاصطناعي",
+    onboarding_title: "دليلك الشامل: كيف تعمل Fixora على تشخيص وحل أعطال أجهزتك؟",
+    onboarding_subtitle: "Fixora تجمع بين قوة خوارزميات الذكاء الاصطناعي وأضخم قواعد بيانات الصيانة المفتوحة في العالم (تحالف Open Repair Alliance، وأدلة MyFixit، وتنبؤات Backblaze SMART). صممت المنظومة لتقديم تشخيص هندسي دقيق بدون أي تخمين أو بيانات وهمية.",
+    onboarding_step1_h: "1. حدد جهازك وسجل الأعراض",
+    onboarding_step1_p: "اختر نوع جهازك من بين 13 فئة شاملة (هواتف، حواسيب محمولة ومكتبية، منصات ألعاب، وسائط تخزين HDD/SSD، أجهزة منزلية). صف ما يحدث باللغة العربية أو الإنجليزية بدقة.",
+    onboarding_step2_h: "2. تحليل الأدلة والتشخيص التنبؤي",
+    onboarding_step2_p: "يقوم محرك Fixora بمطابقة الأعراض مع 416K+ سجل صيانة حقيقي ونماذج التعلم الآلي لاحتساب نسب احتمالية الأعطال ومسبباتها الجذرية استناداً إلى أدلة هندسية موثقة.",
+    onboarding_step3_h: "3. دليل الإصلاح أو حجز فني معتمد",
+    onboarding_step3_p: "احصل على دليل تفكيك خطوة بخطوة بالصور وقائمة الأدوات المطلوبة (MyFixit)، أو أرسل تقريرك المشفر مباشرة إلى أقرب فني معتمد في مدينتك لاستلام الجهاز وإصلاحه.",
+    auth_gate_title: "أدوات الفحص الذكي وتقارير الصيانة مخصصة للأعضاء المسجلين",
+    auth_gate_desc: "للحفاظ على سرية مواصفات أجهزتك وحفظ سجلات الفحص ومطابقتها مستقبلاً، يتطلب استخدام معالج التشخيص وتسجيل الأعراض إنشاء حساب موثق أو تسجيل الدخول السريع.",
+    auth_gate_locked_badge: "وصول محمي وموثق",
+    auth_gate_active_badge: "حساب نشط وموثق",
+    auth_gate_signed_in_msg: "مرحباً بك مجدداً! أدوات الفحص الذكي مفعلة وجاهزة لاستقبال جهازك.",
+    auth_gate_start_btn: "ابدأ تشخيص أي جهاز",
+    safety_modal_title: "بروتوكول السلامة الكهربائية والتعامل مع العتاد",
+    safety_modal_subtitle: "إرشادات حيوية لحماية نفسك وأجهزتك أثناء التفكيك والصيانة.",
+
     // Device Categories
     cat_all: "جميع الأجهزة",
     cat_laptop: "لابتوب (كمبيوتر محمول)",
@@ -396,15 +434,15 @@ class I18n {
     // Update all elements with data-i18n
     document.querySelectorAll("[data-i18n]").forEach(el => {
       const key = el.getAttribute("data-i18n");
-      const val = this.t(key);
-      if (val) el.textContent = val;
+      const val = this.t(key, "");
+      if (val && val !== key) el.textContent = val;
     });
 
     // Update placeholders
     document.querySelectorAll("[data-i18n-placeholder]").forEach(el => {
       const key = el.getAttribute("data-i18n-placeholder");
-      const val = this.t(key);
-      if (val) el.setAttribute("placeholder", val);
+      const val = this.t(key, "");
+      if (val && val !== key) el.setAttribute("placeholder", val);
     });
 
     // Update language toggle button text

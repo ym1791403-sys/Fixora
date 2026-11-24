@@ -274,6 +274,8 @@ window.SupabaseBridge = {
       localStorage.setItem("fixora_user", JSON.stringify(userProfile));
     }
 
+    this.currentUser = userProfile;
+
     if (window.app) {
       if (typeof window.app.updateNavAuth === "function") {
         window.app.updateNavAuth();
@@ -281,10 +283,25 @@ window.SupabaseBridge = {
       if (typeof window.app.closeModal === "function") {
         window.app.closeModal();
       }
+      // If user had an intent to diagnose or an in-progress quick triage input, resume smoothly
+      if (window.app.pendingQuickDiagnosis) {
+        window.app.wizardData = window.app.wizardData || {};
+        window.app.wizardData.device_category = window.app.pendingQuickDiagnosis.category;
+        window.app.wizardData.description = window.app.pendingQuickDiagnosis.description;
+        window.app.wizardData.problem_category = "Hardware";
+        window.app.pendingQuickDiagnosis = null;
+        window.app.pendingNavigation = null;
+        window.app.navigate("diagnose");
+      } else if (window.app.pendingNavigation) {
+        const dest = window.app.pendingNavigation;
+        window.app.pendingNavigation = null;
+        window.app.navigate(dest);
+      }
     }
   },
 
   _clearUserSession() {
+    this.currentUser = null;
     if (window.api && typeof window.api.clearSession === "function") {
       window.api.clearSession();
     } else {

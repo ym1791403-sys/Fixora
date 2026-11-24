@@ -104,6 +104,7 @@ class FixoraApp {
     const mobileDashLink = document.getElementById("mobileNavDashboardLink");
     const mobileAdminLink = document.getElementById("mobileNavAdminLink");
     const userNameEl = document.getElementById("navUserName");
+    const isAr = window.i18n.currentLang === "ar";
 
     const userAvatarEl = document.getElementById("navUserAvatar");
     if (isLoggedIn && user) {
@@ -132,6 +133,40 @@ class FixoraApp {
       if (adminLink) adminLink.style.display = "none";
       if (mobileDashLink) mobileDashLink.style.display = "none";
       if (mobileAdminLink) mobileAdminLink.style.display = "none";
+    }
+
+    // Dynamic update for Onboarding Showcase Auth Card if present on page
+    const obBadge = document.getElementById("onboardingAuthBadge");
+    const obTitle = document.getElementById("onboardingAuthTitle");
+    const obDesc = document.getElementById("onboardingAuthDesc");
+    const obActions = document.getElementById("onboardingAuthActions");
+
+    if (obBadge && obTitle && obDesc && obActions) {
+      if (isLoggedIn && user) {
+        obBadge.innerHTML = `<span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #10B981; border: 1px solid rgba(16, 185, 129, 0.3); font-size: 12px; padding: 4px 10px;"><i class="fas fa-check-circle"></i> ${isAr ? 'حساب نشط وموثق' : 'Verified Account Active'}</span><span style="color: #94A3B8; font-size: 13px;">${user.email || ''}</span>`;
+        obTitle.textContent = isAr ? `مرحباً بك مجدداً، ${user.full_name || user.email}! أدوات الفحص الذكي مفعلة` : `Welcome back, ${user.full_name || user.email}! Diagnostic tools unlocked`;
+        obDesc.textContent = isAr ? "تم التحقق من حسابك بنجاح. يمكنك الآن بدء تشخيص أي جهاز ومطابقة الأعطال مع قواعد بيانات الصيانة العالمية وتحميل التقارير المعتمدة." : "Your account is authenticated. You have full access to hardware diagnosis, empirical dataset matching, and verified repair manuals.";
+        obActions.innerHTML = `
+          <button class="btn btn-primary btn-md" onclick="app.navigate('diagnose')" style="display: inline-flex; align-items: center; gap: 8px;">
+            <i class="fas fa-microchip"></i>
+            <span>${isAr ? 'ابدأ تشخيص أي جهاز الآن' : 'Start Diagnostic Inspection'}</span>
+          </button>
+        `;
+      } else {
+        obBadge.innerHTML = `<span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #F87171; border: 1px solid rgba(239, 68, 68, 0.3); font-size: 12px; padding: 4px 10px;"><i class="fas fa-lock"></i> ${isAr ? 'وصول محمي وموثق' : 'Authentication Required'}</span><span style="color: #94A3B8; font-size: 13px;">${isAr ? 'حماية البيانات وتوثيق تاريخ الأجهزة' : 'Device history & data protection'}</span>`;
+        obTitle.textContent = isAr ? 'أدوات الفحص الذكي وتقارير الصيانة مخصصة للأعضاء المسجلين' : 'Diagnostic Tools & Reports are Reserved for Verified Accounts';
+        obDesc.textContent = isAr ? 'للحفاظ على سرية مواصفات أجهزتك وحفظ سجلات الفحص ومطابقتها مستقبلاً، يتطلب استخدام معالج التشخيص وتسجيل الأعراض إنشاء حساب موثق أو تسجيل الدخول السريع.' : 'To safeguard technical records, maintain device repair histories, and generate certified inspection reports, access to diagnostic tools requires signing in.';
+        obActions.innerHTML = `
+          <button class="btn btn-primary btn-md" onclick="app.showAuthModal('login')" style="display: inline-flex; align-items: center; gap: 8px;">
+            <i class="fas fa-sign-in-alt"></i>
+            <span>${isAr ? 'تسجيل الدخول' : 'Sign In'}</span>
+          </button>
+          <button class="btn btn-outline btn-md" onclick="app.showAuthModal('register')" style="display: inline-flex; align-items: center; gap: 8px;">
+            <i class="fas fa-user-plus"></i>
+            <span>${isAr ? 'إنشاء حساب جديد' : 'Register Account'}</span>
+          </button>
+        `;
+      }
     }
   }
 
@@ -176,6 +211,15 @@ class FixoraApp {
         }, 60);
         break;
       case "diagnose":
+        // STRICT AUTH GATE: Do not allow guest diagnosis
+        if (!window.api.isLoggedIn()) {
+          this.pendingNavigation = "diagnose";
+          const isAr = window.i18n.currentLang === "ar";
+          this.showAuthModal("login", "user", isAr ? 
+            "أدوات الفحص والتشخيص الذكي تتطلب تسجيل الدخول. يرجى تسجيل الدخول أو إنشاء حسابك للوصول إلى معالج الفحص وحفظ تقارير الصيانة لأجهزتك." : 
+            "Diagnostic tools require authentication. Please sign in or register to access the diagnostic wizard and save repair reports.");
+          return;
+        }
         this.renderDiagnose(mainContainer);
         break;
       case "results":
@@ -248,6 +292,20 @@ class FixoraApp {
         this.wizardData.device_category = selectedCat;
         this.wizardData.description = text;
         this.wizardData.problem_category = "Hardware";
+
+        // STRICT AUTH GATE: Do not allow guest diagnosis
+        if (!window.api.isLoggedIn()) {
+          this.pendingQuickDiagnosis = {
+            category: selectedCat,
+            description: text
+          };
+          this.pendingNavigation = "diagnose";
+          this.showAuthModal("login", "user", isAr ? 
+            "أدوات الفحص والتشخيص الذكي تتطلب تسجيل الدخول. يرجى تسجيل الدخول أو إنشاء حسابك لبدء الفحص الفوري ومطابقة العطل مع قواعد البيانات العالمية." : 
+            "Diagnostic tools require authentication. Please sign in or register to initiate AI diagnosis and match your issue against repair datasets.");
+          return;
+        }
+
         this.navigate("diagnose");
       };
     }
@@ -291,6 +349,121 @@ class FixoraApp {
             </button>
           </div>
         </div>
+      </div>
+    </section>
+
+    <!-- Platform Onboarding & Introductory Showcase Section (الواجهة التعريفية لمنصة Fixora) -->
+    <section class="onboarding-intro-section" id="intro-showcase">
+      <div class="container">
+        
+        <!-- Onboarding Header -->
+        <div style="text-align: center; max-width: 820px; margin: 0 auto 46px;">
+          <div style="display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px; background: rgba(37, 99, 235, 0.12); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 9999px; font-size: 13px; font-weight: 600; color: #38BDF8; margin-bottom: 16px;">
+            <i class="fas fa-certificate"></i>
+            <span data-i18n="onboarding_badge">${window.i18n.t('onboarding_badge')}</span>
+          </div>
+          <h2 style="font-size: 34px; font-weight: 800; color: #FFFFFF; line-height: 1.3; margin-bottom: 16px;" data-i18n="onboarding_title">
+            ${window.i18n.t('onboarding_title')}
+          </h2>
+          <p style="font-size: 15px; color: #94A3B8; line-height: 1.7;" data-i18n="onboarding_subtitle">
+            ${window.i18n.t('onboarding_subtitle')}
+          </p>
+        </div>
+
+        <!-- 3-Step Guided Workflow Cards -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-bottom: 40px;">
+          
+          <!-- Step 1 Card -->
+          <div class="card onboarding-card" style="padding: 28px 24px; border: 1px solid rgba(255,255,255,0.08); background: #0E131F; border-radius: 14px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+              <div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(56, 189, 248, 0.12); color: #38BDF8; display: flex; align-items: center; justify-content: center; font-size: 22px;">
+                <i class="fas fa-layer-group"></i>
+              </div>
+              <span style="font-size: 12px; font-weight: 700; color: #38BDF8; background: rgba(56, 189, 248, 0.1); padding: 4px 10px; border-radius: 20px;">${isAr ? 'الخطوة 01' : 'Step 01'}</span>
+            </div>
+            <h3 style="font-size: 18px; font-weight: 700; color: #FFFFFF; margin-bottom: 10px;" data-i18n="onboarding_step1_h">
+              ${window.i18n.t('onboarding_step1_h')}
+            </h3>
+            <p style="font-size: 14px; color: #94A3B8; line-height: 1.6;" data-i18n="onboarding_step1_p">
+              ${window.i18n.t('onboarding_step1_p')}
+            </p>
+            <div style="margin-top: 18px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 12px; color: #64748B; display: flex; align-items: center; gap: 6px;">
+              <i class="fas fa-shield-alt" style="color: #10B981;"></i>
+              <span>${isAr ? 'فحص الأمان الفوري وتفادي مخاطر البطاريات' : 'Instant safety triage & battery hazard check'}</span>
+            </div>
+          </div>
+
+          <!-- Step 2 Card -->
+          <div class="card onboarding-card" style="padding: 28px 24px; border: 1px solid rgba(37, 99, 235, 0.35); background: #0E131F; border-radius: 14px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+              <div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(37, 99, 235, 0.15); color: #60A5FA; display: flex; align-items: center; justify-content: center; font-size: 22px;">
+                <i class="fas fa-brain"></i>
+              </div>
+              <span style="font-size: 12px; font-weight: 700; color: #60A5FA; background: rgba(37, 99, 235, 0.15); padding: 4px 10px; border-radius: 20px;">${isAr ? 'الخطوة 02' : 'Step 02'}</span>
+            </div>
+            <h3 style="font-size: 18px; font-weight: 700; color: #FFFFFF; margin-bottom: 10px;" data-i18n="onboarding_step2_h">
+              ${window.i18n.t('onboarding_step2_h')}
+            </h3>
+            <p style="font-size: 14px; color: #94A3B8; line-height: 1.6;" data-i18n="onboarding_step2_p">
+              ${window.i18n.t('onboarding_step2_p')}
+            </p>
+            <div style="margin-top: 18px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 12px; color: #64748B; display: flex; align-items: center; gap: 6px;">
+              <i class="fas fa-check-circle" style="color: #10B981;"></i>
+              <span>${isAr ? 'دقة تنبؤ SMART للأقراص ROC-AUC = 0.912' : 'SMART Drive failure ML test ROC-AUC = 0.912'}</span>
+            </div>
+          </div>
+
+          <!-- Step 3 Card -->
+          <div class="card onboarding-card" style="padding: 28px 24px; border: 1px solid rgba(255,255,255,0.08); background: #0E131F; border-radius: 14px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+              <div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(16, 185, 129, 0.12); color: #10B981; display: flex; align-items: center; justify-content: center; font-size: 22px;">
+                <i class="fas fa-tools"></i>
+              </div>
+              <span style="font-size: 12px; font-weight: 700; color: #10B981; background: rgba(16, 185, 129, 0.1); padding: 4px 10px; border-radius: 20px;">${isAr ? 'الخطوة 03' : 'Step 03'}</span>
+            </div>
+            <h3 style="font-size: 18px; font-weight: 700; color: #FFFFFF; margin-bottom: 10px;" data-i18n="onboarding_step3_h">
+              ${window.i18n.t('onboarding_step3_h')}
+            </h3>
+            <p style="font-size: 14px; color: #94A3B8; line-height: 1.6;" data-i18n="onboarding_step3_p">
+              ${window.i18n.t('onboarding_step3_p')}
+            </p>
+            <div style="margin-top: 18px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 12px; color: #64748B; display: flex; align-items: center; gap: 6px;">
+              <i class="fas fa-file-pdf" style="color: #38BDF8;"></i>
+              <span>${isAr ? 'توليد تقرير فني معتمد قابل للطباعة PDF' : 'Downloadable PDF technical diagnosis reports'}</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Protected Diagnostic Access Gate Card -->
+        <div class="onboarding-auth-gate-card" id="onboardingAuthCard" style="background: linear-gradient(135deg, rgba(37,99,235,0.1) 0%, rgba(15,23,42,0.85) 100%); border: 1px solid rgba(56,189,248,0.25); border-radius: 16px; padding: 28px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 24px;">
+          <div style="max-width: 620px;">
+            <div id="onboardingAuthBadge" style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+              <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #F87171; border: 1px solid rgba(239, 68, 68, 0.3); font-size: 12px; padding: 4px 10px;">
+                <i class="fas fa-lock"></i> ${window.i18n.t('auth_gate_locked_badge')}
+              </span>
+              <span style="color: #94A3B8; font-size: 13px;">${isAr ? 'حماية البيانات وتوثيق تاريخ الأجهزة' : 'Device history & data protection'}</span>
+            </div>
+            <h3 id="onboardingAuthTitle" style="font-size: 20px; font-weight: 700; color: #FFFFFF; margin-bottom: 8px;" data-i18n="auth_gate_title">
+              ${window.i18n.t('auth_gate_title')}
+            </h3>
+            <p id="onboardingAuthDesc" style="font-size: 14px; color: #94A3B8; line-height: 1.6;" data-i18n="auth_gate_desc">
+              ${window.i18n.t('auth_gate_desc')}
+            </p>
+          </div>
+
+          <div id="onboardingAuthActions" style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+            <button class="btn btn-primary btn-md" onclick="app.showAuthModal('login')" style="display: inline-flex; align-items: center; gap: 8px;">
+              <i class="fas fa-sign-in-alt"></i>
+              <span data-i18n="nav_login">${window.i18n.t('nav_login')}</span>
+            </button>
+            <button class="btn btn-outline btn-md" onclick="app.showAuthModal('register')" style="display: inline-flex; align-items: center; gap: 8px;">
+              <i class="fas fa-user-plus"></i>
+              <span data-i18n="nav_register">${window.i18n.t('nav_register')}</span>
+            </button>
+          </div>
+        </div>
+
       </div>
     </section>
 
@@ -374,7 +547,11 @@ class FixoraApp {
             <textarea id="homeQuickDiagInput" class="form-control" style="min-height: 85px; resize: none;" placeholder="${isAr ? 'مثلاً: جهاز PS5 ينطفئ تلقائياً مع 3 صافرات، أو لابتوب لا يشحن ويصدر صوتاً عند بدء التشغيل...' : 'e.g., PS5 turns off after 10 mins with 3 beeps, or laptop battery not charging...'}"></textarea>
           </div>
 
-          <div style="display: flex; justify-content: flex-end;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #94A3B8;">
+              <i class="fas fa-lock" style="color: #38BDF8;"></i>
+              <span>${isAr ? 'يتطلب فحص الأعطال تسجيل الدخول لحفظ تقرير الصيانة وسجل الجهاز.' : 'Diagnosis requires sign in to save your inspection report.'}</span>
+            </div>
             <button id="homeQuickDiagSubmit" class="btn btn-primary" style="padding: 10px 24px;">
               <i class="fas fa-microchip"></i>
               <span data-i18n="demo_btn">${window.i18n.t('demo_btn')}</span>
@@ -518,6 +695,17 @@ class FixoraApp {
 
   startDiagnosisWithCat(cat) {
     this.wizardData.device_category = cat;
+    // STRICT AUTH GATE: Do not allow guest diagnosis
+    if (!window.api.isLoggedIn()) {
+      this.pendingNavigation = "diagnose";
+      const isAr = window.i18n.currentLang === "ar";
+      const catKey = "cat_" + (cat || "").toLowerCase().replace(/\s+/g, "_");
+      const catName = window.i18n.t(catKey) || cat;
+      this.showAuthModal("login", "user", isAr ? 
+        `يرجى تسجيل الدخول لبدء فحص جهازك (${catName}) والاطلاع على خطوات الإصلاح ومطابقة الأعطال.` : 
+        `Please sign in to diagnose your ${cat} and access verified repair procedures.`);
+      return;
+    }
     this.navigate("diagnose");
   }
 
@@ -526,6 +714,15 @@ class FixoraApp {
   // ==========================================
   renderDiagnose(container) {
     const isAr = window.i18n.currentLang === "ar";
+    // STRICT AUTH GATE: Double protection at component level
+    if (!window.api.isLoggedIn()) {
+      this.pendingNavigation = "diagnose";
+      this.showAuthModal("login", "user", isAr ? 
+        "أدوات الفحص والتشخيص الذكي تتطلب تسجيل الدخول. يرجى تسجيل الدخول أو إنشاء حسابك للوصول إلى معالج الفحص وحفظ تقارير الصيانة لأجهزتك." : 
+        "Diagnostic tools require authentication. Please sign in or register to access the diagnostic wizard and save repair reports.");
+      this.navigate("home");
+      return;
+    }
     container.innerHTML = `
       <section style="padding: 40px 0 70px;">
         <div class="container" style="max-width: 820px;">
@@ -2162,17 +2359,84 @@ class FixoraApp {
   }
 
   showSafetyModal() {
-    this.showTermsModal();
+    const isAr = window.i18n.currentLang === "ar";
+    const html = `
+      <div style="max-height: 80vh; overflow-y: auto; padding-right: 6px;">
+        <div style="text-align: center; margin-bottom: 20px;">
+          <div style="width: 52px; height: 52px; border-radius: 50%; background: rgba(245, 158, 11, 0.12); color: #F59E0B; display: flex; align-items: center; justify-content: center; font-size: 24px; margin: 0 auto 12px;">
+            <i class="fas fa-shield-virus"></i>
+          </div>
+          <h3 style="font-size: 22px; color: #FFFFFF; margin-bottom: 6px;" data-i18n="safety_modal_title">
+            ${window.i18n.t('safety_modal_title')}
+          </h3>
+          <p style="font-size: 13px; color: #94A3B8;" data-i18n="safety_modal_subtitle">
+            ${window.i18n.t('safety_modal_subtitle')}
+          </p>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 24px; font-size: 13px; color: #CBD5E1; line-height: 1.7;">
+          <div style="background: #0A0D14; border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 14px;">
+            <strong style="color: #EF4444; font-size: 14px; display: block; margin-bottom: 4px;">
+              <i class="fas fa-power-off"></i> ${isAr ? '1. فصل مصادر الطاقة وفصل موصل البطارية فوراً' : '1. Power Isolation & Immediate Battery Disconnect'}
+            </strong>
+            <p>
+              ${isAr ? 'قبل فك أي مسمار أو لمس المكونات الداخلية، يجب فصل الشاحن وإزالة موصل البطارية عن اللوحة الأم (Motherboard) لتفريغ الشحنات وتجنب حدوث قصر كهربائي (Short Circuit) قد يتلف المعالج أو دوائر الطاقة الحساسة.' : 'Prior to disassembly or touching internal components, remove external power and disconnect the battery cable from the logic board to prevent catastrophic short-circuits.'}
+            </p>
+          </div>
+
+          <div style="background: #0A0D14; border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 14px;">
+            <strong style="color: #F59E0B; font-size: 14px; display: block; margin-bottom: 4px;">
+              <i class="fas fa-battery-three-quarters"></i> ${isAr ? '2. بروتوكول التعامل مع بطاريات الليثيوم والانتفاخ' : '2. Critical Lithium Battery Safety & Swelling Protocol'}
+            </strong>
+            <p>
+              ${isAr ? 'بطاريات الليثيوم القابلة لإعادة الشحن (Li-Ion / Li-Po) حساسة جداً للثقب أو الانحناء. في حال ملاحظة انتفاخ، لا تستخدم أي أدوات معدنية حادة، ولا تحاول شحن الجهاز، وضع الجهاز في بيئة غير قابلة للاشتعال وتوجه فوراً لفني معتمد.' : 'Lithium batteries are hazardous if punctured or bent. If swelling is observed, avoid metal prying tools, disconnect charging, store in a fireproof enclosure, and consult a technician.'}
+            </p>
+          </div>
+
+          <div style="background: #0A0D14; border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 14px;">
+            <strong style="color: #38BDF8; font-size: 14px; display: block; margin-bottom: 4px;">
+              <i class="fas fa-bolt"></i> ${isAr ? '3. الحماية من التفريغ الكهروستاتيكي (ESD Protection)' : '3. Electrostatic Discharge (ESD) Protection'}
+            </strong>
+            <p>
+              ${isAr ? 'تفرغ الشحنات الساكنة من جسمك بارتداء سوار تأريض (ESD wrist strap) أو ملامسة سطح معدني مؤرض قبل التعامل مع شرائح الذاكرة، وبطاقات الرسوميات، ومسارات الدوائر المطبوعة.' : 'Always ground yourself with an ESD wrist strap or by touching an unpainted metal surface before touching RAM, GPU silicon, or delicate PCB traces.'}
+            </p>
+          </div>
+
+          <div style="background: #0A0D14; border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 14px;">
+            <strong style="color: #A855F7; font-size: 14px; display: block; margin-bottom: 4px;">
+              <i class="fas fa-exclamation-triangle"></i> ${isAr ? '4. تحذير الجهد العالي (High-Voltage Capacitors)' : '4. High-Voltage Capacitors & Power Supplies'}
+            </strong>
+            <p>
+              ${isAr ? 'تحتوي مزودات الطاقة (PSU) وشاشات التلفزيون ومضخمات الصوت على مكثفات تخزن جهداً خطيراً قد يستمر لساعات حتى بعد فصل التيار. يُحظر فتح وحدات الطاقة المغلقة لمن لا يمتلك شهادة هندسية معتمدة.' : 'Power supplies, monitors, and amplifiers contain capacitors that store lethal voltages long after disconnection. Do not open internal power supplies without certification.'}
+            </p>
+          </div>
+        </div>
+
+        <div style="text-align: center;">
+          <button class="btn btn-primary btn-sm" onclick="app.closeModal()">
+            ${isAr ? 'فهمت بروتوكول السلامة' : 'I Understand & Acknowledge'}
+          </button>
+        </div>
+      </div>
+    `;
+    this.openModal(html);
   }
 
-  showAuthModal(mode = "login", defaultRole = "user") {
+  showAuthModal(mode = "login", defaultRole = "user", noticeMessage = "") {
     const isAr = window.i18n.currentLang === "ar";
     const content = mode === "login" ? `
       <div>
         <h3 style="font-size: 22px; margin-bottom: 6px; color: #FFFFFF;" data-i18n="auth_login_title">تسجيل الدخول إلى Fixora</h3>
-        <p style="font-size: 13px; color: var(--color-text-muted); margin-bottom: 20px;">
+        <p style="font-size: 13px; color: var(--color-text-muted); margin-bottom: ${noticeMessage ? '14px' : '20px'};">
           ${isAr ? 'اختر طريقة تسجيل الدخول للمتابعة' : 'Choose how you want to sign in to Fixora'}
         </p>
+
+        ${noticeMessage ? `
+        <div style="background: rgba(37, 99, 235, 0.12); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 8px; padding: 12px 14px; margin-bottom: 18px; font-size: 13px; color: #38BDF8; display: flex; align-items: center; gap: 10px;">
+          <i class="fas fa-lock" style="font-size: 16px; flex-shrink: 0;"></i>
+          <span style="line-height: 1.5;">${noticeMessage}</span>
+        </div>
+        ` : ''}
 
         <!-- Official Google Sign-In Button -->
         <button class="btn-google" id="googleSignInBtn" type="button" onclick="app.triggerGoogleSignIn(this)">
@@ -2212,9 +2476,16 @@ class FixoraApp {
     ` : `
       <div>
         <h3 style="font-size: 22px; margin-bottom: 6px; color: #FFFFFF;" data-i18n="auth_register_title">إنشاء حسابك في Fixora</h3>
-        <p style="font-size: 13px; color: var(--color-text-muted); margin-bottom: 20px;">
+        <p style="font-size: 13px; color: var(--color-text-muted); margin-bottom: ${noticeMessage ? '14px' : '20px'};">
           ${isAr ? 'اختر طريقة إنشاء الحساب للمتابعة' : 'Choose how you want to create your account'}
         </p>
+
+        ${noticeMessage ? `
+        <div style="background: rgba(37, 99, 235, 0.12); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 8px; padding: 12px 14px; margin-bottom: 18px; font-size: 13px; color: #38BDF8; display: flex; align-items: center; gap: 10px;">
+          <i class="fas fa-lock" style="font-size: 16px; flex-shrink: 0;"></i>
+          <span style="line-height: 1.5;">${noticeMessage}</span>
+        </div>
+        ` : ''}
 
         <!-- Official Google Sign-In Button -->
         <button class="btn-google" id="googleSignUpBtn" type="button" onclick="app.triggerGoogleSignIn(this)">
@@ -2316,7 +2587,21 @@ class FixoraApp {
           window.api.setSession("session_" + Date.now(), userProfile);
           this.closeModal();
           this.updateNavAuth();
-          this.navigate("dashboard");
+
+          if (this.pendingQuickDiagnosis) {
+            this.wizardData.device_category = this.pendingQuickDiagnosis.category;
+            this.wizardData.description = this.pendingQuickDiagnosis.description;
+            this.wizardData.problem_category = "Hardware";
+            this.pendingQuickDiagnosis = null;
+            this.pendingNavigation = null;
+            this.navigate("diagnose");
+          } else if (this.pendingNavigation) {
+            const dest = this.pendingNavigation;
+            this.pendingNavigation = null;
+            this.navigate(dest);
+          } else {
+            this.navigate("dashboard");
+          }
         } catch (err) {
           alert((isAr ? "فشل تسجيل الدخول: " : "Login failed: ") + err.message);
           submitBtn.disabled = false;
@@ -2379,7 +2664,21 @@ class FixoraApp {
           window.api.setSession("session_" + Date.now(), userProfile);
           this.closeModal();
           this.updateNavAuth();
-          this.navigate("dashboard");
+
+          if (this.pendingQuickDiagnosis) {
+            this.wizardData.device_category = this.pendingQuickDiagnosis.category;
+            this.wizardData.description = this.pendingQuickDiagnosis.description;
+            this.wizardData.problem_category = "Hardware";
+            this.pendingQuickDiagnosis = null;
+            this.pendingNavigation = null;
+            this.navigate("diagnose");
+          } else if (this.pendingNavigation) {
+            const dest = this.pendingNavigation;
+            this.pendingNavigation = null;
+            this.navigate(dest);
+          } else {
+            this.navigate("dashboard");
+          }
         } catch (err) {
           alert((isAr ? "فشل إنشاء الحساب: " : "Registration failed: ") + err.message);
           submitBtn.disabled = false;
