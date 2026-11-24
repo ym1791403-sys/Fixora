@@ -7,15 +7,16 @@
   <meta name="description" content="Fixora — Expert IT Support, universal hardware diagnostics, and certified repair services across all consumer electronics.">
 
   <!-- Google Fonts: Plus Jakarta Sans (English), Cairo & Almarai (Arabic) -->
+  <!-- Google Fonts: IBM Plex Sans Arabic (Modern Tech Typography), Plus Jakarta Sans & Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Almarai:wght@400;700;800&family=Cairo:wght@400;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <!-- FontAwesome 6 Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
   <!-- Fixora Stylesheet -->
-  <link rel="stylesheet" href="css/style.css?v=3.2.0">
+  <link rel="stylesheet" href="css/style.css?v=3.2.3">
 </head>
 <body>
 
@@ -119,9 +120,9 @@
           </p>
 
           <div class="hero-actions" style="display: flex; gap: 14px; align-items: center; flex-wrap: wrap;">
-            <!-- Get Emergency Service Button (White Pill) -->
-            <button class="btn btn-emergency" onclick="app.navigate('diagnose')" data-i18n="hero_emergency_btn">
-              طلب فحص طارئ
+            <!-- Request Repair Button (White Pill) -->
+            <button class="btn btn-emergency" onclick="app.navigate('technicians')" data-i18n="hero_request_repair">
+              طلب صيانة فورية
             </button>
             <button class="btn btn-outline" onclick="app.navigate('guides')" style="border-radius: var(--radius-full); padding: 10px 22px; font-size: 14px; font-weight: 600;" data-i18n="nav_guides">
               أدلة الإصلاح
@@ -298,48 +299,6 @@
       </div>
     </section>
 
-    <!-- Instant AI Diagnostic Triage / Symptom Checker Widget -->
-    <section class="triage-section">
-      <div class="container">
-        <div class="triage-card">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
-            <div>
-              <h3 style="font-size: 20px; color: #FFFFFF; margin-bottom: 4px;" data-i18n="demo_title">الفحص الذكي الفوري للأعطال</h3>
-              <p style="font-size: 13px; color: var(--color-text-muted);">اختر نوع جهازك واكتب المشكلة باختصار للبدء في الفحص والتشخيص الفوري:</p>
-            </div>
-            <span style="background-color: rgba(56, 189, 248, 0.15); color: #38BDF8; border: 1px solid rgba(56, 189, 248, 0.3); padding: 4px 12px; border-radius: var(--radius-full); font-size: 12px; font-weight: 700;">
-              <i class="fas fa-circle" style="font-size: 7px; color: #10B981; margin-inline-end: 4px;"></i> AI Live
-            </span>
-          </div>
-
-          <div class="triage-pills" id="homeTriagePills">
-            <button class="triage-pill-btn active" data-cat="Smartphone"><i class="fas fa-mobile-alt"></i> هواتف ذكية</button>
-            <button class="triage-pill-btn" data-cat="Laptop"><i class="fas fa-laptop"></i> أجهزة لابتوب</button>
-            <button class="triage-pill-btn" data-cat="Desktop Computer"><i class="fas fa-desktop"></i> كمبيوتر مكتبي</button>
-            <button class="triage-pill-btn" data-cat="Gaming Console"><i class="fas fa-gamepad"></i> منصات ألعاب</button>
-            <button class="triage-pill-btn" data-cat="Smart TV"><i class="fas fa-tv"></i> شاشات وتلفزيونات</button>
-            <button class="triage-pill-btn" data-cat="Storage"><i class="fas fa-hard-drive"></i> وسائط تخزين / SSD</button>
-            <button class="triage-pill-btn" data-cat="Home Appliance"><i class="fas fa-plug"></i> أجهزة منزلية</button>
-          </div>
-
-          <div class="form-group" style="margin-bottom: 14px;">
-            <textarea id="homeQuickDiagInput" class="form-control" style="min-height: 85px; resize: none;" placeholder="مثلاً: جهاز PS5 ينطفئ تلقائياً مع 3 صافرات، أو لابتوب لا يشحن ويصدر صوتاً عند بدء التشغيل..."></textarea>
-          </div>
-
-          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-            <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #94A3B8;">
-              <i class="fas fa-lock" style="color: #38BDF8;"></i>
-              <span>يتطلب فحص الأعطال تسجيل الدخول لحفظ تقرير الصيانة وسجل الجهاز.</span>
-            </div>
-            <button id="homeQuickDiagSubmit" class="btn btn-primary" style="padding: 10px 24px;">
-              <i class="fas fa-microchip"></i>
-              <span data-i18n="demo_btn">فحص وتشخيص فوري</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    </section>
-
     <!-- Supported Universal Devices Section (13 Categories) -->
     <section class="devices-section">
       <div class="container">
@@ -354,79 +313,79 @@
         </div>
 
         <div class="device-categories-grid">
-          <div class="device-category-card" onclick="app.startDiagnosisWithCat('Smartphone')">
+          <div class="device-category-card" onclick="app.filterGuidesByCategory('Smartphone')">
             <i class="fas fa-mobile-alt"></i>
             <strong data-i18n="cat_smartphone">هواتف ذكية</strong>
             <span data-i18n="cat_smartphone_sub">iPhone, Galaxy, Xiaomi, Pixel, OnePlus</span>
           </div>
 
-          <div class="device-category-card" onclick="app.startDiagnosisWithCat('Laptop')">
+          <div class="device-category-card" onclick="app.filterGuidesByCategory('Laptop')">
             <i class="fas fa-laptop"></i>
             <strong data-i18n="cat_laptop">أجهزة لابتوب</strong>
             <span data-i18n="cat_laptop_sub">MacBook, Dell, ThinkPad, HP, Asus</span>
           </div>
 
-          <div class="device-category-card" onclick="app.startDiagnosisWithCat('Desktop Computer')">
+          <div class="device-category-card" onclick="app.filterGuidesByCategory('Desktop Computer')">
             <i class="fas fa-desktop"></i>
             <strong data-i18n="cat_computer">كمبيوتر مكتبي</strong>
             <span data-i18n="cat_computer_sub">Custom PC, iMac, Workstations, PSU, GPU</span>
           </div>
 
-          <div class="device-category-card" onclick="app.startDiagnosisWithCat('Gaming Console')">
+          <div class="device-category-card" onclick="app.filterGuidesByCategory('Gaming Console')">
             <i class="fas fa-gamepad"></i>
             <strong data-i18n="cat_console">منصات الألعاب</strong>
             <span data-i18n="cat_console_sub">PS5, PS4, Xbox Series X, Switch, Steam Deck</span>
           </div>
 
-          <div class="device-category-card" onclick="app.startDiagnosisWithCat('Smart TV')">
+          <div class="device-category-card" onclick="app.filterGuidesByCategory('Smart TV')">
             <i class="fas fa-tv"></i>
             <strong data-i18n="cat_tv">شاشات وتلفزيونات</strong>
             <span data-i18n="cat_tv_sub">OLED, QLED, Smart TVs, Monitors, Projectors</span>
           </div>
 
-          <div class="device-category-card" onclick="app.startDiagnosisWithCat('Storage')">
+          <div class="device-category-card" onclick="app.filterGuidesByCategory('Storage')">
             <i class="fas fa-hard-drive"></i>
             <strong data-i18n="cat_storage">وسائط التخزين</strong>
             <span data-i18n="cat_storage_sub">HDDs, NVMe SSDs, NAS, Backblaze Telemetry</span>
           </div>
 
-          <div class="device-category-card" onclick="app.startDiagnosisWithCat('Tablet')">
+          <div class="device-category-card" onclick="app.filterGuidesByCategory('Tablet')">
             <i class="fas fa-tablet-alt"></i>
             <strong data-i18n="cat_tablet">أجهزة لوحية</strong>
             <span data-i18n="cat_tablet_sub">iPad, Galaxy Tab, Surface, Tablets</span>
           </div>
 
-          <div class="device-category-card" onclick="app.startDiagnosisWithCat('Smartwatch')">
+          <div class="device-category-card" onclick="app.filterGuidesByCategory('Smartwatch')">
             <i class="fas fa-clock"></i>
             <strong data-i18n="cat_smartwatch">ساعات وأجهزة قابلة للارتداء</strong>
             <span data-i18n="cat_smartwatch_sub">Apple Watch, Galaxy Watch, Fitbits</span>
           </div>
 
-          <div class="device-category-card" onclick="app.startDiagnosisWithCat('Audio')">
+          <div class="device-category-card" onclick="app.filterGuidesByCategory('Audio')">
             <i class="fas fa-headphones"></i>
             <strong data-i18n="cat_audio">سماعات وصوتيات</strong>
             <span data-i18n="cat_audio_sub">AirPods, Bose, Soundbars, Speakers</span>
           </div>
 
-          <div class="device-category-card" onclick="app.startDiagnosisWithCat('Camera')">
+          <div class="device-category-card" onclick="app.filterGuidesByCategory('Camera')">
             <i class="fas fa-camera"></i>
             <strong data-i18n="cat_camera">كاميرات وطائرات درون</strong>
             <span data-i18n="cat_camera_sub">DSLR, Mirrorless, DJI Drones, Action Cams</span>
           </div>
 
-          <div class="device-category-card" onclick="app.startDiagnosisWithCat('Printer')">
+          <div class="device-category-card" onclick="app.filterGuidesByCategory('Printer')">
             <i class="fas fa-print"></i>
             <strong data-i18n="cat_printer">طابعات وماسحات ضوئية</strong>
             <span data-i18n="cat_printer_sub">Laser, Inkjet, 3D Printers, Scanners</span>
           </div>
 
-          <div class="device-category-card" onclick="app.startDiagnosisWithCat('Home Appliance')">
+          <div class="device-category-card" onclick="app.filterGuidesByCategory('Home Appliance')">
             <i class="fas fa-plug"></i>
             <strong data-i18n="cat_appliance">أجهزة منزلية وإنترنت الأشياء</strong>
             <span data-i18n="cat_appliance_sub">Robo-Vacuums, Coffee Makers, Microwaves, IoT</span>
           </div>
 
-          <div class="device-category-card" onclick="app.startDiagnosisWithCat('Other')">
+          <div class="device-category-card" onclick="app.filterGuidesByCategory('Other')">
             <i class="fas fa-microchip"></i>
             <strong data-i18n="cat_other">إلكترونيات ومعدات أخرى</strong>
             <span data-i18n="cat_other_sub">Power Tools, Medical Gadgets, Custom Gear</span>
@@ -512,41 +471,34 @@
   <!-- Footer -->
   <footer class="footer">
     <div class="container">
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 36px;">
+      <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px; margin-bottom: 30px;">
         <div>
           <div class="logo" style="color: #FFFFFF; margin-bottom: 14px;">
             <i class="fas fa-asterisk logo-star"></i>
             <span>Fixora</span>
           </div>
-          <p style="font-size: 13px; line-height: 1.6; color: #94A3B8;">
-            Fixing Tech Issues Fast and Right. Fixora provides expert IT support and intelligent universal hardware diagnostics for all consumer and enterprise electronics.
+          <p style="font-size: 13px; line-height: 1.6; color: #94A3B8; max-width: 420px;">
+            Fixing Tech Issues Fast and Right. منصة Fixora الرائدة للدعم التقني وتشخيص وصيانة الأجهزة الإلكترونية بالذكاء الاصطناعي استناداً لأكبر قواعد بيانات الصيانة العالمية المفتوحة.
           </p>
         </div>
 
         <div>
-          <h4>المنصة</h4>
-          <ul style="list-style: none; display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
-            <li><a href="#" data-nav="diagnose">تشخيص الأجهزة</a></li>
-            <li><a href="#" data-nav="guides">مكتبة أدلة الإصلاح</a></li>
-            <li><a href="#" data-nav="technicians">شبكة الفنيين</a></li>
+          <h4 style="color: #FFFFFF; font-size: 14px; font-weight: 700; margin-bottom: 14px;">المنصة</h4>
+          <ul style="list-style: none; display: flex; flex-direction: column; gap: 10px; font-size: 13px;">
+            <li><a href="#" onclick="app.navigate('home'); return false;" style="color: #94A3B8; text-decoration: none;">الرئيسية</a></li>
+            <li><a href="#" onclick="app.navigate('technicians'); return false;" style="color: #94A3B8; text-decoration: none;">سوق الفنيين المعتمدين</a></li>
+            <li><a href="#" onclick="app.navigate('guides'); return false;" style="color: #94A3B8; text-decoration: none;">مكتبة أدلة الإصلاح</a></li>
+            <li><a href="#" onclick="app.navigate('diagnose'); return false;" style="color: #94A3B8; text-decoration: none;">تشخيص الأعطال</a></li>
           </ul>
         </div>
 
         <div>
-          <h4><a href="#" onclick="app.showDatasetsModal(); return false;" style="color: inherit; text-decoration: none;"><i class="fas fa-database" style="color: #38BDF8; font-size: 11px;"></i> قواعد البيانات العالمية المعتمدة</a></h4>
-          <ul style="list-style: none; display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
-            <li><a href="#" onclick="app.showDatasetsModal(); return false;">Open Repair Alliance (416,282 سجل واقعي)</a></li>
-            <li><a href="#" onclick="app.showDatasetsModal(); return false;">MyFixit Dataset (18,995 دليل معتمد)</a></li>
-            <li><a href="#" onclick="app.showDatasetsModal(); return false;">Backblaze Telemetry (12,442 رصد & ML)</a></li>
-          </ul>
-        </div>
-
-        <div>
-          <h4><i class="fas fa-shield-alt" style="color: #10B981; font-size: 11px;"></i> الخصوصية والشروط القانونية</h4>
-          <ul style="list-style: none; display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
-            <li><a href="#" onclick="app.showPrivacyModal(); return false;"><i class="fas fa-user-shield" style="color: #10B981; font-size: 11px;"></i> سياسة الخصوصية وحماية البيانات</a></li>
-            <li><a href="#" onclick="app.showTermsModal(); return false;"><i class="fas fa-file-contract" style="color: #38BDF8; font-size: 11px;"></i> شروط الاستخدام وإخلاء المسؤولية</a></li>
-            <li><a href="#" onclick="app.showSafetyModal(); return false;"><i class="fas fa-exclamation-triangle" style="color: #F59E0B; font-size: 11px;"></i> إرشادات الأمان وسلامة البطاريات</a></li>
+          <h4 style="color: #FFFFFF; font-size: 14px; font-weight: 700; margin-bottom: 14px;">المصادر والدعم</h4>
+          <ul style="list-style: none; display: flex; flex-direction: column; gap: 10px; font-size: 13px;">
+            <li><a href="#" onclick="app.showDatasetsModal(); return false;" style="color: #94A3B8; text-decoration: none;"><i class="fas fa-database" style="color: #38BDF8; font-size: 11px;"></i> قواعد البيانات المعتمدة</a></li>
+            <li><a href="#" onclick="app.showSafetyModal(); return false;" style="color: #94A3B8; text-decoration: none;"><i class="fas fa-shield-alt" style="color: #10B981; font-size: 11px;"></i> بروتوكول الأمان والسلامة</a></li>
+            <li><a href="#" onclick="app.showPrivacyModal(); return false;" style="color: #94A3B8; text-decoration: none;"><i class="fas fa-user-shield" style="color: #38BDF8; font-size: 11px;"></i> سياسة الخصوصية</a></li>
+            <li><a href="#" onclick="app.showTermsModal(); return false;" style="color: #94A3B8; text-decoration: none;"><i class="fas fa-file-contract" style="color: #F59E0B; font-size: 11px;"></i> الشروط وإخلاء المسؤولية</a></li>
           </ul>
         </div>
       </div>
@@ -556,9 +508,10 @@
         <div style="display: flex; gap: 20px; font-size: 12px; align-items: center; flex-wrap: wrap;">
           <a href="#" onclick="app.showPrivacyModal(); return false;" style="color: #94A3B8; text-decoration: none;">سياسة الخصوصية</a>
           <a href="#" onclick="app.showTermsModal(); return false;" style="color: #94A3B8; text-decoration: none;">شروط الخدمة</a>
+          <a href="#" onclick="app.showSafetyModal(); return false;" style="color: #94A3B8; text-decoration: none;">إرشادات الأمان</a>
           <a href="#" onclick="app.showDatasetsModal(); return false;" style="color: #94A3B8; text-decoration: none;">تراخيص البيانات المفتوحة</a>
           <span style="color: rgba(255,255,255,0.2);">|</span>
-          <span style="color: #64748B;">v3.0.1 Certified Real Data Edition</span>
+          <span style="color: #64748B;">v3.2.2 Enterprise Edition</span>
         </div>
       </div>
     </div>
@@ -569,9 +522,9 @@
   <script src="js/supabase-init.js?v=3.2.1"></script>
 
   <!-- Fixora Core Scripts & Real Datasets -->
-  <script src="js/i18n.js?v=3.2.1"></script>
-  <script src="js/api.js?v=3.2.1"></script>
-  <script src="js/app.js?v=3.2.1"></script>
+  <script src="js/i18n.js?v=3.2.3"></script>
+  <script src="js/api.js?v=3.2.3"></script>
+  <script src="js/app.js?v=3.2.3"></script>
   <script>
     if (!window.app && typeof FixoraApp !== 'undefined') {
       window.app = app = new FixoraApp();

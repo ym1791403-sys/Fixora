@@ -29,8 +29,8 @@
   --radius-lg: 16px;
   --radius-full: 9999px;
   
-  --font-en: 'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif;
-  --font-ar: 'Cairo', 'Almarai', Tahoma, sans-serif;
+  --font-en: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-ar: 'IBM Plex Sans Arabic', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 /* Global Reset */
@@ -57,8 +57,18 @@ body {
   flex-direction: column;
 }
 
-[dir="rtl"] body {
-  font-family: var(--font-ar);
+[dir="rtl"] body,
+[dir="rtl"] button,
+[dir="rtl"] input,
+[dir="rtl"] select,
+[dir="rtl"] textarea,
+[dir="rtl"] h1,
+[dir="rtl"] h2,
+[dir="rtl"] h3,
+[dir="rtl"] h4,
+[dir="rtl"] h5,
+[dir="rtl"] h6 {
+  font-family: var(--font-ar) !important;
 }
 
 a {
@@ -266,25 +276,26 @@ h1, h2, h3, h4, h5, h6 {
   align-items: center;
   background-color: #0B0E14;
   background-image: 
-    linear-gradient(180deg, rgba(11, 14, 20, 0.45) 0%, rgba(11, 14, 20, 0.4) 60%, rgba(11, 14, 20, 0.95) 100%),
-    radial-gradient(ellipse at 50% 50%, rgba(11, 14, 20, 0.2) 0%, rgba(11, 14, 20, 0.7) 100%),
+    linear-gradient(180deg, rgba(11, 14, 20, 0.4) 0%, rgba(11, 14, 20, 0.65) 55%, #0B0E14 100%),
+    radial-gradient(ellipse at 50% 50%, rgba(11, 14, 20, 0.2) 0%, rgba(11, 14, 20, 0.8) 100%),
     url('../images/hero-bg.webp');
-  background-position: center center;
+  background-position: center top;
   background-size: cover;
   background-repeat: no-repeat;
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: none !important;
   padding: 100px 0 95px;
   overflow: hidden;
 }
 
 [dir="rtl"] .hero-wrapper {
   background-image: 
-    linear-gradient(180deg, rgba(11, 14, 20, 0.45) 0%, rgba(11, 14, 20, 0.4) 60%, rgba(11, 14, 20, 0.95) 100%),
-    radial-gradient(ellipse at 50% 50%, rgba(11, 14, 20, 0.2) 0%, rgba(11, 14, 20, 0.7) 100%),
+    linear-gradient(180deg, rgba(11, 14, 20, 0.4) 0%, rgba(11, 14, 20, 0.65) 55%, #0B0E14 100%),
+    radial-gradient(ellipse at 50% 50%, rgba(11, 14, 20, 0.2) 0%, rgba(11, 14, 20, 0.8) 100%),
     url('../images/hero-bg.webp');
-  background-position: center center;
+  background-position: center top;
   background-size: cover;
   background-repeat: no-repeat;
+  border-bottom: none !important;
 }
 
 .hero-content-col {
@@ -359,7 +370,7 @@ h1, h2, h3, h4, h5, h6 {
 .about-section {
   padding: 85px 0;
   background-color: var(--color-bg);
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: none;
 }
 
 .about-grid {
@@ -410,13 +421,14 @@ h1, h2, h3, h4, h5, h6 {
 .badge-text textPath,
 [dir="rtl"] .badge-text textPath,
 textPath {
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif !important;
   font-size: 9.5px;
   font-weight: 700;
   letter-spacing: 2px;
   fill: #94A3B8;
   text-transform: uppercase;
   direction: ltr !important;
-  unicode-bidi: bidi-override !important;
+  unicode-bidi: normal !important;
   text-anchor: start !important;
   writing-mode: horizontal-tb !important;
 }
@@ -472,9 +484,9 @@ textPath {
 .onboarding-intro-section {
   position: relative;
   padding: 60px 0;
-  background: linear-gradient(180deg, rgba(10, 13, 20, 0.98) 0%, rgba(15, 23, 42, 0.9) 100%);
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: #0B0E14;
+  border-top: none !important;
+  border-bottom: none !important;
 }
 
 .onboarding-card {
@@ -565,7 +577,7 @@ textPath {
 .devices-section {
   padding: 75px 0;
   background-color: var(--color-bg-alt);
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: none;
 }
 
 .device-categories-grid {
@@ -961,19 +973,21 @@ textPath {
     min-height: auto;
     padding: 38px 0 48px;
     background-image: 
-      linear-gradient(180deg, rgba(11, 14, 20, 0.5) 0%, rgba(11, 14, 20, 0.45) 55%, rgba(11, 14, 20, 0.95) 100%),
+      linear-gradient(180deg, rgba(11, 14, 20, 0.4) 0%, rgba(11, 14, 20, 0.65) 55%, #0B0E14 100%),
       url('../images/hero-bg.webp');
-    background-position: center center;
+    background-position: center top;
     background-size: cover;
     background-repeat: no-repeat;
+    border-bottom: none !important;
   }
   [dir="rtl"] .hero-wrapper {
     background-image: 
-      linear-gradient(180deg, rgba(11, 14, 20, 0.5) 0%, rgba(11, 14, 20, 0.45) 55%, rgba(11, 14, 20, 0.95) 100%),
+      linear-gradient(180deg, rgba(11, 14, 20, 0.4) 0%, rgba(11, 14, 20, 0.65) 55%, #0B0E14 100%),
       url('../images/hero-bg.webp');
-    background-position: center center;
+    background-position: center top;
     background-size: cover;
     background-repeat: no-repeat;
+    border-bottom: none !important;
   }
   .hero-content-col {
     padding: 22px 18px;

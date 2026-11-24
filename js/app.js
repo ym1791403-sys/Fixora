@@ -340,9 +340,9 @@ class FixoraApp {
           </p>
 
           <div style="display: flex; gap: 14px; align-items: center; flex-wrap: wrap;">
-            <!-- Get Emergency Service Button (White Pill) -->
-            <button class="btn btn-emergency" onclick="app.navigate('diagnose')" data-i18n="hero_emergency_btn">
-              ${window.i18n.t('hero_emergency_btn')}
+            <!-- Request Repair Button (White Pill) -->
+            <button class="btn btn-emergency" onclick="app.navigate('technicians')" data-i18n="hero_request_repair">
+              ${window.i18n.t('hero_request_repair')}
             </button>
             <button class="btn btn-outline" onclick="app.navigate('guides')" style="border-radius: var(--radius-full); padding: 10px 22px; font-size: 14px; font-weight: 600;" data-i18n="nav_guides">
               ${window.i18n.t('nav_guides')}
@@ -519,48 +519,6 @@ class FixoraApp {
       </div>
     </section>
 
-    <!-- Instant AI Diagnostic Triage / Symptom Checker Widget -->
-    <section class="triage-section">
-      <div class="container">
-        <div class="triage-card">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
-            <div>
-              <h3 style="font-size: 20px; color: #FFFFFF; margin-bottom: 4px;" data-i18n="demo_title">${window.i18n.t('demo_title')}</h3>
-              <p style="font-size: 13px; color: var(--color-text-muted);">${isAr ? 'اختر نوع جهازك واكتب المشكلة باختصار للبدء في الفحص والتشخيص الفوري:' : 'Select your device and describe the problem for instant diagnosis:'}</p>
-            </div>
-            <span style="background-color: rgba(56, 189, 248, 0.15); color: #38BDF8; border: 1px solid rgba(56, 189, 248, 0.3); padding: 4px 12px; border-radius: var(--radius-full); font-size: 12px; font-weight: 700;">
-              <i class="fas fa-circle" style="font-size: 7px; color: #10B981; margin-inline-end: 4px;"></i> AI Live
-            </span>
-          </div>
-
-          <div class="triage-pills" id="homeTriagePills">
-            <button class="triage-pill-btn active" data-cat="Smartphone"><i class="fas fa-mobile-alt"></i> ${window.i18n.t('cat_smartphone')}</button>
-            <button class="triage-pill-btn" data-cat="Laptop"><i class="fas fa-laptop"></i> ${window.i18n.t('cat_laptop')}</button>
-            <button class="triage-pill-btn" data-cat="Desktop Computer"><i class="fas fa-desktop"></i> ${window.i18n.t('cat_computer')}</button>
-            <button class="triage-pill-btn" data-cat="Gaming Console"><i class="fas fa-gamepad"></i> ${window.i18n.t('cat_console')}</button>
-            <button class="triage-pill-btn" data-cat="Smart TV"><i class="fas fa-tv"></i> ${window.i18n.t('cat_tv')}</button>
-            <button class="triage-pill-btn" data-cat="Storage"><i class="fas fa-hard-drive"></i> ${window.i18n.t('cat_storage')}</button>
-            <button class="triage-pill-btn" data-cat="Home Appliance"><i class="fas fa-plug"></i> ${window.i18n.t('cat_appliance')}</button>
-          </div>
-
-          <div class="form-group" style="margin-bottom: 14px;">
-            <textarea id="homeQuickDiagInput" class="form-control" style="min-height: 85px; resize: none;" placeholder="${isAr ? 'مثلاً: جهاز PS5 ينطفئ تلقائياً مع 3 صافرات، أو لابتوب لا يشحن ويصدر صوتاً عند بدء التشغيل...' : 'e.g., PS5 turns off after 10 mins with 3 beeps, or laptop battery not charging...'}"></textarea>
-          </div>
-
-          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-            <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #94A3B8;">
-              <i class="fas fa-lock" style="color: #38BDF8;"></i>
-              <span>${isAr ? 'يتطلب فحص الأعطال تسجيل الدخول لحفظ تقرير الصيانة وسجل الجهاز.' : 'Diagnosis requires sign in to save your inspection report.'}</span>
-            </div>
-            <button id="homeQuickDiagSubmit" class="btn btn-primary" style="padding: 10px 24px;">
-              <i class="fas fa-microchip"></i>
-              <span data-i18n="demo_btn">${window.i18n.t('demo_btn')}</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    </section>
-
     <!-- Supported Universal Devices Section (13 Categories) -->
     <section class="devices-section">
       <div class="container">
@@ -590,7 +548,7 @@ class FixoraApp {
             { cat: 'Home Appliance', icon: 'fa-plug', key: 'cat_appliance', sub: 'cat_appliance_sub' },
             { cat: 'Other', icon: 'fa-microchip', key: 'cat_other', sub: 'cat_other_sub' }
           ].map(item => `
-            <div class="device-category-card" onclick="app.startDiagnosisWithCat('${item.cat}')">
+            <div class="device-category-card" onclick="app.filterGuidesByCategory('${item.cat}')">
               <i class="fas ${item.icon}"></i>
               <strong data-i18n="${item.key}">${window.i18n.t(item.key)}</strong>
               <span data-i18n="${item.sub}">${window.i18n.t(item.sub)}</span>
@@ -601,7 +559,7 @@ class FixoraApp {
     </section>
 
     <!-- How Fixora Works Section -->
-    <section style="padding: 85px 0; background-color: var(--color-bg); border-bottom: 1px solid var(--color-border);">
+    <section style="padding: 85px 0; background-color: var(--color-bg); border-bottom: none;">
       <div class="container">
         <div style="text-align: center; max-width: 650px; margin: 0 auto 52px;">
           <h2 style="font-size: 34px; margin-bottom: 14px; color: #FFFFFF;" data-i18n="how_title">${window.i18n.t('how_title')}</h2>
@@ -665,7 +623,6 @@ class FixoraApp {
     </section>
     `;
 
-    this.bindHomeTriage();
     this.fetchAndApplyLiveDatasetStats();
   }
 
@@ -691,6 +648,17 @@ class FixoraApp {
     } catch (e) {
       console.warn("Live stats update note:", e);
     }
+  }
+
+  filterGuidesByCategory(cat) {
+    this.navigate("guides");
+    setTimeout(() => {
+      const catSelect = document.getElementById("guideCatFilter");
+      if (catSelect) {
+        catSelect.value = cat;
+        catSelect.dispatchEvent(new Event("change"));
+      }
+    }, 120);
   }
 
   startDiagnosisWithCat(cat) {
