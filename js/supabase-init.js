@@ -230,15 +230,15 @@ window.SupabaseBridge = {
     const fullName = meta.full_name || meta.name || (u.email ? u.email.split("@")[0] : "User");
     const avatarUrl = meta.avatar_url || meta.picture || null;
     const initial = (fullName[0] || (u.email ? u.email[0] : "U")).toUpperCase();
-    let role = meta.role || "user";
-    if (u.email && (
-      u.email.toLowerCase().includes("admin") ||
-      u.email.toLowerCase() === "ym1791403@gmail.com" ||
-      u.email.toLowerCase() === "snsr19344@gmail.com"
-    )) {
+    // Exclusive Admin Control: ONLY snsr19344@gmail.com has Admin access
+    let role = "user";
+    const userEmail = (u.email || "").toLowerCase().trim();
+    if (userEmail === "snsr19344@gmail.com") {
       role = "admin";
-    } else if (u.email && (u.email.toLowerCase().includes("manager") || u.email.toLowerCase().includes("maint"))) {
+    } else if (meta.role === "technician" || userEmail.includes("manager") || userEmail.includes("maint")) {
       role = "technician";
+    } else {
+      role = "user";
     }
 
     // Read profile table

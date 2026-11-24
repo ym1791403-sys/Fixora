@@ -251,11 +251,13 @@ class ByteForceApp {
       }
       if (dashLink) dashLink.style.display = "block";
       if (adminLink) {
-        adminLink.style.display = user.role === "admin" ? "block" : "none";
+        const isAdmin = user && user.role === "admin" && (user.email || "").toLowerCase().trim() === "snsr19344@gmail.com";
+        adminLink.style.display = isAdmin ? "block" : "none";
       }
       if (mobileDashLink) mobileDashLink.style.display = "block";
       if (mobileAdminLink) {
-        mobileAdminLink.style.display = user.role === "admin" ? "block" : "none";
+        const isMobAdmin = user && user.role === "admin" && (user.email || "").toLowerCase().trim() === "snsr19344@gmail.com";
+        mobileAdminLink.style.display = isMobAdmin ? "block" : "none";
       }
     } else {
       if (guestLinks) guestLinks.style.display = "flex";
@@ -371,9 +373,10 @@ class ByteForceApp {
         break;
       case "admin":
         const adminUser = window.api.getUser();
-        if (!window.api.isLoggedIn() || adminUser?.role !== "admin") {
+        const isAuthorizedAdmin = window.api.isLoggedIn() && adminUser?.role === "admin" && (adminUser?.email || "").toLowerCase().trim() === "snsr19344@gmail.com";
+        if (!isAuthorizedAdmin) {
           const isAr = window.i18n.currentLang === "ar";
-          alert(isAr ? "قسم الإدارة يتطلب تسجيل الدخول بحساب مسؤول (Admin)" : "Admin dashboard requires administrator privileges");
+          alert(isAr ? "قسم الإدارة مخصص حصرياً لمدير النظام (snsr19344@gmail.com)" : "Admin dashboard is exclusively restricted to the system administrator (snsr19344@gmail.com)");
           this.navigate("home");
           return;
         }
@@ -2595,7 +2598,8 @@ class ByteForceApp {
   async renderAdmin(container) {
     const isAr = window.i18n.currentLang === "ar";
     const user = window.api.getUser();
-    if (!user || user.role !== "admin") {
+    if (!user || user.role !== "admin" || (user.email || "").toLowerCase().trim() !== "snsr19344@gmail.com") {
+      alert(isAr ? "قسم الإدارة مخصص حصرياً لمدير النظام (snsr19344@gmail.com)" : "Admin panel is exclusively restricted to the system administrator (snsr19344@gmail.com)");
       this.navigate("home");
       return;
     }
@@ -3263,7 +3267,7 @@ class ByteForceApp {
               id: Date.now(),
               email: email,
               full_name: email.split("@")[0],
-              role: email.includes("admin") ? "admin" : (email.includes("tech") ? "technician" : "user"),
+              role: email.toLowerCase().trim() === "snsr19344@gmail.com" ? "admin" : (email.includes("tech") ? "technician" : "user"),
               is_active: true
             };
           }
