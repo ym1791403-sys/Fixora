@@ -268,6 +268,8 @@ window.SupabaseBridge = {
     if (window.api && typeof window.api.setSession === "function") {
       window.api.setSession(session.access_token, userProfile);
     } else {
+      localStorage.setItem("byteforce_token", session.access_token);
+      localStorage.setItem("byteforce_user", JSON.stringify(userProfile));
       localStorage.setItem("techrepair_token", session.access_token);
       localStorage.setItem("techrepair_user", JSON.stringify(userProfile));
       localStorage.setItem("fixora_token", session.access_token);
@@ -305,6 +307,8 @@ window.SupabaseBridge = {
     if (window.api && typeof window.api.clearSession === "function") {
       window.api.clearSession();
     } else {
+      localStorage.removeItem("byteforce_token");
+      localStorage.removeItem("byteforce_user");
       localStorage.removeItem("techrepair_token");
       localStorage.removeItem("techrepair_user");
       localStorage.removeItem("fixora_token");

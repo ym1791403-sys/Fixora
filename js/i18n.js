@@ -1,5 +1,5 @@
 /**
- * Fixora Bilingual Internationalization (i18n) Engine
+ * ByteForce Bilingual Internationalization (i18n) Engine
  * High-End Hardware Aesthetic & Universal Multi-Device Edition
  * Supported Languages: English ('en', LTR) & Arabic ('ar', RTL)
  */
@@ -23,7 +23,7 @@ const TRANSLATIONS = {
     hero_subtext: "From smartphones and laptops to gaming consoles, smart TVs, storage drives, and home electronics — AI-calibrated troubleshooting guides and direct connection to certified technicians.",
     hero_emergency_btn: "Get Emergency Service",
     hero_request_repair: "Request a Repair Today",
-    hero_badge: "Fixora AI Universal Hardware Diagnostic Platform",
+    hero_badge: "ByteForce AI Universal Hardware Diagnostic Platform",
     
     // Quick Demo Triage Card
     demo_title: "Instant Smart Triage",
@@ -33,9 +33,9 @@ const TRANSLATIONS = {
     
     // About Us Section (ByteFix Reference)
     about_title: "About Us",
-    about_body_1: "At Fixora, we provide reliable AI diagnosis and comprehensive repair services tailored to your needs. Our certified specialists and neural triage logic handle everything from hardware troubleshooting and component-level repairs to data recovery and cybersecurity.",
+    about_body_1: "At ByteForce, we provide reliable AI diagnosis and comprehensive repair services tailored to your needs. Our certified specialists and neural triage logic handle everything from hardware troubleshooting and component-level repairs to data recovery and cybersecurity.",
     about_body_2: "We keep your technology running smoothly with dependable solutions for smartphones, laptops, gaming consoles, smart TVs, storage drives, and home appliances.",
-    badge_text: "• FIXORA AI PLATFORM • CERTIFIED REPAIRS • EST. 2026 •",
+    badge_text: "• BYTEFORCE AI PLATFORM • CERTIFIED REPAIRS • EST. 2026 •",
     stat_records: "+3,000",
     stat_records_lbl: "Real ORA Incidents Imported",
     stat_guides: "1,160",
@@ -45,12 +45,12 @@ const TRANSLATIONS = {
 
     // Onboarding Showcase Section
     onboarding_badge: "Certified Hardware Diagnostic Platform",
-    onboarding_title: "How Fixora Diagnoses & Solves Device Failures",
-    onboarding_subtitle: "Fixora combines advanced diagnostic models with the world's largest open repair datasets (Open Repair Alliance, MyFixit teardowns, and Backblaze SMART telemetry) to deliver evidence-based hardware troubleshooting without guesswork.",
+    onboarding_title: "How ByteForce Diagnoses & Solves Device Failures",
+    onboarding_subtitle: "ByteForce combines advanced diagnostic models with the world's largest open repair datasets (Open Repair Alliance, MyFixit teardowns, and Backblaze SMART telemetry) to deliver evidence-based hardware troubleshooting without guesswork.",
     onboarding_step1_h: "1. Select Device & Record Symptoms",
     onboarding_step1_p: "Choose from 13 comprehensive hardware categories. Describe symptoms in natural English or Arabic with immediate safety triage.",
     onboarding_step2_h: "2. Evidence Matching & ML Prediction",
-    onboarding_step2_p: "Fixora correlates observations against 416K+ real repair cases and trained telemetry classifiers (ROC-AUC 0.912) to rank root causes.",
+    onboarding_step2_p: "ByteForce correlates observations against 416K+ real repair cases and trained telemetry classifiers (ROC-AUC 0.912) to rank root causes.",
     onboarding_step3_h: "3. Step-by-Step Manuals or Certified Techs",
     onboarding_step3_p: "Access illustrated teardowns with required toolboxes, or dispatch verified diagnostic reports directly to certified local technicians.",
     auth_gate_title: "Diagnostic Tools & Reports are Reserved for Verified Accounts",
@@ -94,7 +94,7 @@ const TRANSLATIONS = {
     cat_other_sub: "Power Tools, Medical Gadgets, Custom Gear",
     
     // How It Works
-    how_title: "How Fixora Works",
+    how_title: "How ByteForce Works",
     how_desc: "A universal four-step diagnostic procedure grounded in real repair datasets (Open Repair Alliance, MyFixit & Backblaze).",
     how_step1_title: "1. Select Any Device",
     how_step1_desc: "Choose from 13 hardware categories, brands, and models.",
@@ -125,11 +125,11 @@ const TRANSLATIONS = {
     diag_age_label: "Device Age (approx. years)",
     diag_error_label: "Error Code / Message (if shown)",
     diag_changes_label: "Recent Incidents (dropped, liquid spill, surge, update)",
-    diag_submit_btn: "Run Fixora AI Diagnosis",
-    diag_analyzing: "Fixora AI analyzing symptoms across global repair datasets...",
+    diag_submit_btn: "Run ByteForce AI Diagnosis",
+    diag_analyzing: "ByteForce AI analyzing symptoms across global repair datasets...",
 
     // Diagnosis Results
-    results_title: "Fixora Diagnostic & Repair Report",
+    results_title: "ByteForce Diagnostic & Repair Report",
     results_severity: "Severity Level",
     results_confidence: "Model Confidence",
     results_symptoms: "Detected Symptoms",
@@ -155,20 +155,20 @@ const TRANSLATIONS = {
     guides_view_btn: "View Step-by-Step Guide",
 
     // Technician Marketplace
-    tech_title: "Fixora Certified Technician Network",
+    tech_title: "ByteForce Certified Technician Network",
     tech_subtitle: "Connect with vetted specialists across all device repairs in your region.",
     tech_city_all: "All Cities",
     tech_filter_spec: "Hardware Specialization",
     tech_experience: "Years Exp.",
     tech_book_btn: "Book Repair",
-    tech_verified_badge: "Fixora Certified",
-    tech_book_modal_title: "Book Fixora Repair Service",
+    tech_verified_badge: "ByteForce Certified",
+    tech_book_modal_title: "Book ByteForce Repair Service",
     tech_book_notes: "Additional notes for the technician",
     tech_book_date: "Preferred Appointment Date",
     tech_book_confirm: "Confirm Booking Request",
 
     // Dashboards
-    dash_welcome: "Welcome to Fixora",
+    dash_welcome: "Welcome to ByteForce",
     dash_my_devices: "My Registered Devices",
     dash_add_device: "Register New Device",
     dash_my_reports: "Diagnosis History",
@@ -178,7 +178,7 @@ const TRANSLATIONS = {
     dash_no_requests: "No repair requests yet.",
     
     // Admin Dashboard
-    admin_title: "Fixora Administration Center",
+    admin_title: "ByteForce Administration Center",
     admin_stat_users: "Total Users",
     admin_stat_techs: "Total Technicians",
     admin_stat_pending: "Pending Approvals",
@@ -189,8 +189,8 @@ const TRANSLATIONS = {
     admin_reject_btn: "Reject Request",
 
     // Auth
-    auth_login_title: "Sign in to Fixora",
-    auth_register_title: "Create Your Fixora Account",
+    auth_login_title: "Sign in to ByteForce",
+    auth_register_title: "Create Your ByteForce Account",
     auth_email: "Email Address",
     auth_password: "Password",
     auth_fullname: "Full Name",
@@ -200,7 +200,7 @@ const TRANSLATIONS = {
     auth_role_tech: "Certified Technician (Offer Services)",
     auth_login_btn: "Sign In",
     auth_register_btn: "Create Account",
-    auth_switch_to_reg: "Don't have an account? Sign up with Fixora",
+    auth_switch_to_reg: "Don't have an account? Sign up with ByteForce",
     auth_switch_to_login: "Already have an account? Sign in"
   },
 
@@ -222,19 +222,19 @@ const TRANSLATIONS = {
     hero_subtext: "من الهواتف واللابتوبات وأجهزة الكمبيوتر إلى منصات الألعاب، الشاشات، وسائط التخزين، والأجهزة المنزلية الذكية — تشخيص أعطال العتاد والبرمجيات في ثوانٍ مع أدلة صيانة معتمدة وربط فوري بفنيين موثوقين.",
     hero_emergency_btn: "فحص فوري ذكي",
     hero_request_repair: "طلب صيانة فورية",
-    hero_badge: "منصة Fixora الذكية لتشخيص كافة الأجهزة الإلكترونية",
+    hero_badge: "منصة ByteForce الذكية لتشخيص كافة الأجهزة الإلكترونية",
     
     // Quick Demo Triage Card
     demo_title: "فحص فوري ذكي لكافة الأجهزة",
     demo_placeholder: "مثال: بلايستيشن 5 يصدر 3 صفارات وينطفئ، أو لابتوب يسخن وينطفئ فجأة...",
     demo_btn: "فحص سريع",
-    demo_devices: "جميع فئات الأجهزة المدعومة في Fixora",
+    demo_devices: "جميع فئات الأجهزة المدعومة في ByteForce",
     
     // About Us Section (ByteFix Reference Arabic)
-    about_title: "عن Fixora",
-    about_body_1: "في Fixora، نقدم حلول الدعم التقني الموثوقة وتشخيص وصيانة الحواسيب والأجهزة الإلكترونية بدقة عالية لتلائم احتياجاتك. يمتلك فريقنا المعتمد ومحركنا الذكي خبرة عملية تغطي كافة الجوانب من استكشاف الأعطال وحلها، وإصلاح اللوحات الأم، واستعادة البيانات، وحماية الأجهزة.",
+    about_title: "عن ByteForce",
+    about_body_1: "في ByteForce، نقدم حلول الدعم التقني الموثوقة وتشخيص وصيانة الحواسيب والأجهزة الإلكترونية بدقة عالية لتلائم احتياجاتك. يمتلك فريقنا المعتمد ومحركنا الذكي خبرة عملية تغطي كافة الجوانب من استكشاف الأعطال وحلها، وإصلاح اللوحات الأم، واستعادة البيانات، وحماية الأجهزة.",
     about_body_2: "نحافظ على سلامة أجهزتك التقنية عبر حلول موثوقة ومدروسة للهواتف، اللابتوبات، منصات الألعاب، الشاشات، وسائط التخزين، والأجهزة المنزلية الذكية.",
-    badge_text: "• FIXORA AI PLATFORM • CERTIFIED REPAIRS • EST. 2026 •",
+    badge_text: "• BYTEFORCE AI PLATFORM • CERTIFIED REPAIRS • EST. 2026 •",
     stat_records: "+3,000",
     stat_records_lbl: "سجل صيانة حقيقي (ORA)",
     stat_guides: "1,160",
@@ -244,12 +244,12 @@ const TRANSLATIONS = {
 
     // Onboarding Showcase Section (Arabic)
     onboarding_badge: "المنظومة الهندسية المعتمدة لتشخيص الأجهزة بالذكاء الاصطناعي",
-    onboarding_title: "دليلك الشامل: كيف تعمل Fixora على تشخيص وحل أعطال أجهزتك؟",
-    onboarding_subtitle: "Fixora تجمع بين قوة خوارزميات الذكاء الاصطناعي وأضخم قواعد بيانات الصيانة المفتوحة في العالم (تحالف Open Repair Alliance، وأدلة MyFixit، وتنبؤات Backblaze SMART). صممت المنظومة لتقديم تشخيص هندسي دقيق بدون أي تخمين أو بيانات وهمية.",
+    onboarding_title: "دليلك الشامل: كيف تعمل ByteForce على تشخيص وحل أعطال أجهزتك؟",
+    onboarding_subtitle: "ByteForce تجمع بين قوة خوارزميات الذكاء الاصطناعي وأضخم قواعد بيانات الصيانة المفتوحة في العالم (تحالف Open Repair Alliance، وأدلة MyFixit، وتنبؤات Backblaze SMART). صممت المنظومة لتقديم تشخيص هندسي دقيق بدون أي تخمين أو بيانات وهمية.",
     onboarding_step1_h: "1. حدد جهازك وسجل الأعراض",
     onboarding_step1_p: "اختر نوع جهازك من بين 13 فئة شاملة (هواتف، حواسيب محمولة ومكتبية، منصات ألعاب، وسائط تخزين HDD/SSD، أجهزة منزلية). صف ما يحدث باللغة العربية أو الإنجليزية بدقة.",
     onboarding_step2_h: "2. تحليل الأدلة والتشخيص التنبؤي",
-    onboarding_step2_p: "يقوم محرك Fixora بمطابقة الأعراض مع 416K+ سجل صيانة حقيقي ونماذج التعلم الآلي لاحتساب نسب احتمالية الأعطال ومسبباتها الجذرية استناداً إلى أدلة هندسية موثقة.",
+    onboarding_step2_p: "يقوم محرك ByteForce بمطابقة الأعراض مع 416K+ سجل صيانة حقيقي ونماذج التعلم الآلي لاحتساب نسب احتمالية الأعطال ومسبباتها الجذرية استناداً إلى أدلة هندسية موثقة.",
     onboarding_step3_h: "3. دليل الإصلاح أو حجز فني معتمد",
     onboarding_step3_p: "احصل على دليل تفكيك خطوة بخطوة بالصور وقائمة الأدوات المطلوبة (MyFixit)، أو أرسل تقريرك المشفر مباشرة إلى أقرب فني معتمد في مدينتك لاستلام الجهاز وإصلاحه.",
     auth_gate_title: "أدوات الفحص الذكي وتقارير الصيانة مخصصة للأعضاء المسجلين",
@@ -293,19 +293,19 @@ const TRANSLATIONS = {
     cat_other_sub: "أجهزة كهربائية متقدمة ومعدات خاصة",
     
     // How It Works
-    how_title: "كيف تعمل منصة Fixora؟",
+    how_title: "كيف تعمل منصة ByteForce؟",
     how_desc: "خطوات تشخيص علمية دقيقة مبنية على كبرى قواعد بيانات الصيانة العالمية (Open Repair Alliance و MyFixit و Backblaze).",
     how_step1_title: "1. حدد أي جهاز",
     how_step1_desc: "اختر من بين 13 فئة شاملة لكافة الأجهزة والماركات والموديلات.",
     how_step2_title: "2. صف العطل",
     how_step2_desc: "اكتب وصفاً باللغة العربية أو الإنجليزية لما يحدث في جهازك.",
-    how_step3_title: "3. فحص Fixora بالذكاء الاصطناعي",
+    how_step3_title: "3. فحص ByteForce بالذكاء الاصطناعي",
     how_step3_desc: "يحلل النظام الأعراض ويكشف مخاطر الأمان ويحدد السبب الجذري بنسب مؤكدة.",
     how_step4_title: "4. أصلح بنفسك أو استعن بفني",
     how_step4_desc: "اتبع خطوات الدليل العملي المصور أو احجز موعداً مع فني متخصص معتمد.",
 
     // Diagnosis Wizard
-    diag_page_title: "معالج Fixora الذكي لتشخيص كافة الأجهزة",
+    diag_page_title: "معالج ByteForce الذكي لتشخيص كافة الأجهزة",
     diag_step1: "1. فئة الجهاز",
     diag_step2: "2. الشركة والموديل",
     diag_step3: "3. تصنيف العطل",
@@ -324,11 +324,11 @@ const TRANSLATIONS = {
     diag_age_label: "عمر الجهاز تقريباً (بالسنوات)",
     diag_error_label: "رمز أو نص رسالة الخطأ (إن ظهرت)",
     diag_changes_label: "أي حوادث قريبة (سقوط، ماء، صدمة كهربائية، تحديث)",
-    diag_submit_btn: "بدء فحص Fixora بالذكاء الاصطناعي",
-    diag_analyzing: "Fixora يحلل الأعراض ومقارنتها بقواعد بيانات الصيانة العالمية...",
+    diag_submit_btn: "بدء فحص ByteForce بالذكاء الاصطناعي",
+    diag_analyzing: "ByteForce يحلل الأعراض ومقارنتها بقواعد بيانات الصيانة العالمية...",
 
     // Diagnosis Results
-    results_title: "تقرير تشخيص Fixora الفني المتكامل",
+    results_title: "تقرير تشخيص ByteForce الفني المتكامل",
     results_severity: "درجة الخطورة",
     results_confidence: "نسبة دقة التقييم",
     results_symptoms: "الأعراض المكتشفة",
@@ -338,12 +338,12 @@ const TRANSLATIONS = {
     results_safety_alert: "تنبيهات الأمان والوقاية الحتمية",
     results_tech_referral: "يوصى بالاستعانة بفني صيانة معتمد",
     results_tech_referral_desc: "هذا الإجراء يتضمن خطراً كهربائياً أو يتطلب لحام ميكروسكوبي دقيق يتجاوز حدود الأمان للإصلاح الذاتي.",
-    results_book_btn: "طلب فني صيانة معتمد من Fixora",
+    results_book_btn: "طلب فني صيانة معتمد من ByteForce",
     results_print_btn: "طباعة / حفظ التقرير PDF",
     results_restart_btn: "تشخيص جهاز آخر",
 
     // Repair Guides
-    guides_title: "مكتبة أدلة إصلاح وصيانة Fixora الشاملة",
+    guides_title: "مكتبة أدلة إصلاح وصيانة ByteForce الشاملة",
     guides_subtitle: "إرشادات عملية موثقة خطوة بخطوة لجميع الأجهزة مبنية على معايير Open Repair Alliance و MyFixit.",
     guides_search_placeholder: "ابحث في الأدلة باسم الجهاز (بلايستيشن، لابتوب، آيفون، درون، شاشة)...",
     guides_diff_all: "جميع مستويات الصعوبة",
@@ -354,20 +354,20 @@ const TRANSLATIONS = {
     guides_view_btn: "عرض دليل الإصلاح كاملاً",
 
     // Technician Marketplace
-    tech_title: "شبكة فنيي ومراكز صيانة Fixora المعتمدين",
+    tech_title: "شبكة فنيي ومراكز صيانة ByteForce المعتمدين",
     tech_subtitle: "تواصل مع خبراء صيانة محترفين ومعتمدين لجميع أنواع الأجهزة في مدينتك.",
     tech_city_all: "جميع المدن",
     tech_filter_spec: "التخصص العتادي",
     tech_experience: "سنوات الخبرة",
     tech_book_btn: "طلب صيانة",
-    tech_verified_badge: "معتمد من Fixora",
-    tech_book_modal_title: "طلب خدمة صيانة عبر Fixora",
+    tech_verified_badge: "معتمد من ByteForce",
+    tech_book_modal_title: "طلب خدمة صيانة عبر ByteForce",
     tech_book_notes: "ملاحظات إضافية للفني",
     tech_book_date: "الموعد المفضل لاستلام / فحص الجهاز",
     tech_book_confirm: "تأكيد إرسال الطلب",
 
     // Dashboards
-    dash_welcome: "مرحباً بك في Fixora",
+    dash_welcome: "مرحباً بك في ByteForce",
     dash_my_devices: "أجهزتي المسجلة",
     dash_add_device: "تسجيل جهاز جديد",
     dash_my_reports: "سجل تقارير الفحص السابقة",
@@ -377,7 +377,7 @@ const TRANSLATIONS = {
     dash_no_requests: "لا توجد طلبات صيانة حالية.",
     
     // Admin Dashboard
-    admin_title: "مركز إدارة منصة Fixora",
+    admin_title: "مركز إدارة منصة ByteForce",
     admin_stat_users: "إجمالي المستخدمين",
     admin_stat_techs: "إجمالي الفنيين",
     admin_stat_pending: "طلبات اعتماد فنيين",
@@ -388,8 +388,8 @@ const TRANSLATIONS = {
     admin_reject_btn: "رفض الطلب",
 
     // Auth
-    auth_login_title: "تسجيل الدخول إلى Fixora",
-    auth_register_title: "إنشاء حسابك في Fixora",
+    auth_login_title: "تسجيل الدخول إلى ByteForce",
+    auth_register_title: "إنشاء حسابك في ByteForce",
     auth_email: "البريد الإلكتروني",
     auth_password: "كلمة المرور",
     auth_fullname: "الاسم الكامل",
@@ -397,22 +397,23 @@ const TRANSLATIONS = {
     auth_role_label: "نوع الحساب",
     auth_role_user: "مالك جهاز (تشخيص وصيانة أجهزتي)",
     auth_role_tech: "فني صيانة معتمد (تقديم خدمات الصيانة)",
-    auth_login_btn: "دخول Fixora",
-    auth_register_btn: "إنشاء حساب Fixora",
-    auth_switch_to_reg: "ليس لديك حساب؟ انضم إلى Fixora الآن",
+    auth_login_btn: "دخول ByteForce",
+    auth_register_btn: "إنشاء حساب ByteForce",
+    auth_switch_to_reg: "ليس لديك حساب؟ انضم إلى ByteForce الآن",
     auth_switch_to_login: "لديك حساب بالفعل؟ سجل دخولك"
   }
 };
 
 class I18n {
   constructor() {
-    this.currentLang = localStorage.getItem("fixora_lang") || localStorage.getItem("techrepair_lang") || "ar";
+    this.currentLang = localStorage.getItem("byteforce_lang") || localStorage.getItem("fixora_lang") || localStorage.getItem("techrepair_lang") || "ar";
     this.applyLanguage(this.currentLang);
   }
 
   setLanguage(lang) {
     if (lang !== "en" && lang !== "ar") return;
     this.currentLang = lang;
+    localStorage.setItem("byteforce_lang", lang);
     localStorage.setItem("fixora_lang", lang);
     localStorage.setItem("techrepair_lang", lang);
     this.applyLanguage(lang);

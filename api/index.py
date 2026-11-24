@@ -18,7 +18,7 @@ from api.services.db import DatabaseUnavailableError, get_table_count, postgrest
 
 from urllib.parse import parse_qs
 
-app = FastAPI(title="Fixora AI Platform", version="3.0.0")
+app = FastAPI(title="ByteForce AI Platform", version="3.0.0")
 
 class VercelPathRewriter:
     """Pure ASGI middleware that modifies scope['path'] before FastAPI route matching."""
@@ -84,7 +84,7 @@ def get_content_type(path: str) -> str:
 def health_check():
     return {
         "status": "healthy",
-        "service": "Fixora AI Platform",
+        "service": "ByteForce AI Platform",
         "version": "3.0.0",
         "database": "Supabase PostgreSQL",
         "policy": "Strict empirical evidence only; zero synthetic records or mock fallback."
@@ -121,7 +121,7 @@ def serve_index():
     if os.path.exists(index_path):
         with open(index_path, "r", encoding="utf-8") as f:
             return HTMLResponse(content=f.read())
-    return HTMLResponse("<h1>Fixora Platform Live</h1>")
+    return HTMLResponse("<h1>ByteForce Platform Live</h1>")
 
 @app.api_route("/{full_path:path}", methods=["GET", "HEAD"])
 def serve_static(full_path: str):

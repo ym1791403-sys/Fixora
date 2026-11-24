@@ -1,5 +1,5 @@
 /**
- * Fixora Production API Client
+ * ByteForce Production API Client
  * Connects directly to backend API and Supabase PostgreSQL.
  * Strictly zero mock data, zero synthetic fallbacks, and zero fabricated diagnosis results.
  * When services are unavailable, returns authentic 503 Dataset Unavailable errors.
@@ -8,26 +8,26 @@
 class ApiClient {
   constructor() {
     this.baseUrl = "/api";
-    this.token = localStorage.getItem("fixora_token") || localStorage.getItem("techrepair_token") || null;
-    this.currentUser = JSON.parse(localStorage.getItem("fixora_user") || localStorage.getItem("techrepair_user") || "null");
+    this.token = localStorage.getItem("byteforce_token") || localStorage.getItem("fixora_token") || localStorage.getItem("techrepair_token") || null;
+    this.currentUser = JSON.parse(localStorage.getItem("byteforce_user") || localStorage.getItem("fixora_user") || localStorage.getItem("techrepair_user") || "null");
   }
 
   setSession(token, user) {
     this.token = token;
     this.currentUser = user;
+    localStorage.setItem("byteforce_token", token);
+    localStorage.setItem("byteforce_user", JSON.stringify(user));
     localStorage.setItem("fixora_token", token);
     localStorage.setItem("fixora_user", JSON.stringify(user));
-    localStorage.setItem("techrepair_token", token);
-    localStorage.setItem("techrepair_user", JSON.stringify(user));
   }
 
   clearSession() {
     this.token = null;
     this.currentUser = null;
+    localStorage.removeItem("byteforce_token");
+    localStorage.removeItem("byteforce_user");
     localStorage.removeItem("fixora_token");
     localStorage.removeItem("fixora_user");
-    localStorage.removeItem("techrepair_token");
-    localStorage.removeItem("techrepair_user");
   }
 
   isLoggedIn() {

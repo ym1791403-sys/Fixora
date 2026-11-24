@@ -1,4 +1,4 @@
-# Fixora — Production AI Hardware Diagnostics & Repair Platform
+# ByteForce — Production AI Hardware Diagnostics & Repair Platform
 
 [![Vercel Deployment](https://img.shields.io/badge/Deploy-Vercel%20Production-black.svg?style=flat&logo=vercel)](https://fixora-ai-omega.vercel.app/)
 [![Database](https://img.shields.io/badge/Database-Supabase%20PostgreSQL%2017-3ECF8E.svg?style=flat&logo=supabase)](https://supabase.com/)
@@ -6,13 +6,13 @@
 [![License](https://img.shields.io/badge/License-ODbL%20%2F%20CC%20BY--NC--SA-green.svg)](LICENSE)
 [![i18n](https://img.shields.io/badge/i18n-English%20%7C%20العربية%20(RTL)-orange.svg)]()
 
-**Fixora** is a genuine, data-driven hardware diagnosis and repair platform. It connects three certified external open datasets to an enterprise Supabase PostgreSQL database, eliminating all mock, synthetic, fabricated, or hardcoded diagnostic data.
+**ByteForce** is a genuine, data-driven hardware diagnosis and repair platform. It connects three certified external open datasets to an enterprise Supabase PostgreSQL database, eliminating all mock, synthetic, fabricated, or hardcoded diagnostic data.
 
 ---
 
 ## 1. Certified Source Datasets & Exact Roles
 
-| Dataset | Official Source URL | License | Scope & Exact Role in Fixora | Verified Record Count |
+| Dataset | Official Source URL | License | Scope & Exact Role in ByteForce | Verified Record Count |
 | :--- | :--- | :--- | :--- | :--- |
 | **Open Repair Alliance (ORA)** | [Open Repair Alliance GitHub Data](https://raw.githubusercontent.com/openrepair/data/main/OpenRepairData_v0.3_aggregate_202607_eee.csv) | ODbL 1.0 | **Empirical Repair Statistics**: Computes real-world repair success rates, failure mode frequencies, device age benchmarks, and repair barriers across 10 equipment categories. | **416,282** real repair events |
 | **MyFixit Dataset** | [MyFixit Dataset (rub-ksv)](https://github.com/rub-ksv/MyFixit-Dataset) | CC BY-NC-SA 3.0 | **Verified Repair Manuals**: Provides authentic step-by-step disassembly instructions, required toolboxes, parts, difficulty ratings, and official iFixit reference URLs. | **18,995** manuals (1,160 imported in Supabase) |
@@ -60,14 +60,14 @@
 
 ## 3. Zero Mock Data Policy
 
-In strict accordance with production standards, Fixora has completely purged:
+In strict accordance with production standards, ByteForce has completely purged:
 - `handleMockRequest` and client-side fake router fallbacks.
 - `initMockStorage` and localStorage-based fake technician/user records.
 - `runClientDiagnosis` and static diagnostic probabilities (e.g. fake 99.4% accuracy or 0.94 constant).
 - Hardcoded default causes, default screwdrivers, or fabricated disassembly steps.
-- If data is lacking for an unknown device or symptom, Fixora explicitly returns:
+- If data is lacking for an unknown device or symptom, ByteForce explicitly returns:
   `status: "insufficient_evidence"` with a clear explanation rather than inventing advice.
-- If the database is unreachable, Fixora returns `HTTP 503 Dataset unavailable`.
+- If the database is unreachable, ByteForce returns `HTTP 503 Dataset unavailable`.
 
 ---
 

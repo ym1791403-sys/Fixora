@@ -1,8 +1,8 @@
 /**
- * Fixora Core Single Page Application (SPA) Controller
+ * ByteForce Core Single Page Application (SPA) Controller
  */
 
-class FixoraApp {
+class ByteForceApp {
   constructor() {
     this.currentView = "home";
     this.wizardData = {
@@ -352,7 +352,7 @@ class FixoraApp {
       </div>
     </section>
 
-    <!-- Platform Onboarding & Introductory Showcase Section (الواجهة التعريفية لمنصة Fixora) -->
+    <!-- Platform Onboarding & Introductory Showcase Section (الواجهة التعريفية لمنصة ByteForce) -->
     <section class="onboarding-intro-section" id="intro-showcase">
       <div class="container">
         
@@ -480,7 +480,7 @@ class FixoraApp {
               </defs>
               <text class="badge-text" direction="ltr" text-anchor="start" style="direction: ltr; unicode-bidi: bidi-override;">
                 <textPath href="#badge-circle" xlink:href="#badge-circle" startOffset="0%" direction="ltr" text-anchor="start">
-                  • FIXORA AI PLATFORM • CERTIFIED REPAIRS • EST. 2026 •
+                  • BYTEFORCE AI PLATFORM • CERTIFIED REPAIRS • EST. 2026 •
                 </textPath>
               </text>
             </svg>
@@ -558,7 +558,7 @@ class FixoraApp {
       </div>
     </section>
 
-    <!-- How Fixora Works Section -->
+    <!-- How ByteForce Works Section -->
     <section style="padding: 85px 0; background-color: var(--color-bg); border-bottom: none;">
       <div class="container">
         <div style="text-align: center; max-width: 650px; margin: 0 auto 52px;">
@@ -612,7 +612,7 @@ class FixoraApp {
             ${isAr ? 'هل أنت فني أو مركز صيانة محترف؟' : 'Are you a professional repair technician or lab?'}
           </h3>
           <p style="color: #94A3B8; font-size: 14px; max-width: 580px;">
-            ${isAr ? 'انضم إلى شبكة فنيي Fixora المعتمدين واستقبل طلبات الصيانة الموثقة من العملاء في مدينتك بعد مراجعة ملفك واعتماده.' : 'Join Fixora to receive verified repair requests from customers in your area after administrative verification.'}
+            ${isAr ? 'انضم إلى شبكة فنيي ByteForce المعتمدين واستقبل طلبات الصيانة الموثقة من العملاء في مدينتك بعد مراجعة ملفك واعتماده.' : 'Join ByteForce to receive verified repair requests from customers in your area after administrative verification.'}
           </p>
         </div>
         <button class="btn btn-primary btn-lg" onclick="app.showAuthModal('register', 'technician')">
@@ -1511,7 +1511,7 @@ class FixoraApp {
                   ${isAr ? 'سياسة الخصوصية وحماية بيانات المستخدم' : 'Privacy & Data Protection Policy'}
                 </h1>
                 <p style="font-size: 13px; color: #94A3B8;">
-                  ${isAr ? 'وثيقة الحماية الرسمية لمنصة Fixora — الالتزام بالشفافية الكاملة وتشفير البيانات والامتثال لأخلاقيات الذكاء الاصطناعي.' : 'Official Fixora Privacy Document — Total Transparency, Encryption & Ethical AI Standards.'}
+                  ${isAr ? 'وثيقة الحماية الرسمية لمنصة ByteForce — الالتزام بالشفافية الكاملة وتشفير البيانات والامتثال لأخلاقيات الذكاء الاصطناعي.' : 'Official ByteForce Privacy Document — Total Transparency, Encryption & Ethical AI Standards.'}
                 </p>
               </div>
             </div>
@@ -1531,7 +1531,7 @@ class FixoraApp {
                   <i class="fas fa-ban"></i> ${isAr ? '2. حظر جمع الصور الشخصية أو البيانات الحساسة' : '2. Zero Personal Files or Photos Retention'}
                 </h3>
                 <p>
-                  ${isAr ? 'محرك Fixora مصمم هندسياً لتشخيص الأعطال العتادية والبرمجية فقط. لا نطلب ولا نقوم بتخزين صور شخصية، أو محتويات الأقراص، أو ملفات النظام، أو كلمات المرور.' : 'Fixora never requests or stores personal media, filesystem contents, credentials, or private identity records.'}
+                  ${isAr ? 'محرك ByteForce مصمم هندسياً لتشخيص الأعطال العتادية والبرمجية فقط. لا نطلب ولا نقوم بتخزين صور شخصية، أو محتويات الأقراص، أو ملفات النظام، أو كلمات المرور.' : 'ByteForce never requests or stores personal media, filesystem contents, credentials, or private identity records.'}
                 </p>
               </div>
 
@@ -1549,7 +1549,7 @@ class FixoraApp {
                   <i class="fas fa-hand-holding-heart"></i> ${isAr ? '4. الالتزام بحق الإصلاح ودعم الاستدامة' : '4. Supporting the Right to Repair & E-Waste Reduction'}
                 </h3>
                 <p>
-                  ${isAr ? 'الهدف الأساسي لمنصة Fixora هو تمكين المستهلكين والفنيين من استكشاف الأعطال وحلها استناداً إلى بيانات موثوقة من Open Repair Alliance و MyFixit لتقليل النفايات الإلكترونية وإطالة العمر الافتراضي للأجهزة.' : 'Fixora champions consumer empowerment through verified repair open data, striving to minimize worldwide electronic waste.'}
+                  ${isAr ? 'الهدف الأساسي لمنصة ByteForce هو تمكين المستهلكين والفنيين من استكشاف الأعطال وحلها استناداً إلى بيانات موثوقة من Open Repair Alliance و MyFixit لتقليل النفايات الإلكترونية وإطالة العمر الافتراضي للأجهزة.' : 'ByteForce champions consumer empowerment through verified repair open data, striving to minimize worldwide electronic waste.'}
                 </p>
               </div>
             </div>
@@ -1600,7 +1600,7 @@ class FixoraApp {
                   <i class="fas fa-exclamation-triangle"></i> ${isAr ? '1. إخلاء المسؤولية الفنية وبروتوكولات الأمان' : '1. Technical Disclaimer & Mandatory Safety'}
                 </h3>
                 <p>
-                  ${isAr ? 'التقارير الصادرة عن Fixora استرشادية مبنية على بيانات واقعية. يجب دائماً فصل مصادر التيار الكهربائي وفصل كابلات البطارية تماماً واستخدام أساور تفريغ الشحنات (ESD) قبل فتح أي جهاز.' : 'Fixora reports provide empirical guidance. Disconnect power supplies and detach batteries before disassembly, wearing ESD protection.'}
+                  ${isAr ? 'التقارير الصادرة عن ByteForce استرشادية مبنية على بيانات واقعية. يجب دائماً فصل مصادر التيار الكهربائي وفصل كابلات البطارية تماماً واستخدام أساور تفريغ الشحنات (ESD) قبل فتح أي جهاز.' : 'ByteForce reports provide empirical guidance. Disconnect power supplies and detach batteries before disassembly, wearing ESD protection.'}
                 </p>
               </div>
 
@@ -1618,7 +1618,7 @@ class FixoraApp {
                   <i class="fas fa-balance-scale"></i> ${isAr ? '3. رخص المصادر المفتوحة والنسب العلمي' : '3. Open Source Licenses & Dataset Attributions'}
                 </h3>
                 <p>
-                  ${isAr ? 'تعتمد المنصة على: سجلات Open Repair Alliance بموجب رخصة ODbL، وأدلة MyFixit بموجب رخصة CC BY-NC-SA 3.0، وبيانات Backblaze Telemetry المفتوحة. جميع الحقوق الفكرية محفوظة لمطوري ومسجلي هذه المصادر العالمية المعتمدة.' : 'Fixora utilizes ORA (ODbL), MyFixit (CC BY-NC-SA 3.0), and Backblaze telemetry under open research licenses, strictly honoring source attributions.'}
+                  ${isAr ? 'تعتمد المنصة على: سجلات Open Repair Alliance بموجب رخصة ODbL، وأدلة MyFixit بموجب رخصة CC BY-NC-SA 3.0، وبيانات Backblaze Telemetry المفتوحة. جميع الحقوق الفكرية محفوظة لمطوري ومسجلي هذه المصادر العالمية المعتمدة.' : 'ByteForce utilizes ORA (ODbL), MyFixit (CC BY-NC-SA 3.0), and Backblaze telemetry under open research licenses, strictly honoring source attributions.'}
                 </p>
               </div>
             </div>
@@ -2143,7 +2143,7 @@ class FixoraApp {
             <i class="fas fa-database"></i>
           </div>
           <h3 style="font-size: 22px; color: #FFFFFF; margin-bottom: 6px;">
-            ${isAr ? 'حالة قواعد البيانات المعتمدة في Fixora' : 'Fixora Certified Datasets Status'}
+            ${isAr ? 'حالة قواعد البيانات المعتمدة في ByteForce' : 'ByteForce Certified Datasets Status'}
           </h3>
           <p style="font-size: 13px; color: #94A3B8;">
             ${isAr ? 'قواعد البيانات العالمية الثلاث مدمجة ومفهرسة بالكامل في محرك التشخيص الذكي بالأرقام الواقعية الدقيقة.' : 'All three certified datasets are fully indexed and powering the empirical AI diagnostic engine.'}
@@ -2219,7 +2219,7 @@ class FixoraApp {
             ${isAr ? 'سياسة الخصوصية وحماية البيانات' : 'Privacy & Data Protection Policy'}
           </h3>
           <p style="font-size: 13px; color: #94A3B8;">
-            ${isAr ? 'التزام Fixora التام بحماية سرية وأمان بيانات المستخدمين والامتثال للمعايير العالمية.' : 'Fixora commitment to total confidentiality, data security, and ethical AI standards.'}
+            ${isAr ? 'التزام ByteForce التام بحماية سرية وأمان بيانات المستخدمين والامتثال للمعايير العالمية.' : 'ByteForce commitment to total confidentiality, data security, and ethical AI standards.'}
           </p>
         </div>
 
@@ -2238,7 +2238,7 @@ class FixoraApp {
               <i class="fas fa-eye-slash"></i> ${isAr ? '2. عدم جمع البيانات الشخصية الحساسة' : '2. Zero Sensitive Personal Data Collection'}
             </strong>
             <p>
-              ${isAr ? 'لا يطلب نظام Fixora أو يخزن أي ملفات خاصة، أو صور شخصية، أو كلمات مرور، أو وثائق هوية. يتم حصر المدخلات في مواصفات العتاد الفنية (الفئة، الطراز، والأعراض المشاهدة ومؤشرات S.M.A.R.T).' : 'Fixora strictly avoids collecting personal photos, private files, passwords, or personal credentials. Ingestion is strictly scoped to technical hardware parameters.'}
+              ${isAr ? 'لا يطلب نظام ByteForce أو يخزن أي ملفات خاصة، أو صور شخصية، أو كلمات مرور، أو وثائق هوية. يتم حصر المدخلات في مواصفات العتاد الفنية (الفئة، الطراز، والأعراض المشاهدة ومؤشرات S.M.A.R.T).' : 'ByteForce strictly avoids collecting personal photos, private files, passwords, or personal credentials. Ingestion is strictly scoped to technical hardware parameters.'}
             </p>
           </div>
 
@@ -2311,7 +2311,7 @@ class FixoraApp {
               <i class="fas fa-balance-scale"></i> ${isAr ? '3. تراخيص البيانات المفتوحة والنسب العلمي' : '3. Open Data Licensing & Attribution'}
             </strong>
             <p>
-              ${isAr ? 'يعتمد نظام Fixora على قواعد بيانات مفتوحة ومعترف بها دولياً: Open Repair Alliance بموجب رخصة ODbL، و MyFixit بموجب Creative Commons (CC BY-NC-SA 3.0)، وبيانات Backblaze المفتوحة للأبحاث. نلتزم بنسب الفضل وحفظ حقوق النشر لجميع مصادر البيانات الأصلية دون أي تلفيق.' : 'Fixora proudly leverages open datasets under verified licenses: ORA under ODbL, MyFixit under CC BY-NC-SA 3.0, and Backblaze telemetry under open research terms.'}
+              ${isAr ? 'يعتمد نظام ByteForce على قواعد بيانات مفتوحة ومعترف بها دولياً: Open Repair Alliance بموجب رخصة ODbL، و MyFixit بموجب Creative Commons (CC BY-NC-SA 3.0)، وبيانات Backblaze المفتوحة للأبحاث. نلتزم بنسب الفضل وحفظ حقوق النشر لجميع مصادر البيانات الأصلية دون أي تلفيق.' : 'ByteForce proudly leverages open datasets under verified licenses: ORA under ODbL, MyFixit under CC BY-NC-SA 3.0, and Backblaze telemetry under open research terms.'}
             </p>
           </div>
         </div>
@@ -2394,9 +2394,9 @@ class FixoraApp {
     const isAr = window.i18n.currentLang === "ar";
     const content = mode === "login" ? `
       <div>
-        <h3 style="font-size: 22px; margin-bottom: 6px; color: #FFFFFF;" data-i18n="auth_login_title">تسجيل الدخول إلى Fixora</h3>
+        <h3 style="font-size: 22px; margin-bottom: 6px; color: #FFFFFF;" data-i18n="auth_login_title">تسجيل الدخول إلى ByteForce</h3>
         <p style="font-size: 13px; color: var(--color-text-muted); margin-bottom: ${noticeMessage ? '14px' : '20px'};">
-          ${isAr ? 'اختر طريقة تسجيل الدخول للمتابعة' : 'Choose how you want to sign in to Fixora'}
+          ${isAr ? 'اختر طريقة تسجيل الدخول للمتابعة' : 'Choose how you want to sign in to ByteForce'}
         </p>
 
         ${noticeMessage ? `
@@ -2443,7 +2443,7 @@ class FixoraApp {
       </div>
     ` : `
       <div>
-        <h3 style="font-size: 22px; margin-bottom: 6px; color: #FFFFFF;" data-i18n="auth_register_title">إنشاء حسابك في Fixora</h3>
+        <h3 style="font-size: 22px; margin-bottom: 6px; color: #FFFFFF;" data-i18n="auth_register_title">إنشاء حسابك في ByteForce</h3>
         <p style="font-size: 13px; color: var(--color-text-muted); margin-bottom: ${noticeMessage ? '14px' : '20px'};">
           ${isAr ? 'اختر طريقة إنشاء الحساب للمتابعة' : 'Choose how you want to create your account'}
         </p>
@@ -2677,7 +2677,9 @@ var app = null;
 
 function bootApp() {
   if (!window.app) {
-    window.app = app = new FixoraApp();
+    window.FixoraApp = ByteForceApp;
+    window.ByteForceApp = ByteForceApp;
+    window.app = app = new ByteForceApp();
   } else {
     app = window.app;
   }
