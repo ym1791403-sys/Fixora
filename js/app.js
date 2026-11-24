@@ -253,6 +253,10 @@ class ByteForceApp {
       if (adminLink) {
         const isAdmin = user && user.role === "admin" && (user.email || "").toLowerCase().trim() === "snsr19344@gmail.com";
         adminLink.style.display = isAdmin ? "block" : "none";
+        const adminDirectBtn = document.getElementById("navAdminDirectBtn");
+        if (adminDirectBtn) {
+          adminDirectBtn.style.display = isAdmin ? "inline-flex" : "none";
+        }
       }
       if (mobileDashLink) mobileDashLink.style.display = "block";
       if (mobileAdminLink) {
@@ -2191,10 +2195,18 @@ class ByteForceApp {
               <h1 style="font-size: 28px; margin-top: 4px;"><span data-i18n="dash_welcome">Welcome back</span>, ${user.full_name}!</h1>
               <p style="color: var(--color-text-muted); font-size: 14px;">${user.email}</p>
             </div>
-            <button class="btn btn-primary" onclick="app.navigate('diagnose')">
-              <i class="fas fa-plus"></i>
-              <span data-i18n="hero_cta_diag">New Diagnosis</span>
-            </button>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+              ${(user && user.role === "admin" && (user.email || "").toLowerCase().trim() === "snsr19344@gmail.com") ? `
+                <button class="btn btn-sm" onclick="app.navigate('admin')" style="background: rgba(239, 68, 68, 0.18); color: #F87171; border: 1px solid rgba(239, 68, 68, 0.45); border-radius: 8px; font-weight: 700; padding: 8px 16px; font-size: 13px; display: inline-flex; align-items: center; gap: 8px; cursor: pointer;" title="لوحة تحكم الإدارة">
+                  <i class="fas fa-shield-alt" style="color: #EF4444; font-size: 15px;"></i>
+                  <span>فتح لوحة تحكم الإدارة (Admin Panel)</span>
+                </button>
+              ` : ''}
+              <button class="btn btn-primary" onclick="app.navigate('diagnose')">
+                <i class="fas fa-plus"></i>
+                <span data-i18n="hero_cta_diag">New Diagnosis</span>
+              </button>
+            </div>
           </div>
 
           <!-- Dashboard Tabs Content -->
