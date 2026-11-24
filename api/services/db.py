@@ -74,7 +74,7 @@ def postgrest_request(
 
     payload = json.dumps(body).encode("utf-8") if body is not None else None
     last_err = None
-    for attempt in range(3):
+    for attempt in range(5):
         req = urllib.request.Request(url, headers=headers, data=payload, method=method)
         try:
             with urllib.request.urlopen(req, timeout=12) as resp:
@@ -91,8 +91,8 @@ def postgrest_request(
             raise DatabaseUnavailableError(f"Supabase HTTP {e.code} Error on {endpoint}: {err_msg}")
         except Exception as e:
             last_err = e
-            if attempt < 2:
-                time.sleep(0.4 * (attempt + 1))
+            if attempt < 4:
+                time.sleep(0.35 * (attempt + 1))
                 continue
             raise DatabaseUnavailableError(f"Supabase connection failed: {str(last_err)}")
 
@@ -103,7 +103,7 @@ def get_table_count(table: str, params: Optional[Dict[str, str]] = None, use_ser
     url = f"{SUPABASE_URL}/rest/v1/{table}?{urllib.parse.urlencode(query)}"
     headers = get_auth_headers(use_service_role=use_service_role)
     headers.update({"Range": "0-0", "Prefer": "count=exact"})
-    for attempt in range(3):
+    for attempt in range(5):
         req = urllib.request.Request(url, headers=headers)
         try:
             with urllib.request.urlopen(req, timeout=12) as resp:
@@ -119,8 +119,8 @@ def get_table_count(table: str, params: Optional[Dict[str, str]] = None, use_ser
                 pass
             raise DatabaseUnavailableError(f"Supabase count HTTP {e.code} on {table}: {err_msg}")
         except Exception as e:
-            if attempt < 2:
-                time.sleep(0.4 * (attempt + 1))
+            if attempt < 4:
+                time.sleep(0.35 * (attempt + 1))
                 continue
             raise DatabaseUnavailableError(f"Supabase count connection failed on {table}: {e}")
 

@@ -246,13 +246,18 @@ class UnifiedDiagnosisEngine:
         tools = []
         if matched_guide:
             raw_steps = matched_guide.get("steps", [])
-            for s in raw_steps[:6]:
+            for s in raw_steps[:15]:
+                inst_en = (s.get("instruction_en") or "").strip()
+                inst_ar = (s.get("instruction_ar") or inst_en).strip()
+                if not inst_en and not s.get("images"):
+                    continue
                 troubleshooting_steps.append({
                     "step_number": s.get("step_number", len(troubleshooting_steps) + 1),
-                    "title_en": s.get("title_en") or f"Step {s.get('step_number')}",
-                    "title_ar": s.get("title_ar") or f"الخطوة {s.get('step_number')}",
-                    "instruction_en": s.get("instruction_en", ""),
-                    "instruction_ar": s.get("instruction_ar", ""),
+                    "title_en": s.get("title_en") or f"Step {s.get('step_number', len(troubleshooting_steps) + 1)}",
+                    "title_ar": s.get("title_ar") or f"الخطوة {s.get('step_number', len(troubleshooting_steps) + 1)}",
+                    "instruction_en": inst_en,
+                    "instruction_ar": inst_ar,
+                    "images": s.get("images", []),
                     "requires_tools": len(matched_guide.get("toolbox", [])) > 0
                 })
             tools = matched_guide.get("required_tools", [])

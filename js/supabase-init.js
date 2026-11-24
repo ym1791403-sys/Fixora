@@ -529,21 +529,23 @@ window.SupabaseBridge = {
             instruction_en: st
           };
         }
-        const rawText = st.Text_raw || (Array.isArray(st.Lines) ? st.Lines.map(l => (typeof l === 'object' ? l.Text : l)).join(" ") : "") || st.instruction_en || st.instruction_ar || "";
+        const rawText = (st.Text_raw || st.text_raw || (Array.isArray(st.Lines) ? st.Lines.map(l => (typeof l === 'object' ? (l.Text || l.text || '') : l)).join(" ").replace(/ \./g, ".").trim() : "") || st.instruction_en || st.instruction_ar || "").trim();
+        const stepNum = st.step_number || (st.Order !== undefined ? st.Order + 1 : (st.StepId || idx + 1));
         return {
-          step_number: st.step_number || (st.Order !== undefined ? st.Order + 1 : idx + 1),
-          title_ar: st.title_ar || `الخطوة ${st.Order !== undefined ? st.Order + 1 : idx + 1}`,
-          title_en: st.title_en || `Step ${st.Order !== undefined ? st.Order + 1 : idx + 1}`,
-          instruction_ar: st.instruction_ar || rawText,
-          instruction_en: st.instruction_en || rawText,
+          step_number: stepNum,
+          title_ar: st.title_ar || `الخطوة ${stepNum}`,
+          title_en: st.title_en || `Step ${stepNum}`,
+          instruction_ar: rawText || st.instruction_ar || "",
+          instruction_en: rawText || st.instruction_en || "",
           images: st.Images || st.images || []
         };
       });
     }
 
     let tools = [];
-    if (Array.isArray(g.tools)) {
-      tools = g.tools.map(t => typeof t === "string" ? t : (t.Name || t.name || "Tool"));
+    const srcTools = (Array.isArray(g.required_tools) && g.required_tools.length > 0) ? g.required_tools : g.tools;
+    if (Array.isArray(srcTools)) {
+      tools = srcTools.map(t => typeof t === "string" ? t.trim() : (t.Name || t.name || "").trim()).filter(Boolean);
     }
 
     return {

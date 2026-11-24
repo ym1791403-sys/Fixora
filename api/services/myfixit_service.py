@@ -115,16 +115,60 @@ class MyFixitGuideRetrievalService:
 
             formatted_steps = []
             for s in steps:
-                lines = s.get("lines", [])
-                txt = " ".join([l.get("text", "") for l in lines]) if lines else s.get("text_raw", "")
+                if isinstance(s, str):
+                    txt = s.strip()
+                    if not txt:
+                        continue
+                    step_num = len(formatted_steps) + 1
+                    formatted_steps.append({
+                        "step_number": step_num,
+                        "title_en": f"Step {step_num}",
+                        "title_ar": f"الخطوة {step_num}",
+                        "instruction_en": txt,
+                        "instruction_ar": txt,
+                        "lines": [],
+                        "images": []
+                    })
+                    continue
+
+                raw_text = (
+                    s.get("Text_raw")
+                    or s.get("text_raw")
+                    or s.get("instruction_en")
+                    or s.get("instruction_ar")
+                    or s.get("text")
+                    or ""
+                ).strip()
+                lines = s.get("Lines") or s.get("lines") or []
+                if not raw_text and isinstance(lines, list) and lines:
+                    line_parts = []
+                    for l in lines:
+                        if isinstance(l, dict):
+                            val = l.get("Text") or l.get("text") or l.get("Text_raw") or ""
+                            if val:
+                                line_parts.append(str(val).strip())
+                        elif isinstance(l, str) and l.strip():
+                            line_parts.append(l.strip())
+                    raw_text = " ".join(line_parts).replace(" .", ".").strip()
+
+                step_imgs = s.get("Images") or s.get("images") or []
+                if not raw_text and not step_imgs:
+                    continue
+
+                if isinstance(s.get("Order"), (int, float)):
+                    step_num = int(s["Order"]) + 1
+                else:
+                    step_num = s.get("step_number") or s.get("StepId") or s.get("order") or (len(formatted_steps) + 1)
+
+                step_title = s.get("Title") or s.get("title") or s.get("title_en")
                 formatted_steps.append({
-                    "step_number": s.get("order", len(formatted_steps) + 1),
-                    "title_en": s.get("title") or f"Step {s.get('order', len(formatted_steps) + 1)}",
-                    "title_ar": s.get("title") or f"الخطوة {s.get('order', len(formatted_steps) + 1)}",
-                    "instruction_en": txt or "Follow disassembly steps carefully.",
-                    "instruction_ar": txt or "اتبع خطوات الفك والتركيب الموضحة بالدليل المعتمد.",
-                    "lines": lines,
-                    "images": s.get("images", [])
+                    "step_number": step_num,
+                    "title_en": step_title or f"Step {step_num}",
+                    "title_ar": step_title or f"الخطوة {step_num}",
+                    "instruction_en": raw_text or "Inspect the attached diagram for this step.",
+                    "instruction_ar": raw_text or "راجع الصورة التوضيحية المرفقة لهذه الخطوة.",
+                    "lines": lines if isinstance(lines, list) else [],
+                    "images": step_imgs if isinstance(step_imgs, list) else []
                 })
 
             time_req = row.get("time_required")
@@ -134,9 +178,18 @@ class MyFixitGuideRetrievalService:
                 if digits:
                     mins = digits[0]
             else:
-                mins = max(15, (row.get("step_count") or 5) * 4)
+                mins = max(15, (row.get("step_count") or len(formatted_steps) or 5) * 4)
 
             g_id = row.get("id") or row.get("guide_id")
+            clean_tools = []
+            for t in (tools or []):
+                if isinstance(t, str) and t.strip():
+                    clean_tools.append(t.strip())
+                elif isinstance(t, dict):
+                    t_name = (t.get("Name") or t.get("name") or "").strip()
+                    if t_name:
+                        clean_tools.append(t_name)
+
             return {
                 "id": g_id,
                 "guide_id": g_id,
@@ -155,9 +208,9 @@ class MyFixitGuideRetrievalService:
                 "summary_en": row.get("summary", ""),
                 "summary_ar": row.get("summary", ""),
                 "url": row.get("url") or f"https://www.ifixit.com/Guide/{g_id}",
-                "step_count": row.get("step_count", len(formatted_steps)),
-                "toolbox": tools,
-                "required_tools": [t if isinstance(t, str) else t.get("name", "Tool") for t in tools],
+                "step_count": row.get("step_count") or len(formatted_steps),
+                "toolbox": clean_tools,
+                "required_tools": clean_tools,
                 "steps": formatted_steps,
                 "safety_precautions": [
                     "Disconnect all power cables and remove batteries before disassembly.",

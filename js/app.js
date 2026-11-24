@@ -1292,30 +1292,66 @@ class ByteForceApp {
             </div>
           ` : ''}
 
-          <!-- Troubleshooting Steps -->
+          <!-- Troubleshooting & Disassembly / Reassembly Steps -->
           <div class="card" style="margin-bottom: 24px;">
-            <h3 style="font-size: 18px; margin-bottom: 16px;" data-i18n="results_steps_title">Recommended Troubleshooting Steps</h3>
-            <div>
-              ${report.troubleshooting_steps.map(step => `
-                <div class="step-card">
-                  <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
-                    <span style="width: 26px; height: 26px; border-radius: 50%; background-color: var(--color-secondary); color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700;">
-                      ${step.step_number}
-                    </span>
-                    <strong style="font-size: 16px;">${isAr ? step.title_ar : step.title_en}</strong>
-                  </div>
-                  <p style="font-size: 14px; color: var(--color-text-main); margin-bottom: 6px;">
-                    ${isAr ? step.instruction_ar : step.instruction_en}
-                  </p>
-                  ${(step.caution_en || step.caution_ar) ? `
-                    <div style="font-size: 12px; color: #B45309; background-color: #FEF3C7; padding: 6px 12px; border-radius: 4px; display: flex; align-items: center; gap: 6px; margin-top: 6px;">
-                      <i class="fas fa-shield-alt"></i>
-                      <span>${isAr ? step.caution_ar : step.caution_en}</span>
-                    </div>
-                  ` : ''}
-                </div>
-              `).join('')}
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 16px;">
+              <h3 style="font-size: 18px; margin: 0;" data-i18n="results_steps_title">Recommended Troubleshooting Steps</h3>
+              ${report.verified_guide && report.verified_guide.guide_id ? `
+                <button class="btn btn-outline btn-sm" onclick="app.showGuideModal(${report.verified_guide.guide_id})">
+                  <i class="fas fa-book-open"></i> ${isAr ? 'فتح الدليل الكامل بالصور' : 'Open Full Illustrated Manual'}
+                </button>
+              ` : ''}
             </div>
+            ${report.troubleshooting_steps && report.troubleshooting_steps.length > 0 ? `
+              <div style="display: flex; flex-direction: column; gap: 14px;">
+                ${report.troubleshooting_steps.map(step => {
+                  const instr = (isAr ? (step.instruction_ar || step.instruction_en) : (step.instruction_en || step.instruction_ar)) || '';
+                  const isLtrText = /[A-Za-z]{4,}/.test(instr) && !/[\u0600-\u06FF]/.test(instr);
+                  return `
+                  <div class="step-card">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                      <span style="width: 26px; height: 26px; border-radius: 50%; background-color: var(--color-secondary); color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0;">
+                        ${step.step_number}
+                      </span>
+                      <strong style="font-size: 16px; color: #FFFFFF;">${isAr ? step.title_ar : step.title_en}</strong>
+                    </div>
+                    <p style="font-size: 14px; color: var(--color-text-main); margin-bottom: 8px; line-height: 1.65;" ${isLtrText ? 'dir="ltr"' : ''}>
+                      ${instr}
+                    </p>
+                    ${step.images && step.images.length > 0 ? `
+                      <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px;">
+                        ${step.images.slice(0, 3).map(imgUrl => `
+                          <img src="${imgUrl}" alt="${step.title_en || 'Step diagram'}" style="max-width: 260px; width: 100%; max-height: 180px; border-radius: 8px; object-fit: cover; border: 1px solid rgba(255,255,255,0.12);" loading="lazy" onerror="this.style.display='none'" />
+                        `).join('')}
+                      </div>
+                    ` : ''}
+                    ${(step.caution_en || step.caution_ar) ? `
+                      <div style="font-size: 12px; color: #FBBF24; background-color: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.25); padding: 6px 12px; border-radius: 6px; display: flex; align-items: center; gap: 6px; margin-top: 8px;">
+                        <i class="fas fa-shield-alt"></i>
+                        <span>${isAr ? step.caution_ar : step.caution_en}</span>
+                      </div>
+                    ` : ''}
+                  </div>
+                `;
+                }).join('')}
+              </div>
+
+              <!-- Reassembly & Post-Repair Installation Sequence -->
+              <div style="margin-top: 18px; padding: 16px; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 10px;">
+                <h4 style="font-size: 15px; color: #34D399; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                  <i class="fas fa-sync-alt"></i>
+                  <span>${isAr ? 'خطوات إعادة التركيب والتجميع بعد الإصلاح (Installation & Reassembly)' : 'Post-Repair Installation & Reassembly Steps'}</span>
+                </h4>
+                <ul style="margin: 0; padding-inline-start: 20px; font-size: 13px; color: #E2E8F0; line-height: 1.75;">
+                  <li>${isAr
+                    ? `بعد تركيب القطعة البديلة أو تنظيف المكون، أعد تجميع الجهاز باتباع الخطوات من <b>الخطوة ${report.troubleshooting_steps[report.troubleshooting_steps.length - 1]?.step_number || report.troubleshooting_steps.length} وصولاً إلى الخطوة 1</b> بالترتيب العكسي.`
+                    : `After installing the replacement component, reassemble the device in reverse order from <b>Step ${report.troubleshooting_steps[report.troubleshooting_steps.length - 1]?.step_number || report.troubleshooting_steps.length} back to Step 1</b>.`}</li>
+                  <li>${isAr
+                    ? 'تأكد من توصيل جميع كابلات الشريط (Ribbon Cables) وكيبل البطارية بإحكام قبل إغلاق الغطاء الخلفي وتثبيت المسامير بنفس أماكنها.'
+                    : 'Ensure all ribbon cables, antenna connectors, and battery terminals click firmly into place and return each screw to its exact original hole.'}</li>
+                </ul>
+              </div>
+            ` : `<p style="color: var(--color-text-muted); font-size: 14px;">${isAr ? 'لا توجد خطوات متاحة في السجل لهذه الحالة.' : 'No verified procedural steps available for this record.'}</p>`}
           </div>
 
           <!-- Professional Technician Recommendation Banner -->
@@ -1467,26 +1503,32 @@ class ByteForceApp {
       const duration = guide.estimated_minutes || (guide.time_required ? (String(guide.time_required).match(/\d+/) ? String(guide.time_required).match(/\d+/)[0] : '25') : '25');
       const difficulty = guide.difficulty || 'Moderate';
       
-      // Normalize steps
+      // Normalize steps (prefer genuine MyFixit Text_raw / Lines first)
       let steps = [];
       if (Array.isArray(guide.steps)) {
         steps = guide.steps.map((s, idx) => {
-          if (typeof s === 'string') return { step_number: idx + 1, instruction: s, title: `Step ${idx + 1}` };
-          const txt = s.instruction_ar || s.instruction_en || s.Text_raw || (Array.isArray(s.Lines) ? s.Lines.map(l => (typeof l === 'object' ? l.Text : l)).join(" ") : "") || "Follow procedure.";
-          const t = (isAr ? (s.title_ar || s.title) : (s.title_en || s.title)) || `${isAr ? 'الخطوة' : 'Step'} ${s.step_number || (s.Order !== undefined ? s.Order + 1 : idx + 1)}`;
+          if (typeof s === 'string') return { step_number: idx + 1, instruction: s, title: `Step ${idx + 1}`, images: [] };
+          const lineTxt = Array.isArray(s.Lines)
+            ? s.Lines.map(l => (typeof l === 'object' ? (l.Text || l.text || '') : l)).join(" ").replace(/ \./g, ".").trim()
+            : (Array.isArray(s.lines) ? s.lines.map(l => (typeof l === 'object' ? (l.Text || l.text || '') : l)).join(" ").replace(/ \./g, ".").trim() : "");
+          const txt = s.Text_raw || s.text_raw || lineTxt || s.instruction_en || s.instruction_ar || "";
+          const num = s.step_number || (s.Order !== undefined ? s.Order + 1 : (s.order !== undefined ? s.order : idx + 1));
+          const t = s.Title || s.title || (isAr ? (s.title_ar || `الخطوة ${num}`) : (s.title_en || `Step ${num}`));
+          const imgs = s.Images || s.images || [];
           return {
-            step_number: s.step_number || (s.Order !== undefined ? s.Order + 1 : idx + 1),
+            step_number: num,
             title: t,
-            instruction: txt,
-            images: s.Images || s.images || []
+            instruction: txt || (imgs.length ? (isAr ? "راجع الصورة التوضيحية المرفقة لهذه الخطوة." : "Inspect the attached diagram for this step.") : ""),
+            images: imgs
           };
-        });
+        }).filter(st => st.instruction || (st.images && st.images.length > 0));
       }
 
       // Normalize tools
       let tools = [];
-      if (Array.isArray(guide.tools)) {
-        tools = guide.tools.map(t => typeof t === 'string' ? t : (t.Name || t.name || 'Tool'));
+      const rawToolsSource = (Array.isArray(guide.required_tools) && guide.required_tools.length > 0) ? guide.required_tools : guide.tools;
+      if (Array.isArray(rawToolsSource)) {
+        tools = rawToolsSource.map(t => typeof t === 'string' ? t.trim() : (t.Name || t.name || '').trim()).filter(Boolean);
       }
 
       const content = `
@@ -1530,15 +1572,21 @@ class ByteForceApp {
               <strong style="font-size: 14px; display: block; margin-bottom: 6px; color: var(--color-secondary);">
                 ${step.title}
               </strong>
-              <p style="font-size: 13px; color: var(--color-text-main); margin: 0; line-height: 1.6;">${step.instruction}</p>
+              <p style="font-size: 13px; color: var(--color-text-main); margin: 0; line-height: 1.6;" ${/[A-Za-z]{4,}/.test(step.instruction) && !/[\u0600-\u06FF]/.test(step.instruction) ? 'dir="ltr"' : ''}>${step.instruction}</p>
               ${step.images && step.images.length > 0 ? `
-                <div style="margin-top: 10px;">
-                  <img src="${step.images[0]}" alt="${step.title}" style="max-width: 100%; max-height: 220px; border-radius: 6px; object-fit: cover; border: 1px solid var(--color-border);" loading="lazy" onerror="this.style.display='none'" />
+                <div style="margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap;">
+                  ${step.images.slice(0, 3).map(imgUrl => `<img src="${imgUrl}" alt="${step.title}" style="max-width: 100%; max-height: 220px; border-radius: 6px; object-fit: cover; border: 1px solid var(--color-border);" loading="lazy" onerror="this.style.display='none'" />`).join('')}
                 </div>
               ` : ''}
             </div>
           `).join('')}
         </div>
+        ${steps.length > 0 ? `
+          <div style="margin-top: 14px; padding: 12px 14px; background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.25); border-radius: 8px; font-size: 12.5px; color: #E2E8F0; line-height: 1.6;">
+            <strong style="color: #34D399;"><i class="fas fa-sync-alt"></i> ${isAr ? 'إعادة التركيب والتجميع:' : 'Reassembly & Installation:'}</strong>
+            <span>${isAr ? `لإعادة تجميع الجهاز بعد انتهاء الإصلاح، نفذ الخطوات من ${steps.length} إلى 1 بالترتيب العكسي.` : `To reassemble your device after replacement, follow Steps ${steps.length} down to 1 in reverse order.`}</span>
+          </div>
+        ` : ''}
       `;
       this.openModal(content);
     } catch (err) {

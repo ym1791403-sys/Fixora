@@ -154,6 +154,16 @@ class TestProductionIntegrity(unittest.TestCase):
             self.assertTrue(vg["url"].startswith("http"))
             self.assertIsInstance(vg["tools"], list)
 
+        # Verify steps are genuine unique instructions and NOT repeated generic fallback text
+        steps = result.get("troubleshooting_steps", [])
+        self.assertGreater(len(steps), 0, "Expected real MyFixit steps in diagnosis report.")
+        for st in steps:
+            self.assertNotIn("اتبع خطوات الفك والتركيب الموضحة بالدليل المعتمد", st.get("instruction_ar", ""))
+            self.assertNotEqual(st.get("instruction_en", ""), "Follow disassembly steps carefully.")
+        unique_texts = {st.get("instruction_en", "") for st in steps if st.get("instruction_en")}
+        if len(steps) > 1:
+            self.assertGreater(len(unique_texts), 1, "Troubleshooting steps must not repeat the exact same placeholder text.")
+
     def test_06_guide_retrieval_no_synthetic_records(self):
         """Verifies MyFixit search only returns authentic imported records."""
         res = self.myfixit_service.search_guides(query="Screen", limit=5)
