@@ -97,13 +97,20 @@ def get_admin_stats():
     try:
         guides = get_table_count("repair_guides")
         incidents = get_table_count("repair_incidents")
-        techs = get_table_count("technicians")
-        requests = get_table_count("repair_requests")
+        techs_approved = get_table_count("technicians", {"status": "eq.approved"}, use_service_role=True)
+        techs_pending = get_table_count("technicians", {"status": "eq.pending"}, use_service_role=True)
+        requests = get_table_count("repair_requests", use_service_role=True)
+        users_count = get_table_count("profiles", use_service_role=True)
+        diagnoses_count = get_table_count("diagnosis_reports", use_service_role=True)
         return {
             "verified_guides_count": guides,
             "repair_incidents_count": incidents,
-            "active_technicians_count": techs,
+            "active_technicians_count": techs_approved,
             "repair_requests_count": requests,
+            "total_users": users_count,
+            "total_technicians": techs_approved,
+            "pending_approvals": techs_pending,
+            "total_diagnoses": diagnoses_count,
             "source": "Supabase Production Database"
         }
     except DatabaseUnavailableError as e:

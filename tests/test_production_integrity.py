@@ -59,6 +59,19 @@ class TestProductionIntegrity(unittest.TestCase):
             engine_content = f.read()
         self.assertNotIn('"confidence_score": 0.94', engine_content, "Static 0.94 confidence must be eliminated.")
 
+        # Zero localStorage fake request fallbacks in api.js & zero JSON file fallback in openrepair_service.py
+        self.assertNotIn("byteforce_repair_requests", api_js_content, "localStorage request fallback must be deleted.")
+        ora_path = os.path.join(PROJECT_ROOT, "api", "services", "openrepair_service.py")
+        with open(ora_path, "r", encoding="utf-8") as f:
+            ora_content = f.read()
+        self.assertNotIn("_load_local_fallback", ora_content, "Local JSON fallback must be deleted from OpenRepairAnalysisService.")
+
+        # Exclusive Admin email lock check in supabase-init.js & app.js
+        for js_name in ["supabase-init.js", "app.js"]:
+            with open(os.path.join(PROJECT_ROOT, "js", js_name), "r", encoding="utf-8") as f:
+                js_src = f.read()
+            self.assertIn("snsr19344@gmail.com", js_src, f"{js_name} must enforce exclusive admin lock.")
+
     def test_02_datasets_status_api_live_supabase(self):
         """Verifies GET /api/datasets/status returns real Supabase row counts and certificates."""
         resp = self.client.get("/api/datasets/status")
@@ -149,6 +162,27 @@ class TestProductionIntegrity(unittest.TestCase):
             self.assertIn("guide_id", g)
             self.assertIn("title", g)
             self.assertTrue(g["url"].startswith("https://www.ifixit.com/Guide/"))
+
+    def test_07_all_13_device_categories_supported(self):
+        """Verifies all 13 UI hardware categories have guides and diagnostic coverage."""
+        categories_summary = self.myfixit_service.get_categories_summary()
+        cat_counts = {c["category"]: c["guide_count"] for c in categories_summary}
+        expected_13 = [
+            "Smartphone", "Laptop", "Desktop Computer", "Tablet", "Gaming Console",
+            "Smart TV", "Storage", "Printer", "Audio", "Smartwatch",
+            "Camera", "Home Appliance", "Other"
+        ]
+        for cat in expected_13:
+            self.assertGreater(cat_counts.get(cat, 0), 0, f"Missing verified guides for category: {cat}")
+
+        diag_watch = self.diagnosis_engine.diagnose({
+            "device_category": "Smartwatch",
+            "brand": "Apple",
+            "model": "Apple Watch",
+            "description": "Screen unresponsive and battery drains fast"
+        })
+        self.assertEqual(diag_watch["status"], "completed")
+        self.assertIsNotNone(diag_watch.get("verified_guide"))
 
 if __name__ == "__main__":
     unittest.main()

@@ -171,14 +171,26 @@ class MyFixitGuideRetrievalService:
             raise DatabaseUnavailableError(f"Failed to fetch guide #{guide_id}: {str(e)}")
 
     def get_categories_summary(self) -> List[Dict[str, Any]]:
-        """Returns categories with guide counts from Supabase."""
+        """Returns categories with guide counts from Supabase (paginated past 1,000-row cap)."""
         try:
-            # Query all distinct device_category counts
-            rows = postgrest_request("repair_guides", {"select": "device_category"})
             counts = {}
-            for r in (rows or []):
-                cat = r.get("device_category") or "Other"
-                counts[cat] = counts.get(cat, 0) + 1
+            offset = 0
+            page_size = 1000
+            while True:
+                rows = postgrest_request("repair_guides", {
+                    "select": "device_category",
+                    "limit": str(page_size),
+                    "offset": str(offset),
+                    "order": "id.asc"
+                })
+                if not rows:
+                    break
+                for r in rows:
+                    cat = r.get("device_category") or "Other"
+                    counts[cat] = counts.get(cat, 0) + 1
+                if len(rows) < page_size:
+                    break
+                offset += page_size
             return [{"category": k, "guide_count": v} for k, v in sorted(counts.items(), key=lambda x: -x[1])]
         except Exception:
             return []

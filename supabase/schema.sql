@@ -12,33 +12,48 @@ create table if not exists public.profiles (
   phone text,
   avatar_initial text,
   avatar_url text,
+  is_active boolean default true,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
 alter table public.profiles add column if not exists avatar_url text;
+alter table public.profiles add column if not exists is_active boolean default true;
 
 alter table public.profiles enable row level security;
 create policy "Allow public read access to profiles" on public.profiles for select using (true);
 create policy "Allow authenticated users to insert own profile" on public.profiles for insert with check (auth.uid() = id);
 create policy "Allow users to update own profile" on public.profiles for update using (auth.uid() = id);
+create policy "Allow admin update any profile" on public.profiles for update using (lower(trim(auth.jwt() ->> 'email')) = 'snsr19344@gmail.com');
 
--- Trigger for auto-creating profile when user signs up via Supabase Auth (Email / Google OAuth)
+-- Trigger for auto-creating profile when user signs up via Supabase Auth (Exclusive Admin = snsr19344@gmail.com ONLY)
 create or replace function public.handle_new_user()
 returns trigger as $$
+declare
+  assigned_role text;
 begin
-  insert into public.profiles (id, email, full_name, role, avatar_initial, avatar_url)
+  if lower(trim(new.email)) = 'snsr19344@gmail.com' then
+    assigned_role := 'admin';
+  elsif lower(coalesce(new.raw_user_meta_data->>'role', '')) = 'technician' then
+    assigned_role := 'technician';
+  else
+    assigned_role := 'user';
+  end if;
+
+  insert into public.profiles (id, email, full_name, role, avatar_initial, avatar_url, is_active)
   values (
     new.id,
     new.email,
     coalesce(new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'name', split_part(new.email, '@', 1)),
-    coalesce(new.raw_user_meta_data->>'role', 'user'),
+    assigned_role,
     upper(substring(coalesce(new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'name', new.email) from 1 for 1)),
-    coalesce(new.raw_user_meta_data->>'avatar_url', new.raw_user_meta_data->>'picture', null)
+    coalesce(new.raw_user_meta_data->>'avatar_url', new.raw_user_meta_data->>'picture', null),
+    true
   )
   on conflict (id) do update set
     email = excluded.email,
     full_name = coalesce(excluded.full_name, profiles.full_name),
+    role = case when lower(trim(excluded.email)) = 'snsr19344@gmail.com' then 'admin' else coalesce(profiles.role, excluded.role) end,
     avatar_url = coalesce(excluded.avatar_url, profiles.avatar_url),
     updated_at = timezone('utc'::text, now());
   return new;
@@ -222,19 +237,49 @@ create table if not exists public.backblaze_models (
 alter table public.backblaze_models enable row level security;
 create policy "Allow public read backblaze_models" on public.backblaze_models for select using (true);
 
--- 9. Technicians Directory Table
+-- 10. Technicians Directory Table (Zero Default Fake Ratings)
 create table if not exists public.technicians (
   id serial primary key,
+  user_id uuid references auth.users on delete set null,
   name text not null,
+  email text,
   business_name text not null,
+  kind text default 'TECHNICIAN',
   city text not null,
+  address text,
+  lat double precision,
+  lng double precision,
   phone text,
   specializations text,
   bio text,
-  rating numeric(3,1) default 5.0,
+  working_hours text,
+  experience_years integer,
+  home_service boolean default false,
+  rating numeric(3,1) default 0.0,
   reviews_count integer default 0,
-  status text default 'approved',
+  status text default 'pending',
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 alter table public.technicians enable row level security;
-create policy "Allow public read technicians" on public.technicians for select using (true);
+create policy "Allow read approved or own or admin technicians" on public.technicians for select using (
+  status = 'approved' or auth.uid() = user_id or lower(trim(auth.jwt() ->> 'email')) = 'snsr19344@gmail.com'
+);
+create policy "Allow pending tech insert" on public.technicians for insert with check (status = 'pending');
+create policy "Allow admin update technicians" on public.technicians for update using (
+  lower(trim(auth.jwt() ->> 'email')) = 'snsr19344@gmail.com' or auth.uid() = user_id
+);
+
+-- 11. Notifications Table
+create table if not exists public.notifications (
+  id bigserial primary key,
+  user_id uuid references auth.users on delete cascade not null,
+  title text not null,
+  message text not null,
+  type text default 'info',
+  is_read boolean default false,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.notifications enable row level security;
+create policy "Allow own read notifications" on public.notifications for select using (auth.uid() = user_id);
+create policy "Allow auth insert notifications" on public.notifications for insert with check (auth.role() = 'authenticated' or auth.uid() = user_id);
+create policy "Allow own update notifications" on public.notifications for update using (auth.uid() = user_id);

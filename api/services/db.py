@@ -9,6 +9,7 @@ Never fabricates fallback or dummy records. Raises DatabaseUnavailableError (HTT
 
 import os
 import json
+import time
 import urllib.request
 import urllib.parse
 import urllib.error
@@ -72,43 +73,56 @@ def postgrest_request(
         headers.update(headers_extra)
 
     payload = json.dumps(body).encode("utf-8") if body is not None else None
-    req = urllib.request.Request(url, headers=headers, data=payload, method=method)
-
-    try:
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            content = resp.read()
-            if not content:
-                return None
-            return json.loads(content.decode("utf-8"))
-    except urllib.error.HTTPError as e:
-        err_msg = ""
+    last_err = None
+    for attempt in range(3):
+        req = urllib.request.Request(url, headers=headers, data=payload, method=method)
         try:
-            err_msg = e.read().decode("utf-8")
-        except Exception:
-            pass
-        raise DatabaseUnavailableError(f"Supabase HTTP {e.code} Error on {endpoint}: {err_msg}")
-    except Exception as e:
-        raise DatabaseUnavailableError(f"Supabase connection failed: {str(e)}")
+            with urllib.request.urlopen(req, timeout=12) as resp:
+                content = resp.read()
+                if not content:
+                    return None
+                return json.loads(content.decode("utf-8"))
+        except urllib.error.HTTPError as e:
+            err_msg = ""
+            try:
+                err_msg = e.read().decode("utf-8")
+            except Exception:
+                pass
+            raise DatabaseUnavailableError(f"Supabase HTTP {e.code} Error on {endpoint}: {err_msg}")
+        except Exception as e:
+            last_err = e
+            if attempt < 2:
+                time.sleep(0.4 * (attempt + 1))
+                continue
+            raise DatabaseUnavailableError(f"Supabase connection failed: {str(last_err)}")
 
-def get_table_count(table: str) -> int:
+def get_table_count(table: str, params: Optional[Dict[str, str]] = None, use_service_role: bool = False) -> int:
     """Gets exact live row count of a table via Content-Range header."""
-    url = f"{SUPABASE_URL}/rest/v1/{table}?select=count"
-    headers = get_auth_headers()
+    query = dict(params or {})
+    query["select"] = "count"
+    url = f"{SUPABASE_URL}/rest/v1/{table}?{urllib.parse.urlencode(query)}"
+    headers = get_auth_headers(use_service_role=use_service_role)
     headers.update({"Range": "0-0", "Prefer": "count=exact"})
-    req = urllib.request.Request(url, headers=headers)
-    try:
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            cr = resp.headers.get("Content-Range", "")
-            if "/" in cr:
-                return int(cr.split("/")[1])
-            return 0
-    except Exception:
-        # Fallback to length of returned ids
+    for attempt in range(3):
+        req = urllib.request.Request(url, headers=headers)
         try:
-            res = postgrest_request(table, {"select": "id"})
-            return len(res) if isinstance(res, list) else 0
-        except Exception:
-            return 0
+            with urllib.request.urlopen(req, timeout=12) as resp:
+                cr = resp.headers.get("Content-Range", "")
+                if "/" in cr:
+                    return int(cr.split("/")[1])
+                return 0
+        except urllib.error.HTTPError as e:
+            err_msg = ""
+            try:
+                err_msg = e.read().decode("utf-8")
+            except Exception:
+                pass
+            raise DatabaseUnavailableError(f"Supabase count HTTP {e.code} on {table}: {err_msg}")
+        except Exception as e:
+            if attempt < 2:
+                time.sleep(0.4 * (attempt + 1))
+                continue
+            raise DatabaseUnavailableError(f"Supabase count connection failed on {table}: {e}")
 
 # ==============================================================================
 # DATA ACCESS INTERFACES (SUPABASE BACKEND)
@@ -149,6 +163,8 @@ def get_all_dataset_statuses() -> Dict[str, Any]:
             "categories_computed": stats_count,
             "models_registered": len(models) if models else 0
         }
+        if models and len(models) > 0:
+            result["backblaze_metrics"] = models[0].get("metrics") or {}
         return result
     except DatabaseUnavailableError:
         raise
@@ -208,7 +224,11 @@ def search_repair_guides(
     if component:
         params["component"] = f"ilike.%{component.strip()}%"
     if difficulty:
-        params["difficulty"] = f"eq.{difficulty.strip()}"
+        diff_clean = difficulty.strip().lower()
+        if diff_clean in ("hard", "difficult"):
+            params["difficulty"] = "ilike.Difficult"
+        else:
+            params["difficulty"] = f"ilike.{difficulty.strip()}"
     if query:
         # Search title or device_model
         clean_q = query.strip()
@@ -249,6 +269,8 @@ def get_backblaze_model_metadata(model_id: str = "backblaze_rf_v1") -> Optional[
 def save_diagnosis_report(report_data: Dict[str, Any]) -> str:
     """Persists a genuine diagnosis report audit row to Supabase."""
     row = {
+        "report_code": report_data.get("report_id"),
+        "user_id": report_data.get("user_id") or None,
         "device_category": report_data.get("device_category", "Unknown"),
         "brand": report_data.get("brand"),
         "model": report_data.get("model"),
@@ -256,7 +278,17 @@ def save_diagnosis_report(report_data: Dict[str, Any]) -> str:
         "description": report_data.get("description"),
         "severity": report_data.get("severity", "moderate"),
         "confidence_score": report_data.get("confidence_score", 0.0),
-        "empirical_evidence": report_data.get("empirical_evidence", {}),
+        "empirical_evidence": report_data.get("empirical_evidence") or report_data.get("empirical_statistics") or {},
+        "empirical_statistics": report_data.get("empirical_statistics"),
+        "verified_guide": report_data.get("verified_guide"),
+        "possible_causes": report_data.get("possible_causes"),
+        "troubleshooting_steps": report_data.get("troubleshooting_steps"),
+        "required_tools": report_data.get("required_tools"),
+        "extracted_symptoms": report_data.get("extracted_symptoms") or [],
+        "estimated_difficulty": report_data.get("estimated_difficulty"),
+        "estimated_minutes": report_data.get("estimated_minutes"),
+        "requires_technician": bool(report_data.get("requires_technician", False)),
+        "status": report_data.get("status", "completed"),
         "created_at": datetime.now().isoformat() + "Z"
     }
     try:

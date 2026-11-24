@@ -22,6 +22,7 @@ def get_dataset_status() -> Dict[str, Any]:
     try:
         statuses = get_all_dataset_statuses()
         live_counts = statuses.pop("live_counts", {})
+        backblaze_metrics = statuses.pop("backblaze_metrics", None)
         
         return {
             "status": "operational" if statuses else "initializing",
@@ -36,6 +37,7 @@ def get_dataset_status() -> Dict[str, Any]:
                     "backblaze_models": live_counts.get("models_registered", 0)
                 }
             },
+            "backblaze_metrics": backblaze_metrics,
             "datasets": statuses,
             "verification_policy": "Strict empirical evidence only; zero synthetic records or fabricated probabilities."
         }

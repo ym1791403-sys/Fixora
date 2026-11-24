@@ -95,17 +95,18 @@ class ApiClient {
   // ==========================================
   async login(email, password) {
     if (window.SupabaseBridge && window.SupabaseBridge.isReady()) {
-      return await window.SupabaseBridge.signInWithPassword(email, password);
+      const user = await window.SupabaseBridge.login(email, password);
+      if (user?.access_token) {
+        this.setSession(user.access_token, user);
+      }
+      return user;
     }
     throw new Error("Authentication service is unavailable. Please check your Supabase configuration.");
   }
 
-  async register(userData) {
+  async register(nameOrData, email, password, role = "user", techDetails = null) {
     if (window.SupabaseBridge && window.SupabaseBridge.isReady()) {
-      return await window.SupabaseBridge.signUp(userData.email, userData.password, {
-        full_name: userData.full_name,
-        role: userData.role || "user"
-      });
+      return await window.SupabaseBridge.register(nameOrData, email, password, role, techDetails);
     }
     throw new Error("Registration service is unavailable. Please check your Supabase configuration.");
   }
@@ -121,7 +122,7 @@ class ApiClient {
     if (window.SupabaseBridge && window.SupabaseBridge.isReady()) {
       return await window.SupabaseBridge.updateProfile(data);
     }
-    return data;
+    throw new Error("Profile update service is unavailable.");
   }
 
   // ==========================================
@@ -135,52 +136,70 @@ class ApiClient {
   // GENUINE DATA-DRIVEN DIAGNOSIS
   // ==========================================
   async diagnoseDevice(data) {
-    // Primary: Call backend FastAPI UnifiedDiagnosisEngine
+    const user = this.getUser();
+    const payload = { ...data };
+    if (user?.id && !payload.user_id) {
+      payload.user_id = user.id;
+    }
     return await this.request("/diagnosis/analyze", {
       method: "POST",
-      body: JSON.stringify(data)
+      body: JSON.stringify(payload)
     });
+  }
+
+  async runDiagnosis(data) {
+    return await this.diagnoseDevice(data);
   }
 
   async getReports() {
     if (window.SupabaseBridge && window.SupabaseBridge.isReady()) {
-      try {
-        const sbReports = await window.SupabaseBridge.fetchDiagnosisReports();
-        if (sbReports) return sbReports;
-      } catch (e) {}
+      return await window.SupabaseBridge.fetchDiagnosisReports();
     }
     return [];
   }
 
+  async getMyReports() {
+    return await this.getReports();
+  }
+
   async getReportById(reportId) {
     if (window.SupabaseBridge && window.SupabaseBridge.isReady()) {
-      try {
-        return await window.SupabaseBridge.fetchReportById(reportId);
-      } catch (e) {}
+      return await window.SupabaseBridge.fetchReportById(reportId);
     }
     throw new Error(`Report #${reportId} not found.`);
+  }
+
+  async getReport(reportId) {
+    return await this.getReportById(reportId);
   }
 
   // ==========================================
   // MYFIXIT REPAIR MANUALS (SUPABASE BACKEND)
   // ==========================================
-  async getGuides(params = {}) {
+  async getGuides(categoryOrParams = {}, difficulty = null, search = null) {
+    let params = {};
+    if (categoryOrParams && typeof categoryOrParams === "object") {
+      params = categoryOrParams;
+    } else {
+      params = { category: categoryOrParams, difficulty, search };
+    }
+
     const qParams = new URLSearchParams();
     if (params.search) qParams.set("q", params.search);
     if (params.category && params.category !== "all") qParams.set("category", params.category);
     if (params.component) qParams.set("component", params.component);
     if (params.difficulty && params.difficulty !== "all") qParams.set("difficulty", params.difficulty);
-    if (params.limit) qParams.set("limit", params.limit);
-    if (params.offset) qParams.set("offset", params.offset);
+    qParams.set("limit", String(params.limit || 60));
+    if (params.offset) qParams.set("offset", String(params.offset));
 
     const queryStr = qParams.toString();
     const endpoint = `/guides${queryStr ? '?' + queryStr : ''}`;
 
     try {
       const res = await this.request(endpoint);
-      return res.guides || [];
+      const list = res.guides || [];
+      return list.map(g => (window.SupabaseBridge && window.SupabaseBridge._normalizeGuide) ? window.SupabaseBridge._normalizeGuide(g) : g);
     } catch (e) {
-      // Fallback: Query Supabase directly via Supabase client if available
       if (window.SupabaseBridge && window.SupabaseBridge.isReady()) {
         return await window.SupabaseBridge.fetchGuides(params);
       }
@@ -190,13 +209,18 @@ class ApiClient {
 
   async getGuideById(guideId) {
     try {
-      return await this.request(`/guides/${guideId}`);
+      const g = await this.request(`/guides/${guideId}`);
+      return (window.SupabaseBridge && window.SupabaseBridge._normalizeGuide) ? window.SupabaseBridge._normalizeGuide(g) : g;
     } catch (e) {
       if (window.SupabaseBridge && window.SupabaseBridge.isReady()) {
         return await window.SupabaseBridge.fetchGuideById(guideId);
       }
       throw e;
     }
+  }
+
+  async getGuide(guideId) {
+    return await this.getGuideById(guideId);
   }
 
   async getGuideCategories() {
@@ -218,11 +242,11 @@ class ApiClient {
   }
 
   // ==========================================
-  // TECHNICIAN MARKETPLACE (SUPABASE)
+  // TECHNICIAN MARKETPLACE (SUPABASE ONLY)
   // ==========================================
-  async getTechnicians(specialization = "all") {
+  async getTechnicians(city = "all", specialization = "all") {
     if (window.SupabaseBridge && window.SupabaseBridge.isReady()) {
-      return await window.SupabaseBridge.fetchTechnicians(specialization);
+      return await window.SupabaseBridge.fetchTechnicians(city, specialization);
     }
     return [];
   }
@@ -235,13 +259,17 @@ class ApiClient {
   }
 
   // ==========================================
-  // USER DEVICES & REPAIR REQUESTS (SUPABASE)
+  // USER DEVICES & REPAIR REQUESTS (STRICT SUPABASE ONLY - ZERO LOCAL FALLBACKS)
   // ==========================================
   async getDevices() {
     if (window.SupabaseBridge && window.SupabaseBridge.isReady()) {
       return await window.SupabaseBridge.fetchDevices();
     }
     return [];
+  }
+
+  async getMyDevices() {
+    return await this.getDevices();
   }
 
   async addDevice(device) {
@@ -258,73 +286,51 @@ class ApiClient {
     throw new Error("Device deletion service unavailable.");
   }
 
-  // ==========================================
-  // REPAIR REQUESTS & LIFECYCLE (BYTEFORCE FULL SUITE)
-  // ==========================================
   async getMyRequests() {
     if (window.SupabaseBridge && window.SupabaseBridge.isReady()) {
       return await window.SupabaseBridge.fetchRepairRequests();
     }
-    try {
-      const stored = localStorage.getItem("byteforce_repair_requests");
-      return stored ? JSON.parse(stored) : [];
-    } catch(e) {
-      return [];
-    }
+    throw new Error("Repair requests service is unavailable.");
   }
 
   async createRepairRequest(reqData) {
     if (window.SupabaseBridge && window.SupabaseBridge.isReady()) {
       return await window.SupabaseBridge.createRepairRequest(reqData);
     }
-    const stored = JSON.parse(localStorage.getItem("byteforce_repair_requests") || "[]");
-    const newReq = {
-      id: Date.now(),
-      status: "NEW",
-      created_at: new Date().toISOString(),
-      history: [{
-        at: new Date().toISOString().replace('T', ' ').slice(0, 19),
-        old: "",
-        new: "NEW",
-        actor: reqData.customer_name || "User",
-        note: "Initial request submitted"
-      }],
-      ...reqData
-    };
-    stored.unshift(newReq);
-    localStorage.setItem("byteforce_repair_requests", JSON.stringify(stored));
-    return newReq;
+    throw new Error("Repair booking service is unavailable.");
   }
 
   async updateRequestStatus(reqId, newStatus, updates = {}) {
     if (window.SupabaseBridge && window.SupabaseBridge.isReady()) {
-      try {
-        await window.SupabaseBridge.getClient().from("repair_requests").update({ status: newStatus, ...updates }).eq("id", reqId);
-      } catch(e) {
-        console.warn("Supabase updateRequestStatus note:", e);
-      }
+      return await window.SupabaseBridge.updateRequestStatus(reqId, newStatus, updates);
     }
-    try {
-      const stored = JSON.parse(localStorage.getItem("byteforce_repair_requests") || "[]");
-      const idx = stored.findIndex(r => r.id == reqId);
-      if (idx !== -1) {
-        const hist = stored[idx].history || [];
-        hist.push({
-          at: new Date().toISOString().replace('T', ' ').slice(0, 19),
-          old: stored[idx].status,
-          new: newStatus,
-          actor: updates.actor || "User",
-          note: updates.note || ""
-        });
-        stored[idx] = { ...stored[idx], status: newStatus, ...updates, history: hist };
-        localStorage.setItem("byteforce_repair_requests", JSON.stringify(stored));
-      }
-    } catch(e) {}
-    return { ok: true };
+    throw new Error("Repair status service is unavailable.");
   }
 
   // ==========================================
-  // ADMIN SYSTEM METRICS (SUPABASE)
+  // REAL NOTIFICATIONS (SUPABASE BACKED)
+  // ==========================================
+  async getNotifications() {
+    if (window.SupabaseBridge && window.SupabaseBridge.isReady()) {
+      return await window.SupabaseBridge.fetchNotifications();
+    }
+    return [];
+  }
+
+  async markNotificationRead(id) {
+    if (window.SupabaseBridge && window.SupabaseBridge.isReady()) {
+      return await window.SupabaseBridge.markNotificationRead(id);
+    }
+  }
+
+  async markAllNotificationsRead() {
+    if (window.SupabaseBridge && window.SupabaseBridge.isReady()) {
+      return await window.SupabaseBridge.markAllNotificationsRead();
+    }
+  }
+
+  // ==========================================
+  // ADMIN SYSTEM METRICS & CONTROLS (EXCLUSIVE TO ADMIN)
   // ==========================================
   async getAdminStats() {
     try {
@@ -354,6 +360,20 @@ class ApiClient {
   async rejectTechnician(techId) {
     if (window.SupabaseBridge && window.SupabaseBridge.isReady()) {
       return await window.SupabaseBridge.rejectTechnician(techId);
+    }
+    throw new Error("Action unavailable.");
+  }
+
+  async getAdminUsers() {
+    if (window.SupabaseBridge && window.SupabaseBridge.isReady()) {
+      return await window.SupabaseBridge.fetchAdminUsers();
+    }
+    return [];
+  }
+
+  async toggleUserStatus(userId) {
+    if (window.SupabaseBridge && window.SupabaseBridge.isReady()) {
+      return await window.SupabaseBridge.toggleUserStatus(userId);
     }
     throw new Error("Action unavailable.");
   }

@@ -30,6 +30,8 @@ class UnifiedDiagnosisEngine:
 
     def _normalize_category(self, raw_category: str, description: str = "") -> str:
         text = f"{raw_category} {description}".lower()
+        if any(w in text for w in ["smartwatch", "apple watch", "fitbit", "garmin", "pebble", "watch", "ساعة"]):
+            return "Smartwatch"
         if any(w in text for w in ["phone", "iphone", "galaxy", "pixel", "smartphone", "هاتف", "جوال", "موبايل"]):
             return "Smartphone"
         if any(w in text for w in ["laptop", "macbook", "thinkpad", "notebook", "لابتوب", "حاسوب محمول"]):
@@ -50,11 +52,7 @@ class UnifiedDiagnosisEngine:
             return "Printer"
         if any(w in text for w in ["camera", "كاميرا"]):
             return "Camera"
-        if any(w in text for w in ["vacuum", "مكنسة"]):
-            return "Vacuum"
-        if any(w in text for w in ["coffee", "قهوة"]):
-            return "Coffee maker"
-        if any(w in text for w in ["appliance", "kettle", "toaster", "غسالة", "أجهزة منزلية"]):
+        if any(w in text for w in ["appliance", "vacuum", "coffee", "kettle", "toaster", "غسالة", "مكنسة", "قهوة", "أجهزة منزلية"]):
             return "Home Appliance"
         return raw_category or "Other"
 
@@ -133,7 +131,7 @@ class UnifiedDiagnosisEngine:
         is_statistically_significant = ora_analysis.get("is_statistically_significant", False)
 
         # 2. MyFixit: Search Authentic Repair Manual with cascading queries
-        guide_search_cat = "Computer Hardware" if normalized_cat == "Storage" else normalized_cat
+        guide_search_cat = normalized_cat
         matched_guide = None
         exact_model_match = False
         candidates = [
@@ -271,7 +269,7 @@ class UnifiedDiagnosisEngine:
 
         # Severity determination from empirical rates
         severity = "moderate"
-        if is_storage and backblaze_result and backblaze_result.get("failure_probability", 0) > 0.60:
+        if is_storage and backblaze_result and (backblaze_result.get("failure_probability") or 0) > 0.60:
             severity = "critical"
         elif empirical_fix_rate < 35.0:
             severity = "high"
@@ -327,7 +325,7 @@ class UnifiedDiagnosisEngine:
 
         # Audit row persistence via Supabase PostgREST
         try:
-            save_diagnosis_report(report_payload)
+            save_diagnosis_report({**report_payload, "user_id": request_data.get("user_id"), "description": desc})
         except Exception:
             pass
 

@@ -8,7 +8,6 @@ Never fabricates probabilities, sample sizes, or failure rates.
 """
 
 import os
-import json
 from typing import Dict, Any, List, Optional
 from api.services.db import (
     get_openrepair_category_stats,
@@ -17,100 +16,60 @@ from api.services.db import (
     DatabaseUnavailableError
 )
 
-CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-PROJECT_ROOT = os.path.abspath(os.path.join(CURRENT_DIR, "..", ".."))
-LOCAL_STATS_PATH = os.path.join(PROJECT_ROOT, "data", "processed", "openrepair_statistics.json")
+_ORA_CATEGORY_ALIASES = {
+    "storage": "Desktop Computer",
+    "smartwatch": "Other",
+    "camera": "Other",
+    "home appliance": "Home Appliance",
+}
 
 class OpenRepairAnalysisService:
-    def __init__(self):
-        self._local_cache = None
-
-    def _load_local_fallback(self) -> Dict[str, Any]:
-        if self._local_cache is None:
-            if os.path.exists(LOCAL_STATS_PATH):
-                try:
-                    with open(LOCAL_STATS_PATH, "r", encoding="utf-8") as f:
-                        self._local_cache = json.load(f)
-                except Exception:
-                    self._local_cache = {}
-            else:
-                self._local_cache = {}
-        return self._local_cache
-
     def get_dataset_metadata(self) -> Dict[str, Any]:
-        try:
-            cats = get_openrepair_all_categories()
-            total_samples = sum(c.get("sample_size", 0) for c in cats)
-            return {
-                "dataset_name": "Open Repair Alliance Aggregate Dataset",
-                "source": "https://raw.githubusercontent.com/openrepair/data/main/OpenRepairData_v0.3_aggregate_202607_eee.csv",
-                "total_records_analyzed": 416282,
-                "categories_covered": len(cats),
-                "total_computed_sample_size": total_samples,
-                "license": "Open Data Commons Open Database License (ODbL) 1.0",
-                "status": "operational"
-            }
-        except Exception:
-            local = self._load_local_fallback()
-            return {
-                "dataset_name": local.get("dataset_name", "Open Repair Alliance"),
-                "source": local.get("source", "https://github.com/openrepair/data"),
-                "total_records_analyzed": local.get("total_records_analyzed", 416282),
-                "categories_covered": local.get("categories_covered", 10),
-                "license": "ODbL 1.0",
-                "status": "operational"
-            }
+        cats = get_openrepair_all_categories()
+        total_samples = sum(c.get("sample_size", 0) for c in cats)
+        return {
+            "dataset_name": "Open Repair Alliance Aggregate Dataset",
+            "source": "https://raw.githubusercontent.com/openrepair/data/main/OpenRepairData_v0.3_aggregate_202607_eee.csv",
+            "total_records_analyzed": 416282,
+            "categories_covered": len(cats),
+            "total_computed_sample_size": total_samples,
+            "license": "Open Data Commons Open Database License (ODbL) 1.0",
+            "status": "operational"
+        }
 
     def get_categories(self) -> List[Dict[str, Any]]:
-        try:
-            rows = get_openrepair_all_categories()
-            return [
-                {
-                    "category": r.get("category_name"),
-                    "incident_count": r.get("sample_size", 0),
-                    "fix_rate": float(r.get("repair_rate", 0.0)),
-                    "repairable_rate": float(r.get("repairable_rate", 0.0) or 0.0),
-                    "end_of_life_rate": float(r.get("end_of_life_rate", 0.0) or 0.0),
-                    "average_age_years": float(r.get("average_age_years", 0.0) or 0.0)
-                }
-                for r in rows
-            ]
-        except Exception:
-            local = self._load_local_fallback().get("category_statistics", {})
-            return [
-                {
-                    "category": k,
-                    "incident_count": v.get("total_incidents", 0),
-                    "fix_rate": v.get("empirical_fix_rate", 0.0)
-                }
-                for k, v in local.items()
-            ]
+        rows = get_openrepair_all_categories()
+        return [
+            {
+                "category": r.get("category_name"),
+                "incident_count": r.get("sample_size", 0),
+                "fix_rate": float(r.get("repair_rate", 0.0)),
+                "repairable_rate": float(r.get("repairable_rate", 0.0) or 0.0),
+                "end_of_life_rate": float(r.get("end_of_life_rate", 0.0) or 0.0),
+                "average_age_years": float(r.get("average_age_years", 0.0) or 0.0)
+            }
+            for r in rows
+        ]
 
     def get_category_stats(self, category: str) -> Optional[Dict[str, Any]]:
         if not category:
             return None
-        try:
-            row = get_openrepair_category_stats(category)
-            if row:
-                return {
-                    "category": row.get("category_name"),
-                    "total_incidents": row.get("sample_size", 0),
-                    "empirical_fix_rate": float(row.get("repair_rate", 0.0)),
-                    "empirical_repairable_rate": float(row.get("repairable_rate", 0.0) or 0.0),
-                    "empirical_end_of_life_rate": float(row.get("end_of_life_rate", 0.0) or 0.0),
-                    "average_device_age_years": float(row.get("average_age_years", 0.0) or 0.0),
-                    "top_failure_modes": row.get("top_faults") or [],
-                    "top_repair_barriers": row.get("barriers") or []
-                }
-        except Exception:
-            pass
-
-        # Check local cache
-        local = self._load_local_fallback().get("category_statistics", {})
-        cat_norm = category.strip().lower()
-        for k, v in local.items():
-            if k.lower() == cat_norm:
-                return v
+        row = get_openrepair_category_stats(category)
+        if not row:
+            alias = _ORA_CATEGORY_ALIASES.get(category.strip().lower())
+            if alias:
+                row = get_openrepair_category_stats(alias)
+        if row:
+            return {
+                "category": row.get("category_name"),
+                "total_incidents": row.get("sample_size", 0),
+                "empirical_fix_rate": float(row.get("repair_rate", 0.0)),
+                "empirical_repairable_rate": float(row.get("repairable_rate", 0.0) or 0.0),
+                "empirical_end_of_life_rate": float(row.get("end_of_life_rate", 0.0) or 0.0),
+                "average_device_age_years": float(row.get("average_age_years", 0.0) or 0.0),
+                "top_failure_modes": row.get("top_faults") or [],
+                "top_repair_barriers": row.get("barriers") or []
+            }
         return None
 
     def analyze_symptoms(

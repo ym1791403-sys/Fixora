@@ -16,6 +16,8 @@ import csv
 import json
 import time
 import glob
+import re
+import socket
 import hashlib
 import argparse
 import urllib.request
@@ -26,6 +28,32 @@ PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
+_orig_getaddrinfo = socket.getaddrinfo
+_DNS_FALLBACK = {
+    "api.supabase.com": "172.64.145.26",
+    "czwndaulnxvmncbtzsao.supabase.co": "172.64.149.246",
+}
+
+def _resilient_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
+    try:
+        return _orig_getaddrinfo(host, port, family, type, proto, flags)
+    except socket.gaierror:
+        if host in _DNS_FALLBACK:
+            return _orig_getaddrinfo(_DNS_FALLBACK[host], port, family, type, proto, flags)
+        raise
+
+socket.getaddrinfo = _resilient_getaddrinfo
+
+# Load .env if present
+_env_file = os.path.join(PROJECT_ROOT, ".env")
+if os.path.exists(_env_file):
+    with open(_env_file, "r", encoding="utf-8") as _ef:
+        for _line in _ef:
+            _line = _line.strip()
+            if _line and not _line.startswith("#") and "=" in _line:
+                _k, _v = _line.split("=", 1)
+                os.environ.setdefault(_k.strip(), _v.strip().strip('"').strip("'"))
+
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://czwndaulnxvmncbtzsao.supabase.co")
 SUPABASE_MGMT_TOKEN = os.environ.get("SUPABASE_MGMT_TOKEN", "")
 PROJECT_REF = os.environ.get("SUPABASE_PROJECT_REF", "czwndaulnxvmncbtzsao")
@@ -35,6 +63,12 @@ def get_service_key() -> str:
     env_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
     if env_key:
         return env_key
+    try:
+        from api.services.db import SUPABASE_SERVICE_ROLE_KEY as db_srv_key
+        if db_srv_key:
+            return db_srv_key
+    except Exception:
+        pass
     url = f"https://api.supabase.com/v1/projects/{PROJECT_REF}/api-keys"
     headers = {"Authorization": f"Bearer {SUPABASE_MGMT_TOKEN}"}
     req = urllib.request.Request(url, headers=headers)
@@ -66,15 +100,22 @@ def execute_postgrest(endpoint: str, data: Any, service_key: str, method: str = 
         headers.update(headers_extra)
     
     body = json.dumps(data).encode("utf-8") if data is not None else None
-    req = urllib.request.Request(url, headers=headers, data=body, method=method)
-    try:
-        with urllib.request.urlopen(req) as resp:
-            resp_data = resp.read()
-            return json.loads(resp_data.decode("utf-8")) if resp_data else None
-    except urllib.error.HTTPError as e:
-        err_msg = e.read().decode("utf-8")
-        print(f"PostgREST HTTP {e.code} Error on {endpoint}: {err_msg}")
-        raise
+    for attempt in range(4):
+        req = urllib.request.Request(url, headers=headers, data=body, method=method)
+        try:
+            with urllib.request.urlopen(req, timeout=60) as resp:
+                resp_data = resp.read()
+                return json.loads(resp_data.decode("utf-8")) if resp_data else None
+        except urllib.error.HTTPError as e:
+            err_msg = e.read().decode("utf-8")
+            print(f"PostgREST HTTP {e.code} Error on {endpoint}: {err_msg}")
+            raise
+        except Exception as e:
+            print(f"  Retry {attempt+1}/4 on {endpoint}: {e}")
+            if attempt < 3:
+                time.sleep(1.5 * (attempt + 1))
+                continue
+            raise
 
 def get_table_count(table: str, service_key: str) -> int:
     url = f"{SUPABASE_URL}/rest/v1/{table}?select=count"
@@ -208,46 +249,84 @@ def ingest_openrepair(service_key: str, incidents_limit: int = 5000):
     return True
 
 # ==============================================================================
-# 2. INGEST MYFIXIT DATASET
+# 2. INGEST MYFIXIT DATASET (BALANCED ACROSS ALL 13 BYTEFORCE CATEGORIES)
 # ==============================================================================
-def ingest_myfixit(service_key: str, guides_limit: int = 1500):
-    print("\n--- [2/3] Ingesting MyFixit Verified Repair Manuals ---")
+ALL_DEVICE_CATEGORIES = [
+    "Smartphone", "Laptop", "Desktop Computer", "Tablet", "Gaming Console",
+    "Smart TV", "Storage", "Printer", "Audio", "Smartwatch",
+    "Camera", "Home Appliance", "Other"
+]
+
+def _classify_myfixit_guide(fname: str, g: Dict[str, Any]) -> str:
+    txt = f"{g.get('Category', '')} {g.get('Title', '')} {g.get('Subject', '')}".lower()
+
+    if re.search(r"\b(apple watch|smartwatch|zenwatch|pebble|fitbit|garmin|gear live|moto 360|vivofit|breitling|watch)\b", txt):
+        return "Smartwatch"
+    if re.search(r"\b(printer|epson|pixma|laserjet|deskjet|officejet|brother\s+(?:hl|mfc|dcp)|inkjet)\b", txt):
+        return "Printer"
+    if re.search(r"\b(television|bravia|vizio|roku|apple tv|fire tv|smart tv|samsung tv|lg tv|lcd tv|plasma tv|led tv)\b", txt):
+        return "Smart TV"
+    if re.search(r"\b(hard drive|solid state|\bssd\b|\bhdd\b|nvme|time capsule|flash drive|thumb drive|external drive|\bnas\b|western digital|seagate|sd card)\b", txt):
+        return "Storage"
+
+    if fname == "Phone.json":
+        return "Smartphone"
+    if fname == "Tablet.json":
+        return "Tablet"
+    if fname == "Game Console.json":
+        return "Gaming Console"
+    if fname == "Camera.json":
+        return "Camera"
+    if fname == "Media Player.json":
+        return "Audio"
+    if fname == "Appliance.json":
+        return "Home Appliance"
+    if fname == "Mac.json":
+        if any(k in txt for k in ["imac", "mac pro", "mac mini", "power mac", "emac"]):
+            return "Desktop Computer"
+        return "Laptop"
+    if fname == "PC.json":
+        if any(k in txt for k in ["laptop", "notebook", "thinkpad", "latitude", "inspiron", "pavilion", "envy", "ideapad", "xps", "probook", "elitebook", "chromebook", "vaio", "satellite", "zenbook", "vivobook", "aspire", "predator", "legion"]):
+            return "Laptop"
+        return "Desktop Computer"
+    if fname == "Computer Hardware.json":
+        return "Desktop Computer"
+    if fname == "Electronics.json":
+        if any(k in txt for k in ["airpod", "headphone", "earbud", "speaker", "ipod", "beats", "bose", "sonos", "echo", "stereo", "soundbar", "amplifier"]):
+            return "Audio"
+        if any(k in txt for k in ["thermostat", "vacuum", "roomba", "coffee"]):
+            return "Home Appliance"
+        return "Other"
+    if fname == "Household.json":
+        if any(k in txt for k in ["vacuum", "roomba", "coffee", "blender", "microwave", "toaster", "fan", "heater", "washer", "dryer", "iron", "kettle", "humidifier"]):
+            return "Home Appliance"
+        return "Other"
+    return "Other"
+
+def ingest_myfixit(service_key: str, guides_limit: int = 2080):
+    print("\n--- [2/3] Ingesting MyFixit Verified Repair Manuals (13 Device Categories) ---")
     json_dir = os.path.join(PROJECT_ROOT, "datasets", "myfixit", "raw", "jsons")
-    json_files = glob.glob(os.path.join(json_dir, "*.json"))
-    
+    json_files = sorted(glob.glob(os.path.join(json_dir, "*.json")))
+
     if not json_files:
         print(f"ERROR: MyFixit JSON files missing in: {json_dir}")
         return False
-        
-    print(f"Found {len(json_files)} MyFixit JSONL files. Target import limit: {guides_limit} guides.")
-    
-    total_imported = 0
-    batch = []
-    
-    # Map json filenames to standardized Fixora categories
-    cat_map = {
-        "Phone.json": "Smartphone",
-        "PC.json": "Desktop Computer",
-        "Mac.json": "Laptop",
-        "Tablet.json": "Tablet",
-        "Camera.json": "Camera",
-        "Electronics.json": "Electronics",
-        "Game Console.json": "Gaming Console",
-        "Household.json": "Household",
-        "Appliance.json": "Smart Appliance",
-        "Computer Hardware.json": "Computer Hardware",
-        "Media Player.json": "Audio",
-        "Car and Truck.json": "Automotive",
-        "Vehicle.json": "Vehicle",
-        "Apparel.json": "Wearables",
-        "Skills.json": "Soldering & Skills"
-    }
+
+    per_cat_target = max(120, guides_limit // len(ALL_DEVICE_CATEGORIES))
+    print(f"Found {len(json_files)} MyFixit JSONL files. Target ~{per_cat_target}/category (max {guides_limit} total).")
+
+    # Clear legacy rows before inserting clean 13-category balanced guides
+    try:
+        execute_postgrest("repair_guides?id=gt.0", None, service_key, method="DELETE")
+        print("Cleared previous repair_guides rows to ensure clean 13-category balance.")
+    except Exception as e:
+        print(f"Warning clearing repair_guides: {e}")
+
+    buckets: Dict[str, List[Dict[str, Any]]] = {c: [] for c in ALL_DEVICE_CATEGORIES}
+    seen_ids = set()
 
     for json_file in json_files:
         fname = os.path.basename(json_file)
-        dev_cat = cat_map.get(fname, "General")
-        file_count = 0
-        
         with open(json_file, "r", encoding="utf-8", errors="ignore") as f:
             for line in f:
                 line = line.strip()
@@ -257,24 +336,31 @@ def ingest_myfixit(service_key: str, guides_limit: int = 1500):
                     g = json.loads(line)
                 except Exception:
                     continue
-                    
+
                 guide_id = g.get("Guidid") or g.get("guide_id")
-                if not guide_id:
+                if not guide_id or guide_id in seen_ids:
                     continue
-                    
+
+                dev_cat = _classify_myfixit_guide(fname, g)
+                if len(buckets[dev_cat]) >= per_cat_target:
+                    continue
+
                 steps = g.get("Steps") or []
-                raw_summary = ""
-                if steps and isinstance(steps, list):
-                    raw_summary = steps[0].get("Text_raw", "") or steps[0].get("text", "")
-                    
+                if not isinstance(steps, list) or len(steps) == 0:
+                    continue
+
+                seen_ids.add(guide_id)
+                raw_summary = steps[0].get("Text_raw", "") or steps[0].get("text", "")
                 tools = g.get("Toolbox") or g.get("tools") or []
                 diff = "Moderate"
-                if len(steps) > 12: diff = "Difficult"
-                elif len(steps) < 5: diff = "Easy"
-                
+                if len(steps) > 12:
+                    diff = "Difficult"
+                elif len(steps) < 5:
+                    diff = "Easy"
+
                 est_mins = max(15, min(120, len(steps) * 4))
-                
-                batch.append({
+
+                buckets[dev_cat].append({
                     "id": guide_id,
                     "title": g.get("Title") or g.get("title") or f"{g.get('Subject', 'Device')} Repair",
                     "device_category": dev_cat,
@@ -290,26 +376,21 @@ def ingest_myfixit(service_key: str, guides_limit: int = 1500):
                     "step_count": len(steps),
                     "file_source": fname
                 })
-                
-                file_count += 1
-                total_imported += 1
-                
-                if len(batch) >= 150:
-                    execute_postgrest("repair_guides", batch, service_key)
-                    batch = []
-                    print(f"  Ingested {total_imported} guides...", end="\r")
-                    
-                if total_imported >= guides_limit:
-                    break
-                    
-        if total_imported >= guides_limit:
-            break
-            
-    if batch:
+
+    all_rows: List[Dict[str, Any]] = []
+    for cat in ALL_DEVICE_CATEGORIES:
+        print(f"  Category '{cat}': {len(buckets[cat])} authentic MyFixit guides")
+        all_rows.extend(buckets[cat])
+
+    total_imported = 0
+    for i in range(0, len(all_rows), 35):
+        batch = all_rows[i:i + 35]
         execute_postgrest("repair_guides", batch, service_key)
-        
+        total_imported += len(batch)
+        print(f"  Uploaded {total_imported}/{len(all_rows)} guides...", flush=True)
+
     actual_guides_count = get_table_count("repair_guides", service_key)
-    print(f"\nTable 'repair_guides' live count: {actual_guides_count} verified manuals.")
+    print(f"\nTable 'repair_guides' live count: {actual_guides_count} verified manuals across 13 categories.")
 
     # Update certified_datasets table
     zip_path = os.path.join(PROJECT_ROOT, "datasets", "myfixit", "raw", "myfixit_dataset.zip")

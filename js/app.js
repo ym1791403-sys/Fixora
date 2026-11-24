@@ -66,27 +66,30 @@ class ByteForceApp {
   }
 
   // ==========================================
-  // NOTIFICATIONS SYSTEM (BYTEFORCE SUITE)
+  // NOTIFICATIONS SYSTEM (STRICTLY SUPABASE BACKED)
   // ==========================================
   initNotifications() {
+    this.notifications = [];
+    this.loadNotifications();
+  }
+
+  async loadNotifications() {
+    if (!window.api || !window.api.isLoggedIn()) {
+      this.notifications = [];
+      this.updateNotifBadge();
+      return;
+    }
     try {
-      const stored = localStorage.getItem("byteforce_notifications");
-      if (stored) {
-        this.notifications = JSON.parse(stored);
-      } else {
-        const isAr = window.i18n.currentLang === "ar";
-        this.notifications = [
-          {
-            id: 1,
-            title: isAr ? "مرحباً بك في منصة ByteForce" : "Welcome to ByteForce",
-            message: isAr ? "تم ربط المنصة بقواعد بيانات الصيانة العالمية المعتمدة وشبكة الفنيين بنجاح." : "Connected to certified repair datasets and verified technician network.",
-            time: isAr ? "منذ قليل" : "Just now",
-            read: false,
-            type: "system"
-          }
-        ];
-      }
-    } catch(e) {
+      const rows = await window.api.getNotifications();
+      this.notifications = (rows || []).map(n => ({
+        id: n.id,
+        title: n.title,
+        message: n.message,
+        time: n.created_at ? new Date(n.created_at).toLocaleString() : "",
+        read: !!n.is_read,
+        type: n.type || "info"
+      }));
+    } catch (e) {
       this.notifications = [];
     }
     this.updateNotifBadge();
@@ -104,32 +107,33 @@ class ByteForceApp {
     }
   }
 
-  toggleNotifications() {
+  async toggleNotifications() {
     const dropdown = document.getElementById("notifDropdown");
     if (!dropdown) return;
     const isVisible = dropdown.style.display === "block";
     dropdown.style.display = isVisible ? "none" : "block";
     if (!isVisible) {
+      await this.loadNotifications();
       this.renderNotifications();
     }
   }
 
-  markAllNotifsRead() {
+  async markAllNotifsRead() {
     (this.notifications || []).forEach(n => n.read = true);
     try {
-      localStorage.setItem("byteforce_notifications", JSON.stringify(this.notifications));
-    } catch(e) {}
+      await window.api.markAllNotificationsRead();
+    } catch (e) {}
     this.updateNotifBadge();
     this.renderNotifications();
   }
 
-  markNotifRead(id) {
-    const n = (this.notifications || []).find(item => item.id === id);
+  async markNotifRead(id) {
+    const n = (this.notifications || []).find(item => String(item.id) === String(id));
     if (n) {
       n.read = true;
       try {
-        localStorage.setItem("byteforce_notifications", JSON.stringify(this.notifications));
-      } catch(e) {}
+        await window.api.markNotificationRead(id);
+      } catch (e) {}
       this.updateNotifBadge();
       this.renderNotifications();
     }
@@ -137,19 +141,15 @@ class ByteForceApp {
 
   addNotification(title, message, type = "info") {
     const isAr = window.i18n.currentLang === "ar";
-    const newNotif = {
+    this.notifications.unshift({
       id: Date.now(),
       title: title,
       message: message,
       time: isAr ? "الآن" : "Just now",
       read: false,
       type: type
-    };
-    this.notifications.unshift(newNotif);
+    });
     if (this.notifications.length > 30) this.notifications.pop();
-    try {
-      localStorage.setItem("byteforce_notifications", JSON.stringify(this.notifications));
-    } catch(e) {}
     this.updateNotifBadge();
   }
 
@@ -162,7 +162,7 @@ class ByteForceApp {
       return;
     }
     list.innerHTML = this.notifications.map(n => `
-      <div class="notif-item ${n.read ? '' : 'unread'}" style="cursor: pointer;" onclick="app.markNotifRead(${n.id})">
+      <div class="notif-item ${n.read ? '' : 'unread'}" style="cursor: pointer;" onclick="app.markNotifRead('${n.id}')">
         <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
           <strong style="color: #FFFFFF; font-size: 13px;">${n.title}</strong>
           ${!n.read ? '<span style="width: 8px; height: 8px; border-radius: 50%; background: #38BDF8; flex-shrink: 0; margin-top: 4px;"></span>' : ''}
@@ -249,25 +249,20 @@ class ByteForceApp {
           userAvatarEl.textContent = user.avatar_initial || (user.full_name ? user.full_name.charAt(0).toUpperCase() : "U");
         }
       }
+      const isAdmin = !!(user && user.role === "admin" && (user.email || "").toLowerCase().trim() === "snsr19344@gmail.com");
       if (dashLink) dashLink.style.display = "block";
-      if (adminLink) {
-        const isAdmin = user && user.role === "admin" && (user.email || "").toLowerCase().trim() === "snsr19344@gmail.com";
-        adminLink.style.display = isAdmin ? "block" : "none";
-        const adminDirectBtn = document.getElementById("navAdminDirectBtn");
-        if (adminDirectBtn) {
-          adminDirectBtn.style.display = isAdmin ? "inline-flex" : "none";
-        }
-      }
+      if (adminLink) adminLink.style.display = isAdmin ? "block" : "none";
+      const adminDirectBtn = document.getElementById("navAdminDirectBtn");
+      if (adminDirectBtn) adminDirectBtn.style.display = isAdmin ? "inline-flex" : "none";
       if (mobileDashLink) mobileDashLink.style.display = "block";
-      if (mobileAdminLink) {
-        const isMobAdmin = user && user.role === "admin" && (user.email || "").toLowerCase().trim() === "snsr19344@gmail.com";
-        mobileAdminLink.style.display = isMobAdmin ? "block" : "none";
-      }
+      if (mobileAdminLink) mobileAdminLink.style.display = isAdmin ? "block" : "none";
     } else {
       if (guestLinks) guestLinks.style.display = "flex";
       if (userLinks) userLinks.style.display = "none";
       if (dashLink) dashLink.style.display = "none";
       if (adminLink) adminLink.style.display = "none";
+      const adminDirectBtn = document.getElementById("navAdminDirectBtn");
+      if (adminDirectBtn) adminDirectBtn.style.display = "none";
       if (mobileDashLink) mobileDashLink.style.display = "none";
       if (mobileAdminLink) mobileAdminLink.style.display = "none";
     }
@@ -765,28 +760,52 @@ class ByteForceApp {
     this.initNotifications();
   }
 
-  async fetchAndApplyLiveDatasetStats() {
+  async fetchAndApplyLiveDatasetStats(retryCount = 0) {
+    const guidesEl = document.getElementById("homeStatGuides");
+    const incidentsEl = document.getElementById("homeStatIncidents");
+    const aucEl = document.getElementById("homeStatAuc");
+
     try {
       const res = await window.api.getDatasetStatus();
       if (res && res.database_storage && res.database_storage.live_tables) {
         const tables = res.database_storage.live_tables;
-        const guidesEl = document.getElementById("homeStatGuides");
-        const incidentsEl = document.getElementById("homeStatIncidents");
-        const aucEl = document.getElementById("homeStatAuc");
-
-        if (guidesEl && tables.repair_guides) {
+        const datasetsMap = res.datasets || res.certified_datasets || {};
+        if (guidesEl && tables.repair_guides != null) {
           guidesEl.textContent = Number(tables.repair_guides).toLocaleString();
         }
-        if (incidentsEl && tables.repair_incidents) {
-          incidentsEl.textContent = `+${Number(tables.repair_incidents).toLocaleString()}`;
+        if (incidentsEl && tables.repair_incidents != null) {
+          const oraCertTotal = datasetsMap.open_repair_alliance?.total_records;
+          incidentsEl.textContent = oraCertTotal ? Number(oraCertTotal).toLocaleString() : Number(tables.repair_incidents).toLocaleString();
         }
         if (aucEl) {
-          aucEl.textContent = "0.912";
+          const directAuc = res.backblaze_metrics?.roc_auc;
+          const roc = datasetsMap.backblaze_telemetry?.verification_notes?.match(/ROC-AUC:\s*([0-9.]+)/i);
+          aucEl.textContent = directAuc ? Number(directAuc).toFixed(3) : (roc ? Number(roc[1]).toFixed(3) : "—");
         }
+        return;
       }
     } catch (e) {
-      console.warn("Live stats update note:", e);
+      if (retryCount < 1) {
+        await new Promise(r => setTimeout(r, 700));
+        return this.fetchAndApplyLiveDatasetStats(retryCount + 1);
+      }
+      console.warn("Primary dataset status API unavailable, checking Supabase client:", e.message);
     }
+
+    // Live Supabase table count fallback (never hardcoded)
+    try {
+      if (window.SupabaseBridge && window.SupabaseBridge.isReady()) {
+        const sb = window.SupabaseBridge.getClient();
+        const [gRes, oraRes, bbRes] = await Promise.all([
+          sb.from("repair_guides").select("*", { count: "exact", head: true }),
+          sb.from("certified_datasets").select("total_records").eq("dataset_key", "open_repair_alliance").maybeSingle(),
+          sb.from("backblaze_models").select("metrics").eq("model_id", "backblaze_rf_v1").maybeSingle()
+        ]);
+        if (guidesEl && gRes.count != null) guidesEl.textContent = Number(gRes.count).toLocaleString();
+        if (incidentsEl && oraRes.data?.total_records) incidentsEl.textContent = Number(oraRes.data.total_records).toLocaleString();
+        if (aucEl && bbRes.data?.metrics?.roc_auc) aucEl.textContent = Number(bbRes.data.metrics.roc_auc).toFixed(3);
+      }
+    } catch (sbErr) {}
   }
 
   filterGuidesByCategory(cat) {
@@ -874,7 +893,7 @@ class ByteForceApp {
             </div>
 
             <!-- Step 2: Brand & Model -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="form-row-2">
               <div class="form-group">
                 <label class="form-label" data-i18n="diag_brand_label">Device Brand</label>
                 <input type="text" id="diagBrand" class="form-control" data-i18n-placeholder="diag_brand_placeholder" placeholder="e.g., Dell, Apple, HP, Samsung" value="${this.wizardData.brand}">
@@ -908,7 +927,7 @@ class ByteForceApp {
             <!-- Step 5: Optional Details Accordion -->
             <div style="margin-bottom: 24px; padding: 16px; background-color: #0E131F; border-radius: var(--radius-md); border: 1px solid rgba(255, 255, 255, 0.08);">
               <h5 style="margin-bottom: 12px; font-size: 14px; color: #FFFFFF;" data-i18n="diag_step5">5. Additional Details (Optional)</h5>
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+              <div class="form-row-2">
                 <div>
                   <label style="font-size: 12px; font-weight: 600; color: var(--color-text-muted);" data-i18n="diag_age_label">Device Age</label>
                   <input type="number" id="diagAge" class="form-control" style="padding: 8px 12px; font-size: 13px;" placeholder="e.g., 2" value="${this.wizardData.device_age_years || ''}">
@@ -916,6 +935,43 @@ class ByteForceApp {
                 <div>
                   <label style="font-size: 12px; font-weight: 600; color: var(--color-text-muted);" data-i18n="diag_error_label">Error Code</label>
                   <input type="text" id="diagError" class="form-control" style="padding: 8px 12px; font-size: 13px;" placeholder="e.g., 0x000000D1, Beep code" value="${this.wizardData.error_message}">
+                </div>
+              </div>
+            </div>
+
+            <!-- Conditional Storage SMART Telemetry Panel (Backblaze ML Model - Storage ONLY) -->
+            <div id="storageSmartSection" style="display: ${this.wizardData.device_category === 'Storage' ? 'block' : 'none'}; margin-bottom: 24px; padding: 16px; background-color: rgba(16, 185, 129, 0.06); border-radius: var(--radius-md); border: 1px solid rgba(16, 185, 129, 0.25);">
+              <h5 style="margin-bottom: 6px; font-size: 14px; color: #34D399; display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-hdd"></i>
+                <span>${isAr ? 'قياسات S.M.A.R.T للأقراص (لتشغيل نموذج Backblaze التنبؤي - اختياري)' : 'Storage S.M.A.R.T Telemetry (Backblaze ML Prediction - Optional)'}</span>
+              </h5>
+              <p style="font-size: 12px; color: #94A3B8; margin-bottom: 12px;">
+                ${isAr ? 'أدخل قراءات SMART لوسيط التخزين (HDD/SSD) لحساب احتمالية التلف بدقة من نموذج Random Forest.' : 'Supply SMART raw attributes from CrystalDiskInfo / smartctl for drive failure risk scoring.'}
+              </p>
+              <div class="form-row-2">
+                <div>
+                  <label style="font-size: 12px; color: #CBD5E1;">SMART 5 (Reallocated Sectors)</label>
+                  <input type="number" id="smart5Raw" class="form-control" min="0" placeholder="0" value="${this.wizardData.smart_telemetry?.smart_5_raw ?? ''}">
+                </div>
+                <div>
+                  <label style="font-size: 12px; color: #CBD5E1;">SMART 187 (Uncorrectable Errors)</label>
+                  <input type="number" id="smart187Raw" class="form-control" min="0" placeholder="0" value="${this.wizardData.smart_telemetry?.smart_187_raw ?? ''}">
+                </div>
+                <div>
+                  <label style="font-size: 12px; color: #CBD5E1;">SMART 188 (Command Timeout)</label>
+                  <input type="number" id="smart188Raw" class="form-control" min="0" placeholder="0" value="${this.wizardData.smart_telemetry?.smart_188_raw ?? ''}">
+                </div>
+                <div>
+                  <label style="font-size: 12px; color: #CBD5E1;">SMART 197 (Current Pending Sectors)</label>
+                  <input type="number" id="smart197Raw" class="form-control" min="0" placeholder="0" value="${this.wizardData.smart_telemetry?.smart_197_raw ?? ''}">
+                </div>
+                <div>
+                  <label style="font-size: 12px; color: #CBD5E1;">SMART 198 (Offline Uncorrectable)</label>
+                  <input type="number" id="smart198Raw" class="form-control" min="0" placeholder="0" value="${this.wizardData.smart_telemetry?.smart_198_raw ?? ''}">
+                </div>
+                <div>
+                  <label style="font-size: 12px; color: #CBD5E1;">${isAr ? 'سعة القرص (تيرابايت TB)' : 'Drive Capacity (TB)'}</label>
+                  <input type="number" id="smartCapacityTb" class="form-control" step="0.1" min="0.1" placeholder="e.g. 2.0" value="${this.wizardData.smart_telemetry?.capacity_tb ?? ''}">
                 </div>
               </div>
             </div>
@@ -941,6 +997,26 @@ class ByteForceApp {
       this.wizardData.device_age_years = ageVal ? parseFloat(ageVal) : null;
       this.wizardData.error_message = container.querySelector("#diagError").value.trim();
 
+      if (this.wizardData.device_category === "Storage") {
+        const smartFields = {
+          smart_5_raw: container.querySelector("#smart5Raw")?.value,
+          smart_187_raw: container.querySelector("#smart187Raw")?.value,
+          smart_188_raw: container.querySelector("#smart188Raw")?.value,
+          smart_197_raw: container.querySelector("#smart197Raw")?.value,
+          smart_198_raw: container.querySelector("#smart198Raw")?.value,
+          capacity_tb: container.querySelector("#smartCapacityTb")?.value
+        };
+        const cleanSmart = {};
+        Object.entries(smartFields).forEach(([k, v]) => {
+          if (v !== "" && v !== undefined && v !== null && !isNaN(Number(v))) {
+            cleanSmart[k] = Number(v);
+          }
+        });
+        this.wizardData.smart_telemetry = Object.keys(cleanSmart).length > 0 ? cleanSmart : null;
+      } else {
+        this.wizardData.smart_telemetry = null;
+      }
+
       if (!this.wizardData.description) {
         alert(isAr ? "يرجى كتابة وصف للمشكلة للبدء في التشخيص" : "Please provide a problem description to proceed.");
         return;
@@ -954,6 +1030,10 @@ class ByteForceApp {
     this.wizardData.device_category = cat;
     document.querySelectorAll(".wizard-cat-item").forEach(c => c.classList.remove("selected"));
     if (el) el.classList.add("selected");
+    const smartBox = document.getElementById("storageSmartSection");
+    if (smartBox) {
+      smartBox.style.display = cat === "Storage" ? "block" : "none";
+    }
   }
 
   async submitDiagnosis() {
@@ -984,7 +1064,8 @@ class ByteForceApp {
         description: this.wizardData.description,
         device_age_years: this.wizardData.device_age_years,
         error_message: this.wizardData.error_message || null,
-        recent_changes: this.wizardData.recent_changes || null
+        recent_changes: this.wizardData.recent_changes || null,
+        smart_telemetry: this.wizardData.smart_telemetry || null
       });
 
       this.currentReport = response;
@@ -1134,9 +1215,15 @@ class ByteForceApp {
                     <div style="color: var(--color-text-muted); font-size: 12px; margin-bottom: 4px;">
                       ${isAr ? 'تنبؤ الفشل بالذكاء الاصطناعي (Backblaze):' : 'ML Failure Prediction (Backblaze):'}
                     </div>
-                    <div style="font-size: 15px; font-weight: 700; color: ${report.hard_drive_ml_prediction.risk_level === 'CRITICAL' ? '#EF4444' : report.hard_drive_ml_prediction.risk_level === 'WARNING' ? '#F59E0B' : '#10B981'};">
-                      ${report.hard_drive_ml_prediction.risk_level} (${Math.round((report.hard_drive_ml_prediction.failure_probability || 0) * 100)}% Risk)
-                    </div>
+                    ${report.hard_drive_ml_prediction.status === 'awaiting_telemetry' || report.hard_drive_ml_prediction.failure_probability == null ? `
+                      <div style="font-size: 13px; font-weight: 600; color: #38BDF8;">
+                        ${isAr ? 'أدخل قياسات SMART لتشغيل التنبؤ الرقمي' : 'Supply SMART telemetry for failure probability'}
+                      </div>
+                    ` : `
+                      <div style="font-size: 15px; font-weight: 700; color: ${report.hard_drive_ml_prediction.risk_level === 'CRITICAL' ? '#EF4444' : report.hard_drive_ml_prediction.risk_level === 'WARNING' ? '#F59E0B' : '#10B981'};">
+                        ${report.hard_drive_ml_prediction.risk_level} (${Math.round((report.hard_drive_ml_prediction.failure_probability || 0) * 100)}% Risk)
+                      </div>
+                    `}
                   </div>
                 ` : ''}
               </div>
@@ -1268,7 +1355,7 @@ class ByteForceApp {
 
           <!-- Filters & Search -->
           <div class="card" style="margin-bottom: 30px; padding: 20px;">
-            <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 14px;">
+            <div class="filter-grid">
               <input type="text" id="guideSearchInput" class="form-control" data-i18n-placeholder="guides_search_placeholder" placeholder="Search guides by keyword, device, or symptom...">
               <select id="guideCatFilter" class="form-control">
                 <option value="all">${window.i18n.t('cat_all')}</option>
@@ -1481,13 +1568,32 @@ class ByteForceApp {
               </div>
 
               <div>
-                <label style="font-size: 12px; color: #94A3B8; margin-bottom: 4px; display: block;">${isAr ? 'التخصص التقني' : 'Specialization'}</label>
+                <label style="font-size: 12px; color: #94A3B8; margin-bottom: 4px; display: block;">${isAr ? 'التخصص / نوع الجهاز' : 'Specialty / Device'}</label>
                 <select id="techSpecFilter" class="form-control">
-                  <option value="all">${isAr ? 'جميع التخصصات' : 'All Specializations'}</option>
-                  <option value="Laptop">${isAr ? 'لابتوب وماك بوك' : 'Laptops & MacBooks'}</option>
-                  <option value="Smartphone">${isAr ? 'هواتف ذكية وألواح' : 'Smartphones & Tablets'}</option>
+                  <option value="all">${isAr ? 'جميع الأجهزة والتخصصات' : 'All Devices & Specialties'}</option>
+                  <option value="Smartphone">${window.i18n.t('cat_smartphone')}</option>
+                  <option value="Laptop">${window.i18n.t('cat_laptop')}</option>
+                  <option value="Desktop Computer">${window.i18n.t('cat_computer')}</option>
+                  <option value="Tablet">${window.i18n.t('cat_tablet')}</option>
+                  <option value="Gaming Console">${window.i18n.t('cat_console')}</option>
+                  <option value="Smart TV">${window.i18n.t('cat_tv')}</option>
+                  <option value="Storage">${window.i18n.t('cat_storage')}</option>
+                  <option value="Printer">${window.i18n.t('cat_printer')}</option>
+                  <option value="Audio">${window.i18n.t('cat_audio')}</option>
+                  <option value="Smartwatch">${window.i18n.t('cat_smartwatch')}</option>
+                  <option value="Camera">${window.i18n.t('cat_camera')}</option>
+                  <option value="Home Appliance">${window.i18n.t('cat_appliance')}</option>
                   <option value="Motherboard">${isAr ? 'صيانة ماذربورد ولحام دقيق' : 'Motherboards & Micro-soldering'}</option>
                   <option value="Data Recovery">${isAr ? 'استعادة بيانات وتخزين' : 'Data Recovery'}</option>
+                </select>
+              </div>
+
+              <div>
+                <label style="font-size: 12px; color: #94A3B8; margin-bottom: 4px; display: block;">${isAr ? 'نوع المزود' : 'Provider Type'}</label>
+                <select id="techTypeFilter" class="form-control">
+                  <option value="all">${isAr ? 'الكل (فنيين ومراكز صيانة)' : 'All (Technicians & Centers)'}</option>
+                  <option value="CENTER">${isAr ? 'مراكز صيانة معتمدة فقط' : 'Verified Centers Only'}</option>
+                  <option value="TECHNICIAN">${isAr ? 'فنيون مستقلون فقط' : 'Independent Technicians Only'}</option>
                 </select>
               </div>
 
@@ -1515,7 +1621,7 @@ class ByteForceApp {
           <div class="card" style="margin-bottom: 24px; padding: 14px; background: #0E131F; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
               <span style="font-size: 14px; font-weight: 700; color: #FFFFFF;">
-                <i class="fas fa-map-marked-alt" style="color: #38BDF8; margin-inline-end: 6px;"></i>${isAr ? 'خريطة مراكز وفنيي الصيانة التفاعلية' : 'Interactive Repair Centers & Technicians Map'}
+                <i class="fas fa-map-marked-alt" style="color: #38BDF8; margin-inline-end: 6px;"></i>${isAr ? 'خريطة مراكز وفنيي الصيانة المعتمدين' : 'Verified Repair Centers & Technicians Map'}
               </span>
               <button id="useLocationBtn" class="btn btn-outline btn-sm" style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px;">
                 <i class="fas fa-crosshairs" style="color: #10B981;"></i>
@@ -1526,7 +1632,7 @@ class ByteForceApp {
           </div>
 
           <!-- Technicians Grid -->
-          <div id="techGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 24px;">
+          <div id="techGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 24px;">
             <div style="text-align: center; grid-column: 1/-1; padding: 40px; color: var(--color-text-muted);">
               <i class="fas fa-spinner fa-spin fa-2x"></i>
             </div>
@@ -1536,84 +1642,16 @@ class ByteForceApp {
       </section>
     `;
 
-    const loadTechs = async () => {
-      const city = container.querySelector("#techCityFilter").value;
-      const spec = container.querySelector("#techSpecFilter").value;
-      const homeOnly = container.querySelector("#techHomeOnly").checked;
-      const grid = container.querySelector("#techGrid");
-
-      try {
-        let techs = await window.api.getTechnicians(city, spec);
-        if (homeOnly) {
-          techs = techs.filter(t => t.home || t.home_service || (t.bio && t.bio.includes("منزل")));
-        }
-        if (techs.length === 0) {
-          grid.innerHTML = `<div style="text-align: center; grid-column: 1/-1; padding: 40px; color: var(--color-text-muted);">${isAr ? 'لا يوجد فنيين مطابقين لمعايير البحث حالياً' : 'No technicians matched this filter.'}</div>`;
-          return;
-        }
-
-        grid.innerHTML = techs.map(t => {
-          const bName = t.business_name || t.name || 'Certified Repair Lab';
-          const tName = t.technician_name || t.name || 'Hardware Specialist';
-          const city = t.city || 'Cairo';
-          const rating = parseFloat(t.rating) || 5.0;
-          const reviews = t.total_reviews || t.reviews_count || 120;
-          const expYears = t.experience_years || 6;
-          const specs = Array.isArray(t.specializations) ? t.specializations : (typeof t.specializations === 'string' ? t.specializations.split(',') : []);
-          const hasHome = t.home || t.home_service || (t.bio && t.bio.includes("منزل"));
-
-          return `
-          <div class="tech-card" style="display: flex; flex-direction: column; justify-content: space-between;">
-            <div>
-              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
-                <div style="display: flex; gap: 12px; align-items: center;">
-                  <div class="tech-avatar">${bName.charAt(0)}</div>
-                  <div>
-                    <h4 style="font-size: 16px; margin-bottom: 2px; color: #FFFFFF;">${bName}</h4>
-                    <span style="font-size: 12px; color: var(--color-text-muted);"><i class="fas fa-user-check" style="color: var(--color-success);"></i> ${tName}</span>
-                  </div>
-                </div>
-                ${hasHome ? `<span class="tech-home-badge"><i class="fas fa-home"></i> ${isAr ? 'خدمة منزلية' : 'Home'}</span>` : ''}
-              </div>
-
-              <div style="display: flex; gap: 12px; font-size: 12px; color: var(--color-text-muted); margin-bottom: 12px; flex-wrap: wrap;">
-                <span><i class="fas fa-map-marker-alt" style="color: #38BDF8;"></i> ${city}</span>
-                <span><i class="fas fa-star" style="color: #F59E0B;"></i> ${rating} (${reviews})</span>
-                <span><i class="fas fa-award" style="color: #60A5FA;"></i> ${expYears} ${isAr ? 'سنوات خبرة' : 'years exp'}</span>
-                <span><i class="fas fa-clock" style="color: #94A3B8;"></i> 10:00 - 21:00</span>
-              </div>
-
-              <p style="font-size: 13px; color: #94A3B8; margin-bottom: 14px; line-height: 1.5;">
-                ${t.bio || (isAr ? 'فني صيانة معتمد وخبير في فحص وإصلاح اللوحات الإلكترونية والأجهزة الذكية.' : 'Certified hardware diagnostics and motherboard micro-soldering specialist.')}
-              </p>
-
-              <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px;">
-                ${specs.map(s => `<span class="tag">${s.trim()}</span>`).join('')}
-              </div>
-            </div>
-
-            <button class="btn btn-primary btn-sm" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;" onclick="app.showBookTechnicianModal(${t.id}, '${bName.replace(/'/g, "\'")}')">
-              <i class="fas fa-paper-plane"></i>
-              <span>${isAr ? 'طلب صيانة فوري' : 'Request Repair'}</span>
-            </button>
-          </div>
-        `;
-        }).join('');
-      } catch (err) {
-        grid.innerHTML = `<div style="color: var(--color-danger); text-align: center; grid-column: 1/-1;">Error loading technicians: ${err.message}</div>`;
-      }
-    };
-
-    // Leaflet Map Controller
     let leafMap = null;
     let mapMarkers = [];
+    let currentUserLoc = null;
 
     const updateMapMarkers = (techList, userLoc = null) => {
       const mapEl = document.getElementById("techMap");
       if (!mapEl || typeof L === "undefined") return;
 
       if (!leafMap) {
-        leafMap = L.map("techMap").setView([30.0444, 31.2357], 11);
+        leafMap = L.map("techMap").setView([30.0444, 31.2357], 6);
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
           maxZoom: 18,
           attribution: "&copy; OpenStreetMap"
@@ -1625,7 +1663,7 @@ class ByteForceApp {
 
       if (userLoc) {
         const userIcon = L.circleMarker([userLoc.lat, userLoc.lng], {
-          radius: 8,
+          radius: 9,
           fillColor: "#10B981",
           color: "#FFFFFF",
           weight: 2,
@@ -1637,18 +1675,18 @@ class ByteForceApp {
       }
 
       techList.forEach(t => {
-        const coords = t.lat && t.lng ? { lat: t.lat, lng: t.lng } : (CITY_COORDS[t.city] || CITY_COORDS["Cairo"]);
-        // Add subtle jitter if overlapping
-        const jitterLat = coords.lat + (Math.sin(t.id || 1) * 0.015);
-        const jitterLng = coords.lng + (Math.cos(t.id || 1) * 0.015);
-        const bName = t.business_name || t.name || "Repair Center";
-        const marker = L.marker([jitterLat, jitterLng]).addTo(leafMap);
+        const coords = (t.lat && t.lng) ? { lat: t.lat, lng: t.lng } : CITY_COORDS[t.city];
+        if (!coords) return;
+        const bName = t.business_name || t.name || "";
+        const safeName = bName.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+        const ratingTxt = t.reviews_count > 0 ? `★ ${t.rating} (${t.reviews_count})` : (isAr ? "جديد" : "New");
+        const marker = L.marker([coords.lat, coords.lng]).addTo(leafMap);
         marker.bindPopup(`
           <div style="font-family: inherit; font-size: 13px; min-width: 170px;">
             <b style="color: #0F172A; font-size: 14px;">${bName}</b>
-            <div style="color: #64748B; font-size: 12px; margin: 3px 0;">${t.city || 'Cairo'} · ★ ${t.rating || 5.0}</div>
-            <button class="btn btn-primary btn-sm" style="width: 100%; margin-top: 6px; padding: 4px 8px; font-size: 12px;" onclick="app.showBookTechnicianModal(${t.id}, '${bName.replace(/'/g, "\\'")}')">
-              ${isAr ? 'طلب صيانة' : 'Book'}
+            <div style="color: #64748B; font-size: 12px; margin: 3px 0;">${t.city || ''}${t.city ? ' · ' : ''}${ratingTxt}</div>
+            <button class="btn btn-primary btn-sm" style="width: 100%; margin-top: 6px; padding: 4px 8px; font-size: 12px;" onclick="app.showBookTechnicianModal('${t.id}', '${safeName}')">
+              ${isAr ? 'طلب صيانة' : 'Request Repair'}
             </button>
           </div>
         `);
@@ -1656,118 +1694,145 @@ class ByteForceApp {
       });
     };
 
+    const loadTechs = async () => {
+      const city = container.querySelector("#techCityFilter").value;
+      const spec = container.querySelector("#techSpecFilter").value;
+      const provType = container.querySelector("#techTypeFilter").value;
+      const radiusVal = container.querySelector("#techRadiusFilter").value;
+      const homeOnly = container.querySelector("#techHomeOnly").checked;
+      const grid = container.querySelector("#techGrid");
+
+      try {
+        let techs = await window.api.getTechnicians(city, spec);
+        if (provType !== "all") {
+          techs = techs.filter(t => (t.kind || "TECHNICIAN").toUpperCase() === provType);
+        }
+        if (homeOnly) {
+          techs = techs.filter(t => t.home_service_available || t.home_service);
+        }
+        if (currentUserLoc) {
+          techs.forEach(t => {
+            const coords = (t.lat && t.lng) ? { lat: t.lat, lng: t.lng } : CITY_COORDS[t.city];
+            if (coords) {
+              t.distance_km = calculateHaversine(currentUserLoc.lat, currentUserLoc.lng, coords.lat, coords.lng);
+            }
+          });
+          if (radiusVal !== "all") {
+            const maxKm = parseFloat(radiusVal);
+            techs = techs.filter(t => t.distance_km != null && t.distance_km <= maxKm);
+          }
+          techs.sort((a, b) => (a.distance_km ?? 9999) - (b.distance_km ?? 9999));
+        }
+
+        updateMapMarkers(techs, currentUserLoc);
+
+        if (techs.length === 0) {
+          grid.innerHTML = `
+            <div class="card" style="text-align: center; grid-column: 1/-1; padding: 48px 24px; background: #0E131F; border: 1px solid rgba(255,255,255,0.08);">
+              <i class="fas fa-tools" style="font-size: 34px; color: #38BDF8; margin-bottom: 14px;"></i>
+              <h3 style="color: #FFFFFF; font-size: 18px; margin-bottom: 8px;">${isAr ? 'لا توجد مراكز أو فنيون معتمدون مطابقون لهذا البحث حالياً' : 'No verified technicians or repair centers match right now'}</h3>
+              <p style="color: #94A3B8; font-size: 13.5px; max-width: 520px; margin: 0 auto 20px;">
+                ${isAr ? 'نحن نعرض فقط الفنيين ومراكز الصيانة الحقيقية التي تم التحقق منها واعتمادها من قِبل الإدارة (بدون أي بيانات افتراضية).' : 'Only authentic repair centers and certified technicians verified and approved by administration appear here.'}
+              </p>
+              <button class="btn btn-primary btn-sm" onclick="app.showAuthModal('register', 'technician')">
+                <i class="fas fa-user-plus"></i> ${isAr ? 'سجل كفني أو مركز صيانة معتمد' : 'Register as a Technician or Repair Center'}
+              </button>
+            </div>
+          `;
+          return;
+        }
+
+        grid.innerHTML = techs.map(t => {
+          const bName = t.business_name || t.name;
+          const tName = t.technician_name || t.name;
+          const safeName = (bName || '').replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+          const rating = Number(t.rating) || 0;
+          const reviews = Number(t.reviews_count || t.total_reviews || 0);
+          const expYears = t.experience_years;
+          const specs = Array.isArray(t.specializations) ? t.specializations : (typeof t.specializations === 'string' ? t.specializations.split(',').map(x => x.trim()).filter(Boolean) : []);
+          const hasHome = !!(t.home_service_available || t.home_service);
+
+          return `
+          <div class="tech-card" style="display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 12px;">
+                <div style="display: flex; gap: 12px; align-items: center;">
+                  <div class="tech-avatar">${(bName || 'T').charAt(0).toUpperCase()}</div>
+                  <div>
+                    <h4 style="font-size: 16px; margin-bottom: 3px; color: #FFFFFF;">${bName}</h4>
+                    <span style="font-size: 12px; color: var(--color-text-muted); display: inline-flex; align-items: center; gap: 5px;">
+                      <i class="fas fa-check-circle" style="color: var(--color-success);"></i>
+                      ${tName} · ${t.is_verified_center ? (isAr ? 'مركز صيانة معتمد' : 'Verified Center') : (isAr ? 'فني معتمد' : 'Certified Tech')}
+                    </span>
+                  </div>
+                </div>
+                ${hasHome ? `<span class="tech-home-badge"><i class="fas fa-home"></i> ${isAr ? 'خدمة منزلية' : 'Home'}</span>` : ''}
+              </div>
+
+              <div style="display: flex; gap: 12px; font-size: 12px; color: var(--color-text-muted); margin-bottom: 12px; flex-wrap: wrap;">
+                ${t.city ? `<span><i class="fas fa-map-marker-alt" style="color: #38BDF8;"></i> ${t.city}${t.address ? ` - ${t.address}` : ''}</span>` : ''}
+                ${t.distance_km != null ? `<span><i class="fas fa-route" style="color: #34D399;"></i> ${t.distance_km.toFixed(1)} ${isAr ? 'كم' : 'km'}</span>` : ''}
+                ${reviews > 0
+                  ? `<span><i class="fas fa-star" style="color: #F59E0B;"></i> ${rating.toFixed(1)} (${reviews})</span>`
+                  : `<span><i class="fas fa-star" style="color: #64748B;"></i> ${isAr ? 'جديد' : 'New'}</span>`
+                }
+                ${expYears ? `<span><i class="fas fa-award" style="color: #60A5FA;"></i> ${expYears} ${isAr ? 'سنوات خبرة' : 'yrs exp'}</span>` : ''}
+                ${t.working_hours ? `<span><i class="fas fa-clock" style="color: #94A3B8;"></i> ${t.working_hours}</span>` : ''}
+              </div>
+
+              ${t.bio ? `<p style="font-size: 13px; color: #94A3B8; margin-bottom: 14px; line-height: 1.5;">${t.bio}</p>` : ''}
+
+              ${specs.length > 0 ? `
+                <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px;">
+                  ${specs.map(s => `<span class="tag">${s}</span>`).join('')}
+                </div>
+              ` : ''}
+            </div>
+
+            <button class="btn btn-primary btn-sm" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;" onclick="app.showBookTechnicianModal('${t.id}', '${safeName}')">
+              <i class="fas fa-paper-plane"></i>
+              <span>${isAr ? 'طلب صيانة فوري' : 'Request Repair'}</span>
+            </button>
+          </div>
+        `;
+        }).join('');
+      } catch (err) {
+        grid.innerHTML = `<div style="color: var(--color-danger); text-align: center; grid-column: 1/-1;">Error loading technicians: ${err.message}</div>`;
+      }
+    };
+
     container.querySelector("#techCityFilter").addEventListener("change", loadTechs);
     container.querySelector("#techSpecFilter").addEventListener("change", loadTechs);
+    container.querySelector("#techTypeFilter").addEventListener("change", loadTechs);
+    container.querySelector("#techRadiusFilter").addEventListener("change", loadTechs);
     container.querySelector("#techHomeOnly").addEventListener("change", loadTechs);
 
     const locBtn = container.querySelector("#useLocationBtn");
     if (locBtn) {
       locBtn.addEventListener("click", () => {
-        if (navigator.geolocation) {
-          locBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${isAr ? 'جاري التحديد...' : 'Locating...'}`;
-          navigator.geolocation.getCurrentPosition(
-            (pos) => {
-              locBtn.innerHTML = `<i class="fas fa-check" style="color: #10B981;"></i> ${isAr ? 'تم تحديد موقعك' : 'Located'}`;
-              const userLoc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-              window.api.getTechnicians().then(allTechs => {
-                allTechs.forEach(t => {
-                  const c = t.lat && t.lng ? { lat: t.lat, lng: t.lng } : (CITY_COORDS[t.city] || CITY_COORDS["Cairo"]);
-                  t.distance_km = calculateHaversine(userLoc.lat, userLoc.lng, c.lat, c.lng);
-                });
-                allTechs.sort((a, b) => (a.distance_km || 999) - (b.distance_km || 999));
-                updateMapMarkers(allTechs, userLoc);
-              });
-            },
-            (err) => {
-              // Default to downtown Cairo
-              const userLoc = CITY_COORDS["Cairo"];
-              updateMapMarkers(techsCached || [], userLoc);
-              locBtn.innerHTML = `<i class="fas fa-map-marker-alt"></i> ${isAr ? 'القاهرة (افتراضي)' : 'Cairo (Default)'}`;
-            }
-          );
+        if (!navigator.geolocation) {
+          alert(isAr ? "متصفحك لا يدعم تحديد الموقع الجغرافي." : "Geolocation is not supported by your browser.");
+          return;
         }
+        locBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${isAr ? 'جاري التحديد...' : 'Locating...'}`;
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            locBtn.innerHTML = `<i class="fas fa-check" style="color: #10B981;"></i> ${isAr ? 'تم تحديد موقعك الفعلي' : 'Real Location Active'}`;
+            currentUserLoc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+            loadTechs();
+          },
+          () => {
+            locBtn.innerHTML = `<i class="fas fa-exclamation-triangle" style="color: #F59E0B;"></i> ${isAr ? 'تعذر الوصول للموقع (اختر المدينة يدوياً)' : 'Location Denied (Select City)'}`;
+          }
+        );
       });
     }
 
-    let techsCached = [];
-    const origLoad = loadTechs;
-    const loadTechsWithMap = async () => {
-      await origLoad();
-      const city = container.querySelector("#techCityFilter").value;
-      const spec = container.querySelector("#techSpecFilter").value;
-      try {
-        techsCached = await window.api.getTechnicians(city, spec);
-        updateMapMarkers(techsCached);
-      } catch(e) {}
-    };
-
-    loadTechsWithMap();
+    loadTechs();
   }
 
   showBookingModal(techId, techName) {
-    const isAr = window.i18n.currentLang === "ar";
-    if (!window.api.isLoggedIn()) {
-      alert(isAr ? "يرجى تسجيل الدخول أولاً لتتمكن من إرسال طلب الصيانة." : "Please log in first to submit a repair request.");
-      this.showAuthModal("login");
-      return;
-    }
-
-    const defaultDevice = this.currentReport ? `${this.currentReport.brand || ''} ${this.currentReport.model || ''} (${this.currentReport.device_category})` : "Laptop";
-    const defaultProblem = this.currentReport ? (isAr ? this.currentReport.possible_causes[0]?.title_ar : this.currentReport.possible_causes[0]?.title_en) : "Diagnostic Inspection Needed";
-
-    const content = `
-      <div>
-        <h3 style="font-size: 20px; margin-bottom: 6px;" data-i18n="tech_book_modal_title">Book Repair Service</h3>
-        <p style="font-size: 14px; color: var(--color-text-muted); margin-bottom: 20px;">Technician: <strong>${techName}</strong></p>
-
-        <form id="bookingForm">
-          <div class="form-group">
-            <label class="form-label">${isAr ? 'معلومات الجهاز' : 'Device Info'}</label>
-            <input type="text" id="bookDeviceInfo" class="form-control" required value="${defaultDevice}">
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">${isAr ? 'ملخص العطل' : 'Problem Summary'}</label>
-            <input type="text" id="bookProblemSummary" class="form-control" required value="${defaultProblem}">
-          </div>
-
-          <div class="form-group">
-            <label class="form-label" data-i18n="tech_book_date">Preferred Date</label>
-            <input type="date" id="bookDate" class="form-control">
-          </div>
-
-          <div class="form-group">
-            <label class="form-label" data-i18n="tech_book_notes">Additional Notes</label>
-            <textarea id="bookNotes" class="form-control" style="min-height: 80px;" placeholder="${isAr ? 'أي مواعيد محددة أو ملاحظات إضافية...' : 'Any specific delivery or diagnostic details...'}"></textarea>
-          </div>
-
-          <button type="submit" class="btn btn-primary btn-lg" style="width: 100%;">
-            <i class="fas fa-check-circle"></i>
-            <span data-i18n="tech_book_confirm">Confirm Request</span>
-          </button>
-        </form>
-      </div>
-    `;
-    this.openModal(content);
-
-    document.getElementById("bookingForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      try {
-        await window.api.createRepairRequest({
-          technician_id: techId,
-          diagnosis_id: this.currentReport ? this.currentReport.report_id : null,
-          device_info: document.getElementById("bookDeviceInfo").value,
-          problem_summary: document.getElementById("bookProblemSummary").value,
-          customer_notes: document.getElementById("bookNotes").value,
-          scheduled_date: document.getElementById("bookDate").value ? new Date(document.getElementById("bookDate").value).toISOString() : null
-        });
-        alert(isAr ? "تم إرسال طلب الصيانة للفني بنجاح!" : "Repair request sent to technician successfully!");
-        this.closeModal();
-        this.navigate("dashboard");
-      } catch (err) {
-        alert("Booking failed: " + err.message);
-      }
-    });
+    return this.showBookTechnicianModal(techId, techName);
   }
 
   // ==========================================
@@ -2091,7 +2156,7 @@ class ByteForceApp {
     await window.api.updateRequestStatus(reqId, "COMPLETED", {
       reviewed: true,
       rating: rating,
-      comment: comment,
+      review_comment: comment,
       actor: "Customer",
       note: isAr ? `تم تقييم الفني (${rating} نجوم)` : `Customer reviewed (${rating} stars)`
     });
@@ -2110,6 +2175,8 @@ class ByteForceApp {
       return;
     }
     const user = window.api.getUser();
+    const defaultDevice = this.currentReport ? `${this.currentReport.brand || ''} ${this.currentReport.model || ''} (${this.currentReport.device_category})`.trim() : "";
+    const defaultCat = this.currentReport?.device_category || "Other";
     const content = `
       <div>
         <h3 style="font-size: 20px; color: #FFFFFF; margin-bottom: 6px;">
@@ -2122,7 +2189,7 @@ class ByteForceApp {
         <form id="directBookForm">
           <div class="form-group">
             <label class="form-label">${isAr ? 'نوع الجهاز وموديله' : 'Device Category & Model'}</label>
-            <input type="text" id="directBookDevice" class="form-control" required placeholder="${isAr ? 'مثال: iPhone 14 Pro أو Dell XPS 15' : 'e.g. iPhone 14 Pro or Dell XPS 15'}">
+            <input type="text" id="directBookDevice" class="form-control" required value="${defaultDevice}" placeholder="${isAr ? 'مثال: iPhone 14 Pro أو Dell XPS 15' : 'e.g. iPhone 14 Pro or Dell XPS 15'}">
           </div>
           <div class="form-group">
             <label class="form-label">${isAr ? 'وصف المشكلة أو العطل' : 'Problem Description'}</label>
@@ -2153,12 +2220,15 @@ class ByteForceApp {
 
       try {
         await window.api.createRepairRequest({
-          technician_id: techId,
+          tech_profile_id: Number(techId) || null,
+          technician_name: techName,
           technician_business: techName,
+          device_category: defaultCat,
           device_info: dev,
           problem_summary: prob,
           customer_name: user.full_name || user.email,
           customer_phone: phone,
+          diagnosis_id: this.currentReport?.report_id || null,
           status: "NEW"
         });
         this.closeModal();
@@ -2328,10 +2398,10 @@ class ByteForceApp {
                   ${isTech && (st === 'NEW' || st === 'PENDING') ? `
                     <div class="req-action-box" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                       <input type="number" id="estInput_${r.id}" placeholder="${isAr ? 'التكلفة التقديرية (ج.م)' : 'Estimated Cost (EGP)'}" class="form-control" style="max-width: 200px;">
-                      <button class="btn btn-primary btn-sm" onclick="app.techAcceptRequest(${r.id})">
+                      <button class="btn btn-primary btn-sm" onclick="app.techAcceptRequest('${r.id}')">
                         <i class="fas fa-check"></i> ${isAr ? 'قبول وتحديد التكلفة' : 'Accept with Estimate'}
                       </button>
-                      <button class="btn btn-outline btn-sm" style="color: #EF4444; border-color: rgba(239,68,68,0.3);" onclick="app.techRejectRequest(${r.id})">
+                      <button class="btn btn-outline btn-sm" style="color: #EF4444; border-color: rgba(239,68,68,0.3);" onclick="app.techRejectRequest('${r.id}')">
                         ${isAr ? 'اعتذار عن الطلب' : 'Decline'}
                       </button>
                     </div>
@@ -2341,10 +2411,10 @@ class ByteForceApp {
                     <div class="req-action-box" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                       <span style="font-size: 13px; color: #FFFFFF;">${isAr ? 'اختر موعد الصيانة:' : 'Select Appointment Slot:'}</span>
                       <input type="datetime-local" id="apptInput_${r.id}" class="form-control" style="max-width: 240px;" dir="ltr">
-                      <button class="btn btn-primary btn-sm" onclick="app.custBookAppointment(${r.id})">
+                      <button class="btn btn-primary btn-sm" onclick="app.custBookAppointment('${r.id}')">
                         <i class="fas fa-calendar-check"></i> ${isAr ? 'تأكيد حجز الموعد' : 'Confirm Slot'}
                       </button>
-                      <button class="btn btn-outline btn-sm" style="color: #EF4444; border-color: rgba(239,68,68,0.3);" onclick="app.custCancelRequest(${r.id})">
+                      <button class="btn btn-outline btn-sm" style="color: #EF4444; border-color: rgba(239,68,68,0.3);" onclick="app.custCancelRequest('${r.id}')">
                         ${isAr ? 'إلغاء' : 'Cancel'}
                       </button>
                     </div>
@@ -2352,7 +2422,7 @@ class ByteForceApp {
 
                   ${isTech && st === 'APPOINTMENT_CONFIRMED' ? `
                     <div class="req-action-box">
-                      <button class="btn btn-primary btn-sm" onclick="app.techReceiveDevice(${r.id})">
+                      <button class="btn btn-primary btn-sm" onclick="app.techReceiveDevice('${r.id}')">
                         <i class="fas fa-box"></i> ${isAr ? 'تأكيد استلام الجهاز في المركز' : 'Confirm Device Received'}
                       </button>
                     </div>
@@ -2360,7 +2430,7 @@ class ByteForceApp {
 
                   ${isTech && st === 'DEVICE_RECEIVED' ? `
                     <div class="req-action-box">
-                      <button class="btn btn-primary btn-sm" onclick="app.techStartDiagnosis(${r.id})">
+                      <button class="btn btn-primary btn-sm" onclick="app.techStartDiagnosis('${r.id}')">
                         <i class="fas fa-microscope"></i> ${isAr ? 'بدء الفحص والتشخيص الفعلي' : 'Start Diagnostic Inspection'}
                       </button>
                     </div>
@@ -2368,11 +2438,11 @@ class ByteForceApp {
 
                   ${isTech && st === 'DIAGNOSIS_IN_PROGRESS' ? `
                     <div class="req-action-box" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                      <button class="btn btn-primary btn-sm" onclick="app.techStartRepair(${r.id})">
+                      <button class="btn btn-primary btn-sm" onclick="app.techStartRepair('${r.id}')">
                         <i class="fas fa-tools"></i> ${isAr ? 'بدء الصيانة والإصلاح' : 'Start Repair'}
                       </button>
                       <input type="number" id="extraEstInput_${r.id}" placeholder="${isAr ? 'تكلفة إضافية مطلوبة (ج.م)' : 'Extra Cost (EGP)'}" class="form-control" style="max-width: 180px;">
-                      <button class="btn btn-outline btn-sm" style="color: #F59E0B; border-color: rgba(245,158,11,0.4);" onclick="app.techRequestApproval(${r.id})">
+                      <button class="btn btn-outline btn-sm" style="color: #F59E0B; border-color: rgba(245,158,11,0.4);" onclick="app.techRequestApproval('${r.id}')">
                         ${isAr ? 'طلب موافقة العميل على تكلفة إضافية' : 'Request Customer Approval'}
                       </button>
                     </div>
@@ -2381,10 +2451,10 @@ class ByteForceApp {
                   ${!isTech && st === 'WAITING_FOR_CUSTOMER_APPROVAL' ? `
                     <div class="req-action-box" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                       <span style="font-size: 13px; color: #F87171;">${isAr ? 'طلب الفني تكلفة إضافية لمتابعة الإصلاح:' : 'Technician requested extra cost:'}</span>
-                      <button class="btn btn-primary btn-sm" onclick="app.custApproveExtra(${r.id})">
+                      <button class="btn btn-primary btn-sm" onclick="app.custApproveExtra('${r.id}')">
                         <i class="fas fa-check"></i> ${isAr ? 'الموافقة على التكلفة ومتابعة الصيانة' : 'Approve & Proceed'}
                       </button>
-                      <button class="btn btn-outline btn-sm" style="color: #EF4444; border-color: rgba(239,68,68,0.3);" onclick="app.custCancelRequest(${r.id})">
+                      <button class="btn btn-outline btn-sm" style="color: #EF4444; border-color: rgba(239,68,68,0.3);" onclick="app.custCancelRequest('${r.id}')">
                         ${isAr ? 'رفض واستلام الجهاز' : 'Reject & Cancel'}
                       </button>
                     </div>
@@ -2394,7 +2464,7 @@ class ByteForceApp {
                     <div class="req-action-box" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                       <input type="number" id="finalCostInput_${r.id}" placeholder="${isAr ? 'التكلفة النهائية (ج.م)' : 'Final Cost (EGP)'}" class="form-control" style="max-width: 170px;">
                       <input type="text" id="actualFaultInput_${r.id}" placeholder="${isAr ? 'العطل الفعلي والقطع المستبدلة' : 'Actual Fault & Parts'}" class="form-control" style="flex: 1; min-width: 200px;">
-                      <button class="btn btn-primary btn-sm" onclick="app.techCompleteRepair(${r.id})">
+                      <button class="btn btn-primary btn-sm" onclick="app.techCompleteRepair('${r.id}')">
                         <i class="fas fa-check-circle"></i> ${isAr ? 'إتمام الإصلاح وتوثيق التكلفة' : 'Complete Repair'}
                       </button>
                     </div>
@@ -2418,7 +2488,7 @@ class ByteForceApp {
                             <option value="1">★☆☆☆☆ (1/5)</option>
                           </select>
                           <input type="text" id="reviewComment_${r.id}" placeholder="${isAr ? 'اكتب رأيك أو تعليقك على جودة الصيانة...' : 'Review comment...'}" class="form-control" style="flex: 1; min-width: 180px;">
-                          <button class="btn btn-primary btn-sm" onclick="app.custSubmitReview(${r.id})">
+                          <button class="btn btn-primary btn-sm" onclick="app.custSubmitReview('${r.id}')">
                             <i class="fas fa-star"></i> ${isAr ? 'إرسال التقييم' : 'Submit Review'}
                           </button>
                         </div>
@@ -2456,23 +2526,27 @@ class ByteForceApp {
       } else {
         repContainer.innerHTML = `
           <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px;">
-            ${reports.map(rep => `
-              <div style="padding: 16px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: #F8FAFC;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                  <strong style="font-size: 15px;">${rep.brand || ''} ${rep.model || rep.device_category}</strong>
-                  <span class="severity-badge severity-${rep.severity_level}">${rep.severity_level}</span>
+            ${reports.map(rep => {
+              const sev = rep.severity || rep.severity_level || "moderate";
+              const desc = rep.description || rep.symptoms || rep.raw_description || rep.problem_category || "";
+              return `
+              <div style="padding: 16px; border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-sm); background: #0F131C;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; gap: 8px;">
+                  <strong style="font-size: 15px; color: #FFFFFF;">${rep.brand || ''} ${rep.model || rep.device_category || ''}</strong>
+                  <span class="severity-badge severity-${sev}">${sev}</span>
                 </div>
                 <p style="font-size: 13px; color: var(--color-text-muted); margin-bottom: 10px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
-                  ${rep.raw_description}
+                  ${desc}
                 </p>
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                   <span style="font-size: 11px; color: var(--color-text-muted);">${new Date(rep.created_at).toLocaleDateString()}</span>
-                  <button class="btn btn-outline btn-sm" onclick="app.viewSavedReport(${rep.id})">
+                  <button class="btn btn-outline btn-sm" onclick="app.viewSavedReport('${rep.id}')">
                     <i class="fas fa-eye"></i> ${isAr ? 'عرض' : 'View'}
                   </button>
                 </div>
               </div>
-            `).join('')}
+            `;
+            }).join('')}
           </div>
         `;
       }
@@ -2489,17 +2563,20 @@ class ByteForceApp {
       } else {
         devContainer.innerHTML = `
           <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px;">
-            ${devices.map(d => `
-              <div style="padding: 14px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); display: flex; justify-content: space-between; align-items: center;">
+            ${devices.map(d => {
+              const cat = d.device_category || d.category || "";
+              return `
+              <div style="padding: 14px; border: 1px solid rgba(255,255,255,0.08); background: #0F131C; border-radius: var(--radius-sm); display: flex; justify-content: space-between; align-items: center;">
                 <div>
-                  <strong style="font-size: 14px; display: block;">${d.brand || ''} ${d.model || d.category}</strong>
-                  <span style="font-size: 12px; color: var(--color-text-muted);">${d.category} - ${d.os_version || ''}</span>
+                  <strong style="font-size: 14px; display: block; color: #FFFFFF;">${d.brand || ''} ${d.model || cat}</strong>
+                  <span style="font-size: 12px; color: var(--color-text-muted);">${cat}${d.os_version ? ' · ' + d.os_version : ''}</span>
                 </div>
-                <button style="background: none; border: none; color: var(--color-danger); cursor: pointer;" onclick="app.deleteDevice(${d.id})">
+                <button style="background: none; border: none; color: var(--color-danger); cursor: pointer;" onclick="app.deleteDevice('${d.id}')" title="${isAr ? 'حذف الجهاز' : 'Remove Device'}">
                   <i class="fas fa-trash-alt"></i>
                 </button>
               </div>
-            `).join('')}
+            `;
+            }).join('')}
           </div>
         `;
       }
@@ -2522,21 +2599,24 @@ class ByteForceApp {
     try {
       const rep = await window.api.getReport(reportId);
       this.currentReport = {
-        report_id: rep.id,
+        report_id: rep.report_id || rep.report_code || rep.id,
+        status: rep.status || "completed",
         device_category: rep.device_category,
         brand: rep.brand,
         model: rep.model,
-        severity: rep.severity_level,
-        confidence_score: rep.confidence_score,
-        extracted_symptoms: rep.extracted_symptoms,
-        possible_causes: rep.possible_causes,
-        troubleshooting_steps: rep.recommended_steps,
-        required_tools: rep.required_tools,
-        estimated_difficulty: rep.estimated_difficulty,
-        estimated_minutes: rep.estimated_minutes,
-        safety_warnings_en: rep.safety_warnings,
-        safety_warnings_ar: rep.safety_warnings,
-        requires_technician: rep.requires_technician
+        severity: rep.severity || rep.severity_level || "moderate",
+        confidence_score: rep.confidence_score ?? 0.7,
+        empirical_statistics: rep.empirical_statistics || rep.empirical_evidence || null,
+        verified_guide: rep.verified_guide || null,
+        extracted_symptoms: rep.extracted_symptoms || [],
+        possible_causes: rep.possible_causes || [],
+        troubleshooting_steps: rep.troubleshooting_steps || rep.recommended_steps || [],
+        required_tools: rep.required_tools || [],
+        estimated_difficulty: rep.estimated_difficulty || "moderate",
+        estimated_minutes: rep.estimated_minutes || 30,
+        safety_warnings_en: rep.safety_warnings || ["Always disconnect power sources before servicing."],
+        safety_warnings_ar: rep.safety_warnings || ["تأكد دائماً من فصل مصدر الطاقة قبل الصيانة."],
+        requires_technician: !!rep.requires_technician
       };
       this.navigate("results");
     } catch (err) {
@@ -2553,23 +2633,31 @@ class ByteForceApp {
           <div class="form-group">
             <label class="form-label">${isAr ? 'فئة الجهاز' : 'Category'}</label>
             <select id="newDevCat" class="form-control" required>
-              <option value="Laptop">Laptop</option>
-              <option value="Desktop Computer">Desktop Computer</option>
-              <option value="Smartphone">Smartphone</option>
-              <option value="Tablet">Tablet</option>
-              <option value="Other">Other</option>
+              <option value="Smartphone">${window.i18n.t('cat_smartphone')}</option>
+              <option value="Laptop">${window.i18n.t('cat_laptop')}</option>
+              <option value="Desktop Computer">${window.i18n.t('cat_computer')}</option>
+              <option value="Tablet">${window.i18n.t('cat_tablet')}</option>
+              <option value="Gaming Console">${window.i18n.t('cat_console')}</option>
+              <option value="Smart TV">${window.i18n.t('cat_tv')}</option>
+              <option value="Storage">${window.i18n.t('cat_storage')}</option>
+              <option value="Printer">${window.i18n.t('cat_printer')}</option>
+              <option value="Audio">${window.i18n.t('cat_audio')}</option>
+              <option value="Smartwatch">${window.i18n.t('cat_smartwatch')}</option>
+              <option value="Camera">${window.i18n.t('cat_camera')}</option>
+              <option value="Home Appliance">${window.i18n.t('cat_appliance')}</option>
+              <option value="Other">${window.i18n.t('cat_other')}</option>
             </select>
           </div>
           <div class="form-group">
             <label class="form-label">${isAr ? 'الشركة المصنعة' : 'Brand'}</label>
-            <input type="text" id="newDevBrand" class="form-control" placeholder="e.g. Dell, Apple" required>
+            <input type="text" id="newDevBrand" class="form-control" placeholder="e.g. Dell, Apple, Samsung" required>
           </div>
           <div class="form-group">
             <label class="form-label">${isAr ? 'الموديل' : 'Model'}</label>
-            <input type="text" id="newDevModel" class="form-control" placeholder="e.g. XPS 15, iPhone 12" required>
+            <input type="text" id="newDevModel" class="form-control" placeholder="e.g. XPS 15, iPhone 15" required>
           </div>
           <div class="form-group">
-            <label class="form-label">${isAr ? 'نظام التشغيل' : 'OS Version'}</label>
+            <label class="form-label">${isAr ? 'نظام التشغيل / المواصفات' : 'OS Version'}</label>
             <input type="text" id="newDevOs" class="form-control" placeholder="e.g. Windows 11, iOS 17">
           </div>
           <button type="submit" class="btn btn-primary" style="width: 100%;">
@@ -2584,10 +2672,10 @@ class ByteForceApp {
       e.preventDefault();
       try {
         await window.api.addDevice({
-          category: document.getElementById("newDevCat").value,
-          brand: document.getElementById("newDevBrand").value,
-          model: document.getElementById("newDevModel").value,
-          os_version: document.getElementById("newDevOs").value
+          device_category: document.getElementById("newDevCat").value,
+          brand: document.getElementById("newDevBrand").value.trim(),
+          model: document.getElementById("newDevModel").value.trim(),
+          os_version: document.getElementById("newDevOs").value.trim()
         });
         this.closeModal();
         this.navigate("dashboard");
@@ -2697,13 +2785,13 @@ class ByteForceApp {
               <tbody>
                 ${pending.map(t => `
                   <tr style="border-bottom: 1px solid var(--color-border);">
-                    <td style="padding: 10px 8px; font-weight: 600;">${t.business_name}</td>
-                    <td style="padding: 10px 8px;">${t.full_name} (${t.email})</td>
-                    <td style="padding: 10px 8px;">${t.city}</td>
-                    <td style="padding: 10px 8px;">${t.specializations}</td>
-                    <td style="padding: 10px 8px;">
-                      <button class="btn btn-sm btn-primary" onclick="app.approveTech(${t.id})" data-i18n="admin_approve_btn">Approve</button>
-                      <button class="btn btn-sm btn-outline" style="color: var(--color-danger);" onclick="app.rejectTech(${t.id})" data-i18n="admin_reject_btn">Reject</button>
+                    <td style="padding: 10px 8px; font-weight: 600;">${t.business_name} <span class="tag" style="font-size: 10px; margin-inline-start: 4px;">${t.kind === 'CENTER' ? (isAr ? 'مركز' : 'Center') : (isAr ? 'فني' : 'Tech')}</span></td>
+                    <td style="padding: 10px 8px;">${t.technician_name || t.name || '-'} (${t.email || t.phone || '-'})</td>
+                    <td style="padding: 10px 8px;">${t.city || '-'}${t.address ? ' · ' + t.address : ''}</td>
+                    <td style="padding: 10px 8px;">${Array.isArray(t.specializations) ? (t.specializations.join(', ') || '-') : (t.specializations || '-')}</td>
+                    <td style="padding: 10px 8px; display: flex; gap: 6px; flex-wrap: wrap;">
+                      <button class="btn btn-sm btn-primary" onclick="app.approveTech('${t.id}')" data-i18n="admin_approve_btn">Approve</button>
+                      <button class="btn btn-sm btn-outline" style="color: var(--color-danger);" onclick="app.rejectTech('${t.id}')" data-i18n="admin_reject_btn">Reject</button>
                     </td>
                   </tr>
                 `).join('')}
@@ -2733,24 +2821,29 @@ class ByteForceApp {
               </tr>
             </thead>
             <tbody>
-              ${users.map(u => `
+              ${users.map(u => {
+                const isActive = u.is_active !== false;
+                const isSelfAdmin = (u.email || '').toLowerCase().trim() === 'snsr19344@gmail.com';
+                return `
                 <tr style="border-bottom: 1px solid var(--color-border);">
-                  <td style="padding: 8px;">#${u.id}</td>
-                  <td style="padding: 8px; font-weight: 600;">${u.full_name}</td>
-                  <td style="padding: 8px;">${u.email}</td>
-                  <td style="padding: 8px;"><span class="tag">${u.role}</span></td>
+                  <td style="padding: 8px; font-family: monospace; font-size: 12px;">${String(u.id).slice(0, 8)}</td>
+                  <td style="padding: 8px; font-weight: 600;">${u.full_name || '-'}</td>
+                  <td style="padding: 8px;">${u.email || '-'}</td>
+                  <td style="padding: 8px;"><span class="tag">${u.role || 'user'}</span></td>
                   <td style="padding: 8px;">
-                    <span style="color: ${u.is_active ? 'var(--color-success)' : 'var(--color-danger)'}; font-weight: 600;">
-                      ${u.is_active ? 'Active' : 'Deactivated'}
+                    <span style="color: ${isActive ? 'var(--color-success)' : 'var(--color-danger)'}; font-weight: 600;">
+                      ${isActive ? (isAr ? 'نشط' : 'Active') : (isAr ? 'معطل' : 'Deactivated')}
                     </span>
                   </td>
                   <td style="padding: 8px;">
-                    <button class="btn btn-sm btn-outline" onclick="app.toggleUser(${u.id})">
-                      ${u.is_active ? 'Deactivate' : 'Activate'}
-                    </button>
+                    ${isSelfAdmin
+                      ? `<span style="font-size: 12px; color: #94A3B8;">${isAr ? 'المدير الرئيسي' : 'Primary Admin'}</span>`
+                      : `<button class="btn btn-sm btn-outline" onclick="app.toggleUser('${u.id}')">${isActive ? (isAr ? 'تعطيل' : 'Deactivate') : (isAr ? 'تفعيل' : 'Activate')}</button>`
+                    }
                   </td>
                 </tr>
-              `).join('')}
+              `;
+              }).join('')}
             </tbody>
           </table>
         </div>
@@ -3202,19 +3295,46 @@ class ByteForceApp {
             <input type="password" id="regPassword" class="form-control" required minlength="6" placeholder="At least 6 characters">
           </div>
 
-          <!-- Dynamic Technician Profile Fields -->
+          <!-- Dynamic Technician / Center Profile Fields -->
           <div id="techExtraFields" style="display: ${defaultRole === 'technician' ? 'block' : 'none'}; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 14px; margin-top: 14px;">
+            <div class="form-group">
+              <label class="form-label">${isAr ? 'نوع الحساب المهني' : 'Provider Account Type'}</label>
+              <select id="regTechKind" class="form-control">
+                <option value="TECHNICIAN">${isAr ? 'فني صيانة مستقل' : 'Independent Certified Technician'}</option>
+                <option value="CENTER">${isAr ? 'مركز صيانة معتمد / معمل إلكترونيات' : 'Verified Repair Center / Lab'}</option>
+              </select>
+            </div>
             <div class="form-group">
               <label class="form-label">${isAr ? 'اسم مركز / ورشة الصيانة' : 'Business / Lab Name'}</label>
               <input type="text" id="regTechBusiness" class="form-control" placeholder="${isAr ? 'مثال: مركز النخبة للصيانة' : 'e.g. Apex Repair Lab'}">
             </div>
-            <div class="form-group">
-              <label class="form-label">${isAr ? 'رقم الهاتف للتواصل المباشر' : 'Direct Phone'}</label>
-              <input type="tel" id="regTechPhone" class="form-control" placeholder="+20 10 ...">
+            <div class="form-row-2">
+              <div class="form-group">
+                <label class="form-label">${isAr ? 'رقم الهاتف للتواصل' : 'Direct Phone'}</label>
+                <input type="tel" id="regTechPhone" class="form-control" placeholder="+20 10 ...">
+              </div>
+              <div class="form-group">
+                <label class="form-label">${isAr ? 'المحافظة / المدينة' : 'City'}</label>
+                <input type="text" id="regTechCity" class="form-control" placeholder="${isAr ? 'القاهرة / الجيزة / الإسكندرية' : 'Cairo / Giza / Alexandria'}">
+              </div>
             </div>
             <div class="form-group">
-              <label class="form-label">${isAr ? 'المدينة والمنطقة' : 'City & Address'}</label>
-              <input type="text" id="regTechCity" class="form-control" placeholder="${isAr ? 'القاهرة - وسط البلد' : 'Cairo, Downtown'}">
+              <label class="form-label">${isAr ? 'العنوان التفصيلي' : 'Street Address'}</label>
+              <input type="text" id="regTechAddress" class="form-control" placeholder="${isAr ? 'وسط البلد، شارع...' : 'Street / District'}">
+            </div>
+            <div class="form-group">
+              <label class="form-label">${isAr ? 'التخصصات (مفصولة بفاصلة)' : 'Specializations (comma-separated)'}</label>
+              <input type="text" id="regTechSpec" class="form-control" placeholder="Smartphone, Laptop, Storage, Gaming Console, Smart TV">
+            </div>
+            <div class="form-row-2">
+              <div class="form-group">
+                <label class="form-label">${isAr ? 'ساعات العمل' : 'Working Hours'}</label>
+                <input type="text" id="regTechHours" class="form-control" placeholder="10:00 AM - 9:00 PM">
+              </div>
+              <div class="form-group">
+                <label class="form-label">${isAr ? 'سنوات الخبرة' : 'Years Experience'}</label>
+                <input type="number" id="regTechExp" class="form-control" min="0" placeholder="5">
+              </div>
             </div>
             <div class="form-group" style="margin-top: 8px;">
               <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; color: #E2E8F0;">
@@ -3249,44 +3369,11 @@ class ByteForceApp {
         submitBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${isAr ? 'جاري التحقق...' : 'Signing in...'}`;
 
         try {
-          let userProfile = null;
-          // Try Supabase Auth
-          if (window.SupabaseBridge && window.SupabaseBridge.isReady()) {
-            try {
-              userProfile = await window.SupabaseBridge.login(email, pwd);
-            } catch (sbErr) {
-              console.warn("Supabase sign-in message:", sbErr);
-              let msg = sbErr.message || "";
-              if (msg.includes("Invalid login credentials") || sbErr.code === "invalid_credentials") {
-                msg = isAr ? "البريد الإلكتروني أو كلمة المرور غير صحيحة" : "Invalid email or password";
-              } else if (msg.includes("Email not confirmed") || sbErr.code === "email_not_confirmed") {
-                msg = isAr ? "يرجى تأكيد حسابك عبر البريد الإلكتروني أولاً" : "Please confirm your email address first";
-              }
-              alert((isAr ? "فشل تسجيل الدخول عبر Supabase: " : "Supabase Login failed: ") + msg);
-              submitBtn.disabled = false;
-              submitBtn.innerHTML = originalText;
-              return;
-            }
-          }
-
-          if (!userProfile && window.api && typeof window.api.login === "function") {
-            const data = await window.api.login(email, pwd);
-            userProfile = data.user;
-          }
-
-          if (!userProfile) {
-            userProfile = {
-              id: Date.now(),
-              email: email,
-              full_name: email.split("@")[0],
-              role: email.toLowerCase().trim() === "snsr19344@gmail.com" ? "admin" : (email.includes("tech") ? "technician" : "user"),
-              is_active: true
-            };
-          }
-
-          window.api.setSession("session_" + Date.now(), userProfile);
+          const userProfile = await window.api.login(email, pwd);
+          window.api.setSession(userProfile.access_token || "", userProfile);
           this.closeModal();
           this.updateNavAuth();
+          this.loadNotifications();
 
           if (this.pendingQuickDiagnosis) {
             this.wizardData.device_category = this.pendingQuickDiagnosis.category;
@@ -3303,7 +3390,13 @@ class ByteForceApp {
             this.navigate("dashboard");
           }
         } catch (err) {
-          alert((isAr ? "فشل تسجيل الدخول: " : "Login failed: ") + err.message);
+          let msg = err.message || "";
+          if (msg.includes("Invalid login credentials") || err.code === "invalid_credentials") {
+            msg = isAr ? "البريد الإلكتروني أو كلمة المرور غير صحيحة" : "Invalid email or password";
+          } else if (msg.includes("Email not confirmed") || err.code === "email_not_confirmed") {
+            msg = isAr ? "يرجى تأكيد حسابك عبر البريد الإلكتروني أولاً" : "Please confirm your email address first";
+          }
+          alert((isAr ? "فشل تسجيل الدخول: " : "Login failed: ") + msg);
           submitBtn.disabled = false;
           submitBtn.innerHTML = originalText;
         }
@@ -3315,55 +3408,55 @@ class ByteForceApp {
         const email = document.getElementById("regEmail").value.trim();
         const pwd = document.getElementById("regPassword").value;
         const role = document.getElementById("regRole").value;
+
+        let techDetails = null;
+        if (role === "technician") {
+          const bName = document.getElementById("regTechBusiness")?.value.trim();
+          const tCity = document.getElementById("regTechCity")?.value.trim();
+          const tPhone = document.getElementById("regTechPhone")?.value.trim();
+          if (!bName || !tCity || !tPhone) {
+            alert(isAr ? "يرجى إدخال اسم المركز والمدينة ورقم الهاتف للتسجيل كفني أو مركز صيانة" : "Please enter Business Name, City, and Phone for technician/center registration.");
+            return;
+          }
+          const cityCoords = CITY_COORDS[tCity] || null;
+          techDetails = {
+            kind: document.getElementById("regTechKind")?.value || "TECHNICIAN",
+            business_name: bName,
+            phone: tPhone,
+            city: tCity,
+            address: document.getElementById("regTechAddress")?.value.trim() || "",
+            specializations: document.getElementById("regTechSpec")?.value.trim() || "Hardware Repair",
+            working_hours: document.getElementById("regTechHours")?.value.trim() || null,
+            experience_years: document.getElementById("regTechExp")?.value || null,
+            home_service: !!document.getElementById("regTechHome")?.checked,
+            lat: cityCoords ? cityCoords.lat : null,
+            lng: cityCoords ? cityCoords.lng : null
+          };
+        }
+
         const submitBtn = e.target.querySelector("button[type='submit']");
         const originalText = submitBtn.innerHTML;
         submitBtn.disabled = true;
         submitBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${isAr ? 'جاري إنشاء الحساب...' : 'Creating account...'}`;
 
         try {
-          let userProfile = null;
-          // Try Supabase Auth
-          if (window.SupabaseBridge && window.SupabaseBridge.isReady()) {
-            try {
-              userProfile = await window.SupabaseBridge.register(name, email, pwd, role);
-              if (userProfile && !userProfile.session) {
-                alert(isAr 
-                  ? "تم إنشاء الحساب في Supabase بنجاح! إذا كانت خاصية تأكيد البريد مفعلة، يرجى مراجعة صندوق الوارد."
-                  : "Account created successfully in Supabase! Please check your inbox if email confirmation is required.");
-              }
-            } catch (sbErr) {
-              console.warn("Supabase register message:", sbErr);
-              let msg = sbErr.message || "";
-              if (msg.includes("already registered") || msg.includes("already in use") || sbErr.code === "user_already_exists") {
-                msg = isAr ? "هذا البريد مسجل بالفعل في Supabase، يرجى تسجيل الدخول" : "Email already registered in Supabase. Please sign in";
-              } else if (msg.includes("at least 6 characters") || msg.includes("weak")) {
-                msg = isAr ? "كلمة المرور ضعيفة، يجب ألا تقل عن 6 أحرف" : "Password should be at least 6 characters";
-              }
-              alert((isAr ? "فشل إنشاء الحساب عبر Supabase: " : "Supabase Registration failed: ") + msg);
-              submitBtn.disabled = false;
-              submitBtn.innerHTML = originalText;
-              return;
-            }
+          const userProfile = await window.api.register(name, email, pwd, role, techDetails);
+          if (role === "technician") {
+            alert(isAr
+              ? "تم استلام طلب تسجيلك كفني/مركز صيانة بنجاح وهو الآن قيد المراجعة من قِبل الإدارة."
+              : "Your technician/center application has been submitted and is pending administrator approval.");
+          } else if (userProfile && !userProfile.session) {
+            alert(isAr
+              ? "تم إنشاء الحساب بنجاح! إذا كانت خاصية تأكيد البريد مفعلة، يرجى مراجعة صندوق الوارد."
+              : "Account created successfully! Please check your inbox if email confirmation is required.");
           }
 
-          if (!userProfile && window.api && typeof window.api.register === "function") {
-            const data = await window.api.register(name, email, pwd, role);
-            userProfile = data.user;
+          if (userProfile?.access_token) {
+            window.api.setSession(userProfile.access_token, userProfile);
           }
-
-          if (!userProfile) {
-            userProfile = {
-              id: Date.now(),
-              email: email,
-              full_name: name,
-              role: role || "user",
-              is_active: true
-            };
-          }
-
-          window.api.setSession("session_" + Date.now(), userProfile);
           this.closeModal();
           this.updateNavAuth();
+          this.loadNotifications();
 
           if (this.pendingQuickDiagnosis) {
             this.wizardData.device_category = this.pendingQuickDiagnosis.category;
@@ -3380,7 +3473,13 @@ class ByteForceApp {
             this.navigate("dashboard");
           }
         } catch (err) {
-          alert((isAr ? "فشل إنشاء الحساب: " : "Registration failed: ") + err.message);
+          let msg = err.message || "";
+          if (msg.includes("already registered") || msg.includes("already in use") || err.code === "user_already_exists") {
+            msg = isAr ? "هذا البريد مسجل بالفعل في Supabase، يرجى تسجيل الدخول" : "Email already registered in Supabase. Please sign in";
+          } else if (msg.includes("at least 6 characters") || msg.includes("weak")) {
+            msg = isAr ? "كلمة المرور ضعيفة، يجب ألا تقل عن 6 أحرف" : "Password should be at least 6 characters";
+          }
+          alert((isAr ? "فشل إنشاء الحساب: " : "Registration failed: ") + msg);
           submitBtn.disabled = false;
           submitBtn.innerHTML = originalText;
         }
