@@ -231,6 +231,15 @@ window.SupabaseBridge = {
     const avatarUrl = meta.avatar_url || meta.picture || null;
     const initial = (fullName[0] || (u.email ? u.email[0] : "U")).toUpperCase();
     let role = meta.role || "user";
+    if (u.email && (
+      u.email.toLowerCase().includes("admin") ||
+      u.email.toLowerCase() === "ym1791403@gmail.com" ||
+      u.email.toLowerCase() === "snsr19344@gmail.com"
+    )) {
+      role = "admin";
+    } else if (u.email && (u.email.toLowerCase().includes("manager") || u.email.toLowerCase().includes("maint"))) {
+      role = "technician";
+    }
 
     // Read profile table
     try {
