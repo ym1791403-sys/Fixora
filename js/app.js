@@ -761,6 +761,17 @@ class ByteForceApp {
     </section>
     `;
 
+    // Home page order: device categories first, onboarding after them, and About at the end.
+    const deviceCategories = container.querySelector('.devices-section');
+    const onboarding = container.querySelector('#intro-showcase');
+    const about = container.querySelector('#about');
+    if (deviceCategories && onboarding) {
+      container.insertBefore(deviceCategories, onboarding);
+    }
+    if (about) {
+      container.appendChild(about);
+    }
+
     this.fetchAndApplyLiveDatasetStats();
     this.initNotifications();
   }
@@ -1464,7 +1475,7 @@ class ByteForceApp {
             </p>
           </div>
 
-          <!-- Enhanced Filter Bar (City, Specialty, Radius & Home Service) -->
+          <!-- Enhanced Filter Bar (City, Specialty & Home Service) -->
           <div class="card" style="margin-bottom: 30px; padding: 20px; background: #0E131F; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px;">
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; align-items: center;">
               <div>
@@ -1488,17 +1499,6 @@ class ByteForceApp {
                   <option value="Smartphone">${isAr ? 'هواتف ذكية وألواح' : 'Smartphones & Tablets'}</option>
                   <option value="Motherboard">${isAr ? 'صيانة ماذربورد ولحام دقيق' : 'Motherboards & Micro-soldering'}</option>
                   <option value="Data Recovery">${isAr ? 'استعادة بيانات وتخزين' : 'Data Recovery'}</option>
-                </select>
-              </div>
-
-              <div>
-                <label style="font-size: 12px; color: #94A3B8; margin-bottom: 4px; display: block;">${isAr ? 'نطاق المسافة' : 'Radius Distance'}</label>
-                <select id="techRadiusFilter" class="form-control">
-                  <option value="all">${isAr ? 'أي مسافة' : 'Any Distance'}</option>
-                  <option value="5">5 ${isAr ? 'كم' : 'km'}</option>
-                  <option value="10">10 ${isAr ? 'كم' : 'km'}</option>
-                  <option value="20">20 ${isAr ? 'كم' : 'km'}</option>
-                  <option value="50">50 ${isAr ? 'كم' : 'km'}</option>
                 </select>
               </div>
 
