@@ -561,6 +561,12 @@ window.SupabaseBridge = {
       time_required: g.time_required || `${estMins} min`,
       steps: steps,
       tools: tools,
+      required_tools: tools,
+      safety_precautions: g.safety_precautions || [
+        "Disconnect all power cables and remove batteries before disassembly.",
+        "Wear an ESD wrist strap to protect delicate microchips from electrostatic discharge.",
+        "Organize screws by size and thread length to avoid logic board damage."
+      ],
       device_category: g.device_category || "General",
       difficulty: g.difficulty || "Moderate"
     };

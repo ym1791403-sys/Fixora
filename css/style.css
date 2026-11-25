@@ -1333,3 +1333,9 @@ textPath {
     right: -40px;
   }
 }
+
+@media (min-width: 901px) {
+  #mobileNavDrawer {
+    display: none !important;
+  }
+}

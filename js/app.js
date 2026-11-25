@@ -41,7 +41,22 @@ class ByteForceApp {
     this.init();
   }
 
+  applyHomeSectionOrder() {
+    const main = document.getElementById("mainContent");
+    if (!main) return;
+    const deviceCategories = main.querySelector('.devices-section');
+    const onboarding = main.querySelector('#intro-showcase');
+    const about = main.querySelector('#about');
+    if (deviceCategories && onboarding) {
+      main.insertBefore(deviceCategories, onboarding);
+    }
+    if (about) {
+      main.appendChild(about);
+    }
+  }
+
   async init() {
+    this.applyHomeSectionOrder();
     this.bindEvents();
     this.updateNavAuth();
     this.bindHomeTriage();
@@ -635,15 +650,15 @@ class ByteForceApp {
 
           <div class="about-stats-row">
             <div class="about-stat-box">
-              <div id="homeStatIncidents" class="about-stat-num" style="color: #38BDF8;">${window.i18n.t('stat_records')}</div>
+              <div id="homeStatIncidents" class="about-stat-num" style="color: #38BDF8;">${this._liveStats?.incidents || '...'}</div>
               <div class="about-stat-lbl" data-i18n="stat_records_lbl">${window.i18n.t('stat_records_lbl')}</div>
             </div>
             <div class="about-stat-box">
-              <div id="homeStatGuides" class="about-stat-num" style="color: #10B981;">${window.i18n.t('stat_guides')}</div>
+              <div id="homeStatGuides" class="about-stat-num" style="color: #10B981;">${this._liveStats?.guides || '...'}</div>
               <div class="about-stat-lbl" data-i18n="stat_guides_lbl">${window.i18n.t('stat_guides_lbl')}</div>
             </div>
             <div class="about-stat-box">
-              <div id="homeStatAuc" class="about-stat-num" style="color: #F59E0B;">${window.i18n.t('stat_ml_auc')}</div>
+              <div id="homeStatAuc" class="about-stat-num" style="color: #F59E0B;">${this._liveStats?.auc || '...'}</div>
               <div class="about-stat-lbl" data-i18n="stat_ml_auc_lbl">${window.i18n.t('stat_ml_auc_lbl')}</div>
             </div>
           </div>
@@ -756,17 +771,7 @@ class ByteForceApp {
     </section>
     `;
 
-// Home page order: device categories first, onboarding after them, and About at the end.
-    const deviceCategories = container.querySelector('.devices-section');
-    const onboarding = container.querySelector('#intro-showcase');
-    const about = container.querySelector('#about');
-    if (deviceCategories && onboarding) {
-      container.insertBefore(deviceCategories, onboarding);
-    }
-    if (about) {
-      container.appendChild(about);
-    }
-
+    this.applyHomeSectionOrder();
     this.fetchAndApplyLiveDatasetStats();
     this.initNotifications();
   }
@@ -781,18 +786,20 @@ class ByteForceApp {
       if (res && res.database_storage && res.database_storage.live_tables) {
         const tables = res.database_storage.live_tables;
         const datasetsMap = res.datasets || res.certified_datasets || {};
-        if (guidesEl && tables.repair_guides != null) {
-          guidesEl.textContent = Number(tables.repair_guides).toLocaleString();
+        this._liveStats = this._liveStats || {};
+        if (tables.repair_guides != null) {
+          this._liveStats.guides = Number(tables.repair_guides).toLocaleString();
+          if (guidesEl) guidesEl.textContent = this._liveStats.guides;
         }
-        if (incidentsEl && tables.repair_incidents != null) {
+        if (tables.repair_incidents != null) {
           const oraCertTotal = datasetsMap.open_repair_alliance?.total_records;
-          incidentsEl.textContent = oraCertTotal ? Number(oraCertTotal).toLocaleString() : Number(tables.repair_incidents).toLocaleString();
+          this._liveStats.incidents = oraCertTotal ? Number(oraCertTotal).toLocaleString() : Number(tables.repair_incidents).toLocaleString();
+          if (incidentsEl) incidentsEl.textContent = this._liveStats.incidents;
         }
-        if (aucEl) {
-          const directAuc = res.backblaze_metrics?.roc_auc;
-          const roc = datasetsMap.backblaze_telemetry?.verification_notes?.match(/ROC-AUC:\s*([0-9.]+)/i);
-          aucEl.textContent = directAuc ? Number(directAuc).toFixed(3) : (roc ? Number(roc[1]).toFixed(3) : "—");
-        }
+        const directAuc = res.backblaze_metrics?.roc_auc;
+        const roc = datasetsMap.backblaze_telemetry?.verification_notes?.match(/ROC-AUC:\s*([0-9.]+)/i);
+        this._liveStats.auc = directAuc ? Number(directAuc).toFixed(3) : (roc ? Number(roc[1]).toFixed(3) : "—");
+        if (aucEl) aucEl.textContent = this._liveStats.auc;
         return;
       }
     } catch (e) {
@@ -812,9 +819,19 @@ class ByteForceApp {
           sb.from("certified_datasets").select("total_records").eq("dataset_key", "open_repair_alliance").maybeSingle(),
           sb.from("backblaze_models").select("metrics").eq("model_id", "backblaze_rf_v1").maybeSingle()
         ]);
-        if (guidesEl && gRes.count != null) guidesEl.textContent = Number(gRes.count).toLocaleString();
-        if (incidentsEl && oraRes.data?.total_records) incidentsEl.textContent = Number(oraRes.data.total_records).toLocaleString();
-        if (aucEl && bbRes.data?.metrics?.roc_auc) aucEl.textContent = Number(bbRes.data.metrics.roc_auc).toFixed(3);
+        this._liveStats = this._liveStats || {};
+        if (gRes.count != null) {
+          this._liveStats.guides = Number(gRes.count).toLocaleString();
+          if (guidesEl) guidesEl.textContent = this._liveStats.guides;
+        }
+        if (oraRes.data?.total_records) {
+          this._liveStats.incidents = Number(oraRes.data.total_records).toLocaleString();
+          if (incidentsEl) incidentsEl.textContent = this._liveStats.incidents;
+        }
+        if (bbRes.data?.metrics?.roc_auc) {
+          this._liveStats.auc = Number(bbRes.data.metrics.roc_auc).toFixed(3);
+          if (aucEl) aucEl.textContent = this._liveStats.auc;
+        }
       }
     } catch (sbErr) {}
   }
@@ -1098,7 +1115,14 @@ class ByteForceApp {
 
     const report = this.currentReport;
     const isAr = window.i18n.currentLang === "ar";
-    const isCritical = report.severity === "critical";
+    const severity = report.severity || "moderate";
+    const isCritical = severity === "critical";
+    const isInsufficient = report.status === "insufficient_evidence";
+    const safetyList = (isAr ? report.safety_warnings_ar : report.safety_warnings_en) || [];
+    const symptomsList = Array.isArray(report.extracted_symptoms) ? report.extracted_symptoms : [];
+    const causesList = Array.isArray(report.possible_causes) ? report.possible_causes : [];
+    const estDiff = report.estimated_difficulty || (isInsufficient ? (isAr ? "غير محدد" : "N/A") : "moderate");
+    const estMins = report.estimated_minutes || null;
 
     container.innerHTML = `
       <section style="padding: 40px 0 80px;">
@@ -1110,7 +1134,7 @@ class ByteForceApp {
               <span class="tag" style="background-color: rgba(56, 189, 248, 0.15); color: #38BDF8; border: 1px solid rgba(56, 189, 248, 0.3); margin-bottom: 6px;">Report #${report.report_id || 'TEMP'}</span>
               <h1 style="font-size: 28px;" data-i18n="results_title">Diagnostic Report</h1>
               <p style="color: var(--color-text-muted); font-size: 14px;">
-                ${report.brand || ''} ${report.model || ''} (${report.device_category})
+                ${report.brand || ''} ${report.model || ''} (${report.device_category || ''})
               </p>
             </div>
             <div style="display: flex; gap: 10px;">
@@ -1125,15 +1149,27 @@ class ByteForceApp {
             </div>
           </div>
 
-          <!-- Safety Hazard Box (if critical or high) -->
-          ${(report.safety_warnings_ar.length > 0 || report.safety_warnings_en.length > 0) ? `
+          ${isInsufficient ? `
+            <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+              <h3 style="color: #FBBF24; font-size: 17px; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-info-circle"></i>
+                <span>${isAr ? 'تنبيه: أدلة تجريبية غير كافية لهذا الجهاز' : 'Insufficient Empirical Evidence'}</span>
+              </h3>
+              <p style="color: #E2E8F0; font-size: 14px; line-height: 1.6; margin: 0;">
+                ${report.message || (isAr ? 'لم يتم العثور على سجلات موثقة مطابقة تماماً لهذه الفئة أو الأعراض؛ لذلك ترفض المنصة تخمين أو اختلاق خطوات غير موثقة.' : 'No verified matching manual or empirical record exists for this exact device/symptom combination.')}
+              </p>
+            </div>
+          ` : ''}
+
+          <!-- Safety Hazard Box -->
+          ${safetyList.length > 0 ? `
             <div class="hazard-box">
               <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
                 <i class="fas fa-exclamation-triangle" style="font-size: 20px;"></i>
                 <strong data-i18n="results_safety_alert">Safety Warning & Precautions</strong>
               </div>
-              <ul style="padding-left: 20px; font-size: 14px;">
-                ${(isAr ? report.safety_warnings_ar : report.safety_warnings_en).map(w => `<li>${w}</li>`).join('')}
+              <ul style="padding-inline-start: 20px; font-size: 14px;">
+                ${safetyList.map(w => `<li>${w}</li>`).join('')}
               </ul>
             </div>
           ` : ''}
@@ -1144,9 +1180,9 @@ class ByteForceApp {
               <div>
                 <span style="font-size: 13px; color: var(--color-text-muted);" data-i18n="results_severity">Severity Level</span>
                 <div style="margin-top: 6px;">
-                  <span class="severity-badge severity-${report.severity}">
+                  <span class="severity-badge severity-${severity}">
                     <i class="fas fa-circle" style="font-size: 8px;"></i>
-                    ${report.severity.toUpperCase()}
+                    ${severity.toUpperCase()}
                   </span>
                 </div>
               </div>
@@ -1154,21 +1190,21 @@ class ByteForceApp {
               <div>
                 <span style="font-size: 13px; color: var(--color-text-muted);" data-i18n="results_confidence">Model Confidence</span>
                 <div style="margin-top: 6px; font-size: 20px; font-weight: 700; color: var(--color-primary);">
-                  ${Math.round(report.confidence_score * 100)}%
+                  ${Math.round((report.confidence_score ?? 0) * 100)}%
                 </div>
               </div>
 
               <div>
                 <span style="font-size: 13px; color: var(--color-text-muted);">${isAr ? 'الصعوبة المقدرة' : 'Estimated Difficulty'}</span>
                 <div style="margin-top: 6px; font-size: 16px; font-weight: 600; text-transform: capitalize;">
-                  ${report.estimated_difficulty} (~${report.estimated_minutes} min)
+                  ${estDiff}${estMins ? ` (~${estMins} min)` : ''}
                 </div>
               </div>
 
               <div>
                 <span style="font-size: 13px; color: var(--color-text-muted);" data-i18n="results_symptoms">Detected Symptoms</span>
                 <div style="margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px;">
-                  ${report.extracted_symptoms.map(s => `<span class="tag">${s}</span>`).join('')}
+                  ${symptomsList.length > 0 ? symptomsList.map(s => `<span class="tag">${s}</span>`).join('') : `<span style="color: var(--color-text-muted); font-size: 13px;">—</span>`}
                 </div>
               </div>
             </div>
@@ -1244,8 +1280,9 @@ class ByteForceApp {
           <!-- Possible Root Causes -->
           <div class="card" style="margin-bottom: 24px;">
             <h3 style="font-size: 18px; margin-bottom: 16px;" data-i18n="results_causes_title">Most Probable Root Causes</h3>
-            <div style="display: flex; flex-direction: column; gap: 16px;">
-              ${report.possible_causes.map(c => {
+            ${causesList.length > 0 ? `
+              <div style="display: flex; flex-direction: column; gap: 16px;">
+                ${causesList.map(c => {
                 const fixRate = c.empirical_repairability_pct != null ? c.empirical_repairability_pct : Math.round((c.probability || 0.5) * 100);
                 return `
                 <div style="padding: 16px; background-color: #0E131F; border-radius: var(--radius-sm); border: 1px solid rgba(255, 255, 255, 0.08);">
@@ -1275,7 +1312,8 @@ class ByteForceApp {
                   ` : ''}
                 </div>
               `}).join('')}
-            </div>
+              </div>
+            ` : `<p style="color: var(--color-text-muted); font-size: 14px;">${isAr ? 'لم يتم العثور على مسببات جذرية مطابقة بقدر كافٍ من الأدلة لهذه الحالة.' : 'No statistically backed root causes met the evidence threshold.'}</p>`}
           </div>
 
           <!-- Required Tools -->
@@ -1558,9 +1596,18 @@ class ByteForceApp {
 
         ${guide.safety_precautions && guide.safety_precautions.length > 0 ? `
           <div class="hazard-box" style="margin: 16px 0; padding: 12px 16px;">
-            <strong style="display: block; margin-bottom: 4px;"><i class="fas fa-shield-alt"></i> ${isAr ? 'إجراءات الأمان' : 'Safety Precautions'}:</strong>
-            <ul style="padding-left: 20px; font-size: 13px;">
-              ${guide.safety_precautions.map(p => `<li>${p}</li>`).join('')}
+            <strong style="display: block; margin-bottom: 6px;"><i class="fas fa-shield-alt"></i> ${isAr ? 'إجراءات الأمان والسلامة:' : 'Safety Precautions:'}</strong>
+            <ul style="padding-inline-start: 20px; font-size: 13px; margin: 0; line-height: 1.65;">
+              ${guide.safety_precautions.map(p => {
+                const arMap = {
+                  "Disconnect all power cables and remove batteries before disassembly.": "افصل جميع كابلات الطاقة وافصل البطارية تماماً قبل بدء التفكيك.",
+                  "Wear an ESD wrist strap to protect delicate microchips from electrostatic discharge.": "ارتدِ سوار التفريغ الكهروستاتيكي (ESD) لحماية الشرائح الدقيقة من الشحنات الساكنة.",
+                  "Organize screws by size and thread length to avoid logic board damage.": "رتب المسامير حسب المقاس والطول لتفادي تلف اللوحة الأم عند إعادة التركيب."
+                };
+                const txt = isAr ? (arMap[p] || p) : p;
+                const ltr = isAr && !/[\u0600-\u06FF]/.test(txt);
+                return `<li ${ltr ? 'dir="ltr" style="text-align: left;"' : ''}>${txt}</li>`;
+              }).join('')}
             </ul>
           </div>
         ` : ''}
@@ -3030,7 +3077,7 @@ class ByteForceApp {
               ${isAr ? 'نموذج تصنيف احصائي مدرب على مؤشرات SMART الحقيقية مع عزل السيريال الزمني للتنبؤ بأعطال وحدات التخزين فقط.' : 'Binary classification Random Forest model trained on SMART telemetry for storage devices only.'}
             </p>
             <div style="font-size: 11px; color: #38BDF8;">
-              <i class="fas fa-microchip"></i> SMART 5, 9, 187, 188, 194, 197, 198 â€” Strictly Storage Scoped
+              <i class="fas fa-microchip"></i> SMART 5, 9, 187, 188, 194, 197, 198 — Strictly Storage Scoped
             </div>
           </div>
         </div>

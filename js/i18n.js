@@ -23,6 +23,7 @@ const TRANSLATIONS = {
     hero_subtext: "From smartphones and laptops to gaming consoles, smart TVs, storage drives, and home electronics — AI-calibrated troubleshooting guides and direct connection to certified technicians.",
     hero_emergency_btn: "Get Emergency Service",
     hero_request_repair: "Request a Repair Today",
+    hero_cta_diag: "New Diagnosis",
     hero_badge: "ByteForce AI Universal Hardware Diagnostic Platform",
     
     // Quick Demo Triage Card
@@ -228,6 +229,7 @@ const TRANSLATIONS = {
     demo_title: "فحص فوري ذكي لكافة الأجهزة",
     demo_placeholder: "مثال: بلايستيشن 5 يصدر 3 صفارات وينطفئ، أو لابتوب يسخن وينطفئ فجأة...",
     demo_btn: "فحص سريع",
+    hero_cta_diag: "تشخيص عطل جديد",
     demo_devices: "جميع فئات الأجهزة المدعومة في ByteForce",
     
     // About Us Section (ByteFix Reference Arabic)
