@@ -318,7 +318,6 @@ class ByteForceApp {
     const guestLinks = document.getElementById("navGuestActions");
     const userLinks = document.getElementById("navUserActions");
     const dashLink = document.getElementById("navDashboardLink");
-    const adminLink = document.getElementById("navAdminLink");
     const mobileDashLink = document.getElementById("mobileNavDashboardLink");
     const mobileAdminLink = document.getElementById("mobileNavAdminLink");
     const userNameEl = document.getElementById("navUserName");
@@ -338,7 +337,6 @@ class ByteForceApp {
       }
       const isAdmin = this.isExclusiveAdmin(user);
       if (dashLink) dashLink.style.display = "block";
-      if (adminLink) adminLink.style.display = isAdmin ? "block" : "none";
       const adminDirectBtn = document.getElementById("navAdminDirectBtn");
       if (adminDirectBtn) adminDirectBtn.style.display = isAdmin ? "inline-flex" : "none";
       if (mobileDashLink) mobileDashLink.style.display = "block";
@@ -347,7 +345,6 @@ class ByteForceApp {
       if (guestLinks) guestLinks.style.display = "flex";
       if (userLinks) userLinks.style.display = "none";
       if (dashLink) dashLink.style.display = "none";
-      if (adminLink) adminLink.style.display = "none";
       const adminDirectBtn = document.getElementById("navAdminDirectBtn");
       if (adminDirectBtn) adminDirectBtn.style.display = "none";
       if (mobileDashLink) mobileDashLink.style.display = "none";
