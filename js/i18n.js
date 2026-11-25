@@ -14,6 +14,8 @@ const TRANSLATIONS = {
     nav_technicians: "Technicians",
     nav_datasets: "Datasets",
     nav_dashboard: "Dashboard",
+    nav_admin: "Admin Panel",
+    nav_admin_btn: "Admin Panel",
     nav_login: "Log In",
     nav_register: "Get Started",
     nav_logout: "Log Out",
@@ -181,13 +183,20 @@ const TRANSLATIONS = {
     // Admin Dashboard
     admin_title: "ByteForce Administration Center",
     admin_stat_users: "Total Users",
-    admin_stat_techs: "Total Technicians",
+    admin_stat_techs: "Approved Centers",
     admin_stat_pending: "Pending Approvals",
+    admin_stat_active_req: "Active Requests",
+    admin_stat_completed_req: "Completed Repairs",
     admin_stat_diags: "Total Diagnoses",
-    admin_tab_approvals: "Technician Approvals",
+    admin_tab_centers: "Centers & Techs",
+    admin_tab_approvals: "Maintenance Centers & Technicians",
     admin_tab_users: "User Accounts",
-    admin_approve_btn: "Approve Specialist",
-    admin_reject_btn: "Reject Request",
+    admin_tab_requests: "All Repair Requests",
+    admin_tab_audit: "Audit Log",
+    admin_approve_btn: "Approve",
+    admin_suspend_btn: "Suspend",
+    admin_reactivate_btn: "Reactivate",
+    admin_reject_btn: "Reject",
 
     // Auth
     auth_login_title: "Sign in to ByteForce",
@@ -214,6 +223,8 @@ const TRANSLATIONS = {
     nav_technicians: "سوق الفنيين",
     nav_datasets: "قواعد البيانات",
     nav_dashboard: "لوحة التحكم",
+    nav_admin: "لوحة الإدارة",
+    nav_admin_btn: "لوحة الإدارة",
     nav_login: "تسجيل الدخول",
     nav_register: "ابدأ مجاناً",
     nav_logout: "تسجيل الخروج",
@@ -381,13 +392,20 @@ const TRANSLATIONS = {
     // Admin Dashboard
     admin_title: "مركز إدارة منصة ByteForce",
     admin_stat_users: "إجمالي المستخدمين",
-    admin_stat_techs: "إجمالي الفنيين",
-    admin_stat_pending: "طلبات اعتماد فنيين",
-    admin_stat_diags: "إجمالي عمليات التشخيص",
-    admin_tab_approvals: "مراجعة واعتماد الفنيين",
+    admin_stat_techs: "المراكز المعتمدة",
+    admin_stat_pending: "بانتظار الموافقة",
+    admin_stat_active_req: "طلبات صيانة نشطة",
+    admin_stat_completed_req: "إصلاحات مكتملة",
+    admin_stat_diags: "تقارير التشخيص",
+    admin_tab_centers: "المراكز والفنيون",
+    admin_tab_approvals: "إدارة المراكز والفنيين والاعتمادات",
     admin_tab_users: "إدارة حسابات المستخدمين",
-    admin_approve_btn: "اعتماد الفني",
-    admin_reject_btn: "رفض الطلب",
+    admin_tab_requests: "جميع طلبات الصيانة",
+    admin_tab_audit: "سجل تدقيق الإدارة",
+    admin_approve_btn: "موافقة واعتماد",
+    admin_suspend_btn: "إيقاف مؤقت",
+    admin_reactivate_btn: "إعادة تفعيل",
+    admin_reject_btn: "رفض",
 
     // Auth
     auth_login_title: "تسجيل الدخول إلى ByteForce",
@@ -421,6 +439,9 @@ class I18n {
     this.applyLanguage(lang);
     if (window.app && typeof window.app.renderCurrentView === "function") {
       window.app.renderCurrentView();
+    }
+    if (window.app && typeof window.app.updateNavAuth === "function") {
+      window.app.updateNavAuth();
     }
   }
 

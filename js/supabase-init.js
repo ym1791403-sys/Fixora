@@ -34,12 +34,26 @@ window.SupabaseBridge = {
     return supabaseClient;
   },
 
+  async getAccessToken() {
+    if (this.currentUser?.access_token) return this.currentUser.access_token;
+    if (!this.isReady()) return null;
+    try {
+      const { data } = await supabaseClient.auth.getSession();
+      return data?.session?.access_token || null;
+    } catch (e) {
+      return null;
+    }
+  },
+
   /**
    * Initializes session upon page load / refresh or OAuth redirect.
    */
   async initSession() {
     if (!this.isReady()) return null;
     try {
+      if (window.location.hash.includes("access_token=") || window.location.search.includes("code=")) {
+        this._oauthRedirectPending = true;
+      }
       const { data, error } = await supabaseClient.auth.getSession();
       if (error) {
         console.warn("Supabase getSession notice:", error.message);
@@ -388,6 +402,10 @@ window.SupabaseBridge = {
         const dest = window.app.pendingNavigation;
         window.app.pendingNavigation = null;
         window.app.navigate(dest);
+      } else if (this._oauthRedirectPending) {
+        this._oauthRedirectPending = false;
+        const targetView = this.isExclusiveAdminEmail(u.email) ? "admin" : "dashboard";
+        window.app.navigate(targetView);
       }
     }
   },
@@ -699,6 +717,13 @@ window.SupabaseBridge = {
     };
     const { data, error } = await supabaseClient.from("technicians").insert([payload]).select().single();
     if (error) throw error;
+    try {
+      fetch("/api/notifications/pending-tech-alert", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: payload.email, business_name: payload.business_name })
+      }).catch(() => {});
+    } catch (notifyErr) {}
     return this._normalizeTechnician(data);
   },
 
@@ -950,6 +975,7 @@ window.SupabaseBridge = {
         .from("notifications")
         .select("*")
         .eq("user_id", user.id)
+        .neq("type", "admin_audit")
         .order("created_at", { ascending: false })
         .limit(40);
       if (error) throw error;
@@ -993,34 +1019,83 @@ window.SupabaseBridge = {
   },
 
   /**
-   * Admin System Controls (Exclusive to snsr19344@gmail.com via RLS)
+   * Admin System Controls (Exclusive to snsr19344@gmail.com)
    */
+  _requireClientAdmin() {
+    const user = this.currentUser;
+    if (!user || !this.isExclusiveAdminEmail(user.email)) {
+      throw new Error(`Forbidden: restricted exclusively to ${this.EXCLUSIVE_ADMIN_EMAIL}`);
+    }
+    return user;
+  },
+
+  async _logAdminAudit(action, title, message) {
+    try {
+      const adminUser = this.currentUser;
+      if (!adminUser?.id || !this.isExclusiveAdminEmail(adminUser.email)) return;
+      await supabaseClient.from("notifications").insert([{
+        user_id: adminUser.id,
+        title,
+        message: `[${action}] ${message}`,
+        type: "admin_audit",
+        is_read: true
+      }]);
+    } catch (e) {}
+  },
+
   async fetchAdminStats() {
     if (!this.isReady()) throw new Error("Supabase SDK unavailable");
-    const [guidesRes, incidentsRes, profilesRes, techsApprovedRes, techsPendingRes, diagRes, reqRes] = await Promise.all([
+    this._requireClientAdmin();
+    const [guidesRes, incidentsRes, profilesRes, techsRes, diagRes, reqRes] = await Promise.all([
       supabaseClient.from("repair_guides").select("*", { count: "exact", head: true }),
       supabaseClient.from("repair_incidents").select("*", { count: "exact", head: true }),
       supabaseClient.from("profiles").select("*", { count: "exact", head: true }),
-      supabaseClient.from("technicians").select("*", { count: "exact", head: true }).eq("status", "approved"),
-      supabaseClient.from("technicians").select("*", { count: "exact", head: true }).eq("status", "pending"),
+      supabaseClient.from("technicians").select("id, status"),
       supabaseClient.from("diagnosis_reports").select("*", { count: "exact", head: true }),
-      supabaseClient.from("repair_requests").select("*", { count: "exact", head: true })
+      supabaseClient.from("repair_requests").select("id, status")
     ]);
+    const techs = techsRes.data || [];
+    const reqs = reqRes.data || [];
+    const approved = techs.filter(t => String(t.status || "").toLowerCase() === "approved").length;
+    const pending = techs.filter(t => String(t.status || "").toLowerCase() === "pending").length;
+    const suspended = techs.filter(t => ["suspended", "rejected"].includes(String(t.status || "").toLowerCase())).length;
+    const closed = new Set(["COMPLETED", "CANCELED", "CANCELLED", "REJECTED"]);
+    const activeReqs = reqs.filter(r => !closed.has(String(r.status || "NEW").toUpperCase())).length;
+    const completedReqs = reqs.filter(r => String(r.status || "").toUpperCase() === "COMPLETED").length;
     return {
       verified_guides_count: guidesRes.count || 0,
       repair_incidents_count: incidentsRes.count || 0,
-      active_technicians_count: techsApprovedRes.count || 0,
-      repair_requests_count: reqRes.count || 0,
+      active_technicians_count: approved,
+      repair_requests_count: reqs.length,
+      active_requests: activeReqs,
+      completed_requests: completedReqs,
       total_users: profilesRes.count || 0,
-      total_technicians: techsApprovedRes.count || 0,
-      pending_approvals: techsPendingRes.count || 0,
+      total_technicians: approved,
+      approved_centers: approved,
+      pending_approvals: pending,
+      suspended_centers: suspended,
       total_diagnoses: diagRes.count || 0,
       source: "Supabase Live Client"
     };
   },
 
+  async fetchAllTechniciansAdmin() {
+    if (!this.isReady()) return [];
+    this._requireClientAdmin();
+    const { data, error } = await supabaseClient
+      .from("technicians")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    const order = { pending: 0, approved: 1, suspended: 2, rejected: 3 };
+    return (data || [])
+      .map(t => this._normalizeTechnician(t))
+      .sort((a, b) => (order[String(a.status || "pending").toLowerCase()] ?? 9) - (order[String(b.status || "pending").toLowerCase()] ?? 9));
+  },
+
   async fetchPendingTechnicians() {
     if (!this.isReady()) return [];
+    this._requireClientAdmin();
     const { data, error } = await supabaseClient
       .from("technicians")
       .select("*")
@@ -1030,49 +1105,65 @@ window.SupabaseBridge = {
     return (data || []).map(t => this._normalizeTechnician(t));
   },
 
-  async approveTechnician(techId) {
+  async _transitionTechnicianStatusAdmin(techId, targetStatus, notifTitle, notifMessage, auditAction, auditTitle) {
     if (!this.isReady()) throw new Error("Supabase SDK unavailable");
+    this._requireClientAdmin();
     const { data, error } = await supabaseClient
       .from("technicians")
-      .update({ status: "approved" })
+      .update({ status: targetStatus })
       .eq("id", techId)
       .select()
       .single();
     if (error) throw error;
     if (data?.user_id) {
-      await supabaseClient.from("profiles").update({ role: "technician" }).eq("id", data.user_id);
+      await supabaseClient.from("profiles").update({ role: targetStatus === "approved" ? "technician" : "user" }).eq("id", data.user_id);
       await this.createNotification({
         user_id: data.user_id,
-        title: "تم قبول حسابك الفني",
-        message: "تمت مراجعة وتوثيق ملفك المهني من قِبل الإدارة وهو ظاهر الآن للعملاء.",
+        title: notifTitle,
+        message: notifMessage,
         type: "status"
       });
     }
+    await this._logAdminAudit(auditAction, auditTitle, `${data?.business_name || data?.name || "#" + techId} (${data?.city || "-"})`);
     return data;
   },
 
+  async approveTechnician(techId) {
+    return this._transitionTechnicianStatusAdmin(
+      techId,
+      "approved",
+      "تم قبول حسابك الفني",
+      "تمت مراجعة وتوثيق ملفك المهني من قِبل الإدارة وهو ظاهر الآن للعملاء.",
+      `center:${techId}:approved`,
+      "اعتماد مركز / فني صيانة"
+    );
+  },
+
+  async suspendTechnician(techId) {
+    return this._transitionTechnicianStatusAdmin(
+      techId,
+      "suspended",
+      "تم إيقاف الحساب الفني مؤقتاً",
+      "تم إيقاف ظهور مركز الصيانة مؤقتاً من قِبل مدير النظام. تواصل مع الإدارة للمراجعة.",
+      `center:${techId}:suspended`,
+      "إيقاف مركز / فني صيانة"
+    );
+  },
+
   async rejectTechnician(techId) {
-    if (!this.isReady()) throw new Error("Supabase SDK unavailable");
-    const { data, error } = await supabaseClient
-      .from("technicians")
-      .update({ status: "rejected" })
-      .eq("id", techId)
-      .select()
-      .single();
-    if (error) throw error;
-    if (data?.user_id) {
-      await this.createNotification({
-        user_id: data.user_id,
-        title: "تحديث طلب التوثيق",
-        message: "نعتذر، تم رفض طلب الانضمام كمركز صيانة. يرجى مراجعة البيانات والمحاولة مجدداً.",
-        type: "status"
-      });
-    }
-    return data;
+    return this._transitionTechnicianStatusAdmin(
+      techId,
+      "rejected",
+      "تحديث طلب التوثيق",
+      "نعتذر، تم رفض طلب الانضمام كمركز صيانة. يرجى مراجعة البيانات والمحاولة مجدداً.",
+      `center:${techId}:rejected`,
+      "رفض طلب انضمام فني"
+    );
   },
 
   async fetchAdminUsers() {
     if (!this.isReady()) return [];
+    this._requireClientAdmin();
     const { data, error } = await supabaseClient
       .from("profiles")
       .select("*")
@@ -1083,9 +1174,10 @@ window.SupabaseBridge = {
 
   async toggleUserStatus(userId) {
     if (!this.isReady()) throw new Error("Supabase SDK unavailable");
+    this._requireClientAdmin();
     const { data: userRow, error: getErr } = await supabaseClient
       .from("profiles")
-      .select("id, email, is_active")
+      .select("id, email, full_name, is_active")
       .eq("id", userId)
       .single();
     if (getErr) throw getErr;
@@ -1100,7 +1192,37 @@ window.SupabaseBridge = {
       .select()
       .single();
     if (error) throw error;
+    await this._logAdminAudit(
+      `user:${userId}:${nextState ? "reactivate" : "suspend"}`,
+      nextState ? "تفعيل حساب مستخدم" : "تعطيل حساب مستخدم",
+      `${userRow.full_name || userRow.email} (${userRow.email})`
+    );
     return data;
+  },
+
+  async fetchAllRequestsAdmin() {
+    if (!this.isReady()) return [];
+    this._requireClientAdmin();
+    const { data, error } = await supabaseClient
+      .from("repair_requests")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(200);
+    if (error) throw error;
+    return (data || []).map(r => this._normalizeRequest(r));
+  },
+
+  async fetchAdminAuditLogs() {
+    if (!this.isReady()) return [];
+    this._requireClientAdmin();
+    const { data, error } = await supabaseClient
+      .from("notifications")
+      .select("id, title, message, type, created_at")
+      .eq("type", "admin_audit")
+      .order("created_at", { ascending: false })
+      .limit(100);
+    if (error) throw error;
+    return data || [];
   }
 };
 

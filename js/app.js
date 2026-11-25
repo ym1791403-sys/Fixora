@@ -38,7 +38,21 @@ class ByteForceApp {
       recent_changes: ""
     };
     this.currentReport = null;
+    this.adminActiveTab = "centers";
+    this.adminNotice = null;
     this.init();
+  }
+
+  isExclusiveAdmin(user = null) {
+    const u = user || (window.api ? window.api.getUser() : null);
+    if (!u || !u.email) return false;
+    return String(u.email).toLowerCase().trim() === "snsr19344@gmail.com";
+  }
+
+  _esc(val) {
+    return String(val ?? "").replace(/[&<>"']/g, c => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;"
+    }[c]));
   }
 
   applyHomeSectionOrder() {
@@ -63,15 +77,17 @@ class ByteForceApp {
     this.fetchAndApplyLiveDatasetStats();
     this.initNotifications();
 
+    const wasOAuthCallback = window.location.hash.includes("access_token") || window.location.search.includes("code=");
+
     // Check for active Supabase session or OAuth redirect callback
     if (window.SupabaseBridge && typeof window.SupabaseBridge.initSession === "function") {
       try {
         const session = await window.SupabaseBridge.initSession();
         if (session) {
           this.updateNavAuth();
-          // If returning from Google OAuth redirect, route smoothly to dashboard
-          if (window.location.hash.includes("access_token") || window.location.search.includes("code=")) {
-            this.navigate("dashboard");
+          // If returning from Google OAuth redirect, route admin straight to admin center, or user to dashboard
+          if (wasOAuthCallback) {
+            this.navigate(this.isExclusiveAdmin() ? "admin" : "dashboard");
           }
         }
       } catch (e) {
@@ -264,7 +280,7 @@ class ByteForceApp {
           userAvatarEl.textContent = user.avatar_initial || (user.full_name ? user.full_name.charAt(0).toUpperCase() : "U");
         }
       }
-      const isAdmin = !!(user && user.role === "admin" && (user.email || "").toLowerCase().trim() === "snsr19344@gmail.com");
+      const isAdmin = this.isExclusiveAdmin(user);
       if (dashLink) dashLink.style.display = "block";
       if (adminLink) adminLink.style.display = isAdmin ? "block" : "none";
       const adminDirectBtn = document.getElementById("navAdminDirectBtn");
@@ -290,10 +306,17 @@ class ByteForceApp {
 
     if (obBadge && obTitle && obDesc && obActions) {
       if (isLoggedIn && user) {
-        obBadge.innerHTML = `<span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #10B981; border: 1px solid rgba(16, 185, 129, 0.3); font-size: 12px; padding: 4px 10px;"><i class="fas fa-check-circle"></i> ${isAr ? 'حساب نشط وموثق' : 'Verified Account Active'}</span><span style="color: #94A3B8; font-size: 13px;">${user.email || ''}</span>`;
+        const isAdminUser = this.isExclusiveAdmin(user);
+        obBadge.innerHTML = `<span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #10B981; border: 1px solid rgba(16, 185, 129, 0.3); font-size: 12px; padding: 4px 10px;"><i class="fas fa-check-circle"></i> ${isAr ? 'حساب نشط وموثق' : 'Verified Account Active'}</span>${isAdminUser ? `<span class="badge" style="background: rgba(239, 68, 68, 0.16); color: #F87171; border: 1px solid rgba(239, 68, 68, 0.35); font-size: 12px; padding: 4px 10px;"><i class="fas fa-shield-alt"></i> ${isAr ? 'مدير النظام' : 'System Admin'}</span>` : ''}<span style="color: #94A3B8; font-size: 13px;">${this._esc(user.email || '')}</span>`;
         obTitle.textContent = isAr ? `مرحباً بك مجدداً، ${user.full_name || user.email}! أدوات الفحص الذكي مفعلة` : `Welcome back, ${user.full_name || user.email}! Diagnostic tools unlocked`;
         obDesc.textContent = isAr ? "تم التحقق من حسابك بنجاح. يمكنك الآن بدء تشخيص أي جهاز ومطابقة الأعطال مع قواعد بيانات الصيانة العالمية وتحميل التقارير المعتمدة." : "Your account is authenticated. You have full access to hardware diagnosis, empirical dataset matching, and verified repair manuals.";
         obActions.innerHTML = `
+          ${isAdminUser ? `
+            <button class="btn btn-md" onclick="app.navigate('admin')" style="background: rgba(239, 68, 68, 0.18); color: #FCA5A5; border: 1px solid rgba(239, 68, 68, 0.45); display: inline-flex; align-items: center; gap: 8px; font-weight: 700;">
+              <i class="fas fa-shield-alt" style="color: #EF4444;"></i>
+              <span>${isAr ? 'فتح لوحة تحكم الإدارة (Admin Panel)' : 'Open Admin Control Center'}</span>
+            </button>
+          ` : ''}
           <button class="btn btn-primary btn-md" onclick="app.navigate('diagnose')" style="display: inline-flex; align-items: center; gap: 8px;">
             <i class="fas fa-microchip"></i>
             <span>${isAr ? 'ابدأ تشخيص أي جهاز الآن' : 'Start Diagnostic Inspection'}</span>
@@ -387,7 +410,7 @@ class ByteForceApp {
         break;
       case "admin":
         const adminUser = window.api.getUser();
-        const isAuthorizedAdmin = window.api.isLoggedIn() && adminUser?.role === "admin" && (adminUser?.email || "").toLowerCase().trim() === "snsr19344@gmail.com";
+        const isAuthorizedAdmin = window.api.isLoggedIn() && this.isExclusiveAdmin(adminUser);
         if (!isAuthorizedAdmin) {
           const isAr = window.i18n.currentLang === "ar";
           alert(isAr ? "قسم الإدارة مخصص حصرياً لمدير النظام (snsr19344@gmail.com)" : "Admin dashboard is exclusively restricted to the system administrator (snsr19344@gmail.com)");
@@ -2372,10 +2395,10 @@ class ByteForceApp {
               <p style="color: var(--color-text-muted); font-size: 14px;">${user.email}</p>
             </div>
             <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-              ${(user && user.role === "admin" && (user.email || "").toLowerCase().trim() === "snsr19344@gmail.com") ? `
+              ${this.isExclusiveAdmin(user) ? `
                 <button class="btn btn-sm" onclick="app.navigate('admin')" style="background: rgba(239, 68, 68, 0.18); color: #F87171; border: 1px solid rgba(239, 68, 68, 0.45); border-radius: 8px; font-weight: 700; padding: 8px 16px; font-size: 13px; display: inline-flex; align-items: center; gap: 8px; cursor: pointer;" title="لوحة تحكم الإدارة">
                   <i class="fas fa-shield-alt" style="color: #EF4444; font-size: 15px;"></i>
-                  <span>فتح لوحة تحكم الإدارة (Admin Panel)</span>
+                  <span>${isAr ? 'فتح لوحة تحكم الإدارة (Admin Panel)' : 'Open Admin Control Center'}</span>
                 </button>
               ` : ''}
               <button class="btn btn-primary" onclick="app.navigate('diagnose')">
@@ -2799,180 +2822,409 @@ class ByteForceApp {
   }
 
   // ==========================================
-  // VIEW: ADMIN CONTROL PANEL
+  // VIEW: ADMIN CONTROL PANEL (EXCLUSIVE SYSTEM MANAGEMENT)
   // ==========================================
+  switchAdminTab(tab) {
+    this.adminActiveTab = tab;
+    const panel = document.getElementById("adminTabBody");
+    document.querySelectorAll(".admin-tab-btn").forEach(btn => {
+      btn.classList.toggle("active", btn.getAttribute("data-tab") === tab);
+    });
+    if (panel) this._renderAdminTabContent(panel);
+  }
+
+  _setAdminNotice(type, text) {
+    this.adminNotice = { type, text };
+  }
+
   async renderAdmin(container) {
     const isAr = window.i18n.currentLang === "ar";
     const user = window.api.getUser();
-    if (!user || user.role !== "admin" || (user.email || "").toLowerCase().trim() !== "snsr19344@gmail.com") {
+    if (!window.api.isLoggedIn() || !this.isExclusiveAdmin(user)) {
       alert(isAr ? "قسم الإدارة مخصص حصرياً لمدير النظام (snsr19344@gmail.com)" : "Admin panel is exclusively restricted to the system administrator (snsr19344@gmail.com)");
       this.navigate("home");
       return;
     }
 
+    const activeTab = this.adminActiveTab || "centers";
+    const noticeHtml = this.adminNotice ? `
+      <div id="adminFeedbackBanner" style="margin-bottom: 20px; padding: 12px 16px; border-radius: 10px; font-size: 14px; font-weight: 600; display: flex; justify-content: space-between; align-items: center; gap: 10px; background: ${this.adminNotice.type === 'error' ? 'rgba(239,68,68,0.14)' : 'rgba(16,185,129,0.14)'}; color: ${this.adminNotice.type === 'error' ? '#FCA5A5' : '#6EE7B7'}; border: 1px solid ${this.adminNotice.type === 'error' ? 'rgba(239,68,68,0.35)' : 'rgba(16,185,129,0.35)'};">
+        <span><i class="fas ${this.adminNotice.type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle'}"></i> ${this._esc(this.adminNotice.text)}</span>
+        <button type="button" onclick="app.adminNotice=null; this.parentElement.remove();" style="background:none;border:0;color:inherit;cursor:pointer;font-size:16px;">&times;</button>
+      </div>
+    ` : "";
+
     container.innerHTML = `
       <section style="padding: 40px 0 80px;">
         <div class="container">
-          
-          <div style="margin-bottom: 28px;">
-            <span class="tag" style="background-color: #FEE2E2; color: #DC2626;">ADMIN ACCESS ONLY</span>
-            <h1 style="font-size: 28px; margin-top: 4px;" data-i18n="admin_title">Administration Control Center</h1>
+
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 14px; margin-bottom: 24px;">
+            <div>
+              <span class="tag" style="background: rgba(239, 68, 68, 0.16); color: #F87171; border-color: rgba(239, 68, 68, 0.35);">
+                <i class="fas fa-shield-alt"></i>
+                ${isAr ? 'وصول إداري حصري: snsr19344@gmail.com' : 'EXCLUSIVE ADMIN: snsr19344@gmail.com'}
+              </span>
+              <h1 style="font-size: 28px; margin-top: 8px;" data-i18n="admin_title">ByteForce Administration Center</h1>
+              <p style="font-size: 13.5px; color: var(--color-text-muted); margin-top: 4px;">
+                ${isAr ? 'إدارة واعتماد مراكز الصيانة والفنيين، التحكم بحسابات المستخدمين، مراقبة طلبات الصيانة، وسجل التدقيق الإداري.' : 'Manage maintenance center approvals, user access controls, platform-wide repair requests, and the audit log.'}
+              </p>
+            </div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button class="btn btn-outline btn-sm" onclick="app.navigate('admin')">
+                <i class="fas fa-sync-alt"></i> ${isAr ? 'تحديث البيانات' : 'Refresh'}
+              </button>
+              <button class="btn btn-outline btn-sm" onclick="app.navigate('dashboard')">
+                <i class="fas fa-user"></i> ${isAr ? 'لوحة حسابي' : 'My Dashboard'}
+              </button>
+            </div>
           </div>
 
-          <!-- KPI Cards -->
-          <div id="adminStatsGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 18px; margin-bottom: 32px;">
+          ${noticeHtml}
+
+          <!-- 6 Admin KPI Cards -->
+          <div id="adminStatsGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(175px, 1fr)); gap: 14px; margin-bottom: 26px;">
             <div style="padding: 20px; text-align: center; color: var(--color-text-muted);"><i class="fas fa-spinner fa-spin"></i></div>
           </div>
 
-          <!-- Pending Technician Approvals -->
-          <div class="card" style="margin-bottom: 30px;">
-            <h3 style="font-size: 18px; margin-bottom: 16px;" data-i18n="admin_tab_approvals">Technician Approvals</h3>
-            <div id="adminPendingTechs">
-              <div style="padding: 20px; text-align: center; color: var(--color-text-muted);"><i class="fas fa-spinner fa-spin"></i></div>
-            </div>
+          <!-- Admin Navigation Tabs -->
+          <div class="admin-tabs">
+            <button type="button" class="admin-tab-btn ${activeTab === 'centers' ? 'active' : ''}" data-tab="centers" onclick="app.switchAdminTab('centers')">
+              <i class="fas fa-store-alt"></i>
+              <span data-i18n="admin_tab_centers">المراكز والفنيون</span>
+              <span class="admin-count-pill" id="tabCountCenters">0</span>
+            </button>
+            <button type="button" class="admin-tab-btn ${activeTab === 'users' ? 'active' : ''}" data-tab="users" onclick="app.switchAdminTab('users')">
+              <i class="fas fa-users"></i>
+              <span data-i18n="admin_tab_users">حسابات المستخدمين</span>
+              <span class="admin-count-pill" id="tabCountUsers">0</span>
+            </button>
+            <button type="button" class="admin-tab-btn ${activeTab === 'requests' ? 'active' : ''}" data-tab="requests" onclick="app.switchAdminTab('requests')">
+              <i class="fas fa-clipboard-list"></i>
+              <span data-i18n="admin_tab_requests">جميع طلبات الصيانة</span>
+              <span class="admin-count-pill" id="tabCountRequests">0</span>
+            </button>
+            <button type="button" class="admin-tab-btn ${activeTab === 'audit' ? 'active' : ''}" data-tab="audit" onclick="app.switchAdminTab('audit')">
+              <i class="fas fa-history"></i>
+              <span data-i18n="admin_tab_audit">سجل تدقيق الإدارة</span>
+              <span class="admin-count-pill" id="tabCountAudit">0</span>
+            </button>
           </div>
 
-          <!-- User Management -->
-          <div class="card">
-            <h3 style="font-size: 18px; margin-bottom: 16px;" data-i18n="admin_tab_users">User Accounts</h3>
-            <div id="adminUsersList">
-              <div style="padding: 20px; text-align: center; color: var(--color-text-muted);"><i class="fas fa-spinner fa-spin"></i></div>
-            </div>
+          <!-- Active Tab Card -->
+          <div class="card" id="adminTabBody" style="min-height: 240px;">
+            <div style="padding: 32px; text-align: center; color: var(--color-text-muted);"><i class="fas fa-spinner fa-spin"></i></div>
           </div>
 
         </div>
       </section>
     `;
 
-    // Load Stats
-    try {
-      const stats = await window.api.getAdminStats();
-      container.querySelector("#adminStatsGrid").innerHTML = `
-        <div class="card" style="padding: 20px; text-align: center;">
-          <span style="font-size: 13px; color: var(--color-text-muted);" data-i18n="admin_stat_users">Total Users</span>
-          <div style="font-size: 28px; font-weight: 800; color: var(--color-primary); margin-top: 4px;">${stats.total_users}</div>
+    // Load Stats + All Admin Datasets in Parallel
+    const [statsRes, centersRes, usersRes, reqsRes, auditRes] = await Promise.allSettled([
+      window.api.getAdminStats(),
+      window.api.getAllAdminCenters("all"),
+      window.api.getAdminUsers(),
+      window.api.getAdminRequests(),
+      window.api.getAdminAuditLogs()
+    ]);
+
+    const stats = statsRes.status === "fulfilled" ? statsRes.value : {};
+    this._adminCache = {
+      centers: centersRes.status === "fulfilled" ? (centersRes.value || []) : [],
+      users: usersRes.status === "fulfilled" ? (usersRes.value || []) : [],
+      requests: reqsRes.status === "fulfilled" ? (reqsRes.value || []) : [],
+      audit: auditRes.status === "fulfilled" ? (auditRes.value || []) : [],
+      errors: {
+        stats: statsRes.status === "rejected" ? statsRes.reason?.message : null,
+        centers: centersRes.status === "rejected" ? centersRes.reason?.message : null,
+        users: usersRes.status === "rejected" ? usersRes.reason?.message : null,
+        requests: reqsRes.status === "rejected" ? reqsRes.reason?.message : null,
+        audit: auditRes.status === "rejected" ? auditRes.reason?.message : null
+      }
+    };
+
+    // Update KPI Cards
+    const statsGrid = container.querySelector("#adminStatsGrid");
+    if (statsGrid) {
+      statsGrid.innerHTML = `
+        <div class="card" style="padding: 18px; text-align: center;">
+          <span style="font-size: 12.5px; color: var(--color-text-muted);" data-i18n="admin_stat_users">Total Users</span>
+          <div style="font-size: 28px; font-weight: 800; color: #38BDF8; margin-top: 6px;">${stats.total_users ?? this._adminCache.users.length ?? 0}</div>
         </div>
-        <div class="card" style="padding: 20px; text-align: center;">
-          <span style="font-size: 13px; color: var(--color-text-muted);" data-i18n="admin_stat_techs">Total Technicians</span>
-          <div style="font-size: 28px; font-weight: 800; color: var(--color-secondary); margin-top: 4px;">${stats.total_technicians}</div>
+        <div class="card" style="padding: 18px; text-align: center;">
+          <span style="font-size: 12.5px; color: var(--color-text-muted);" data-i18n="admin_stat_techs">Approved Centers</span>
+          <div style="font-size: 28px; font-weight: 800; color: #10B981; margin-top: 6px;">${stats.total_technicians ?? 0}</div>
         </div>
-        <div class="card" style="padding: 20px; text-align: center;">
-          <span style="font-size: 13px; color: var(--color-text-muted);" data-i18n="admin_stat_pending">Pending Approvals</span>
-          <div style="font-size: 28px; font-weight: 800; color: #D97706; margin-top: 4px;">${stats.pending_approvals}</div>
+        <div class="card" style="padding: 18px; text-align: center;">
+          <span style="font-size: 12.5px; color: var(--color-text-muted);" data-i18n="admin_stat_pending">Pending Approvals</span>
+          <div style="font-size: 28px; font-weight: 800; color: #F59E0B; margin-top: 6px;">${stats.pending_approvals ?? 0}</div>
         </div>
-        <div class="card" style="padding: 20px; text-align: center;">
-          <span style="font-size: 13px; color: var(--color-text-muted);" data-i18n="admin_stat_diags">Total Diagnoses</span>
-          <div style="font-size: 28px; font-weight: 800; color: var(--color-success); margin-top: 4px;">${stats.total_diagnoses}</div>
+        <div class="card" style="padding: 18px; text-align: center;">
+          <span style="font-size: 12.5px; color: var(--color-text-muted);" data-i18n="admin_stat_active_req">Active Requests</span>
+          <div style="font-size: 28px; font-weight: 800; color: #60A5FA; margin-top: 6px;">${stats.active_requests ?? 0}</div>
+        </div>
+        <div class="card" style="padding: 18px; text-align: center;">
+          <span style="font-size: 12.5px; color: var(--color-text-muted);" data-i18n="admin_stat_completed_req">Completed Repairs</span>
+          <div style="font-size: 28px; font-weight: 800; color: #34D399; margin-top: 6px;">${stats.completed_requests ?? 0}</div>
+        </div>
+        <div class="card" style="padding: 18px; text-align: center;">
+          <span style="font-size: 12.5px; color: var(--color-text-muted);" data-i18n="admin_stat_diags">Total Diagnoses</span>
+          <div style="font-size: 28px; font-weight: 800; color: #A78BFA; margin-top: 6px;">${stats.total_diagnoses ?? 0}</div>
         </div>
       `;
-    } catch (e) {
-      console.error(e);
     }
 
-    // Load Pending Technicians
-    try {
-      const pending = await window.api.getPendingTechnicians();
-      const pContainer = container.querySelector("#adminPendingTechs");
-      if (pending.length === 0) {
-        pContainer.innerHTML = `<p style="color: var(--color-text-muted); font-size: 14px;">${isAr ? 'لا توجد طلبات اعتماد فنيين معلقة حالياً.' : 'No pending technician applications.'}</p>`;
-      } else {
-        pContainer.innerHTML = `
-          <div style="overflow-x: auto;">
-            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-              <thead>
-                <tr style="border-bottom: 2px solid var(--color-border); text-align: ${isAr ? 'right' : 'left'};">
-                  <th style="padding: 8px;">Business</th>
-                  <th style="padding: 8px;">Applicant</th>
-                  <th style="padding: 8px;">City</th>
-                  <th style="padding: 8px;">Specialties</th>
-                  <th style="padding: 8px;">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${pending.map(t => `
-                  <tr style="border-bottom: 1px solid var(--color-border);">
-                    <td style="padding: 10px 8px; font-weight: 600;">${t.business_name} <span class="tag" style="font-size: 10px; margin-inline-start: 4px;">${t.kind === 'CENTER' ? (isAr ? 'مركز' : 'Center') : (isAr ? 'فني' : 'Tech')}</span></td>
-                    <td style="padding: 10px 8px;">${t.technician_name || t.name || '-'} (${t.email || t.phone || '-'})</td>
-                    <td style="padding: 10px 8px;">${t.city || '-'}${t.address ? ' · ' + t.address : ''}</td>
-                    <td style="padding: 10px 8px;">${Array.isArray(t.specializations) ? (t.specializations.join(', ') || '-') : (t.specializations || '-')}</td>
-                    <td style="padding: 10px 8px; display: flex; gap: 6px; flex-wrap: wrap;">
-                      <button class="btn btn-sm btn-primary" onclick="app.approveTech('${t.id}')" data-i18n="admin_approve_btn">Approve</button>
-                      <button class="btn btn-sm btn-outline" style="color: var(--color-danger);" onclick="app.rejectTech('${t.id}')" data-i18n="admin_reject_btn">Reject</button>
+    const setCount = (id, count) => {
+      const el = container.querySelector("#" + id);
+      if (el) el.textContent = String(count);
+    };
+    setCount("tabCountCenters", this._adminCache.centers.length);
+    setCount("tabCountUsers", this._adminCache.users.length);
+    setCount("tabCountRequests", this._adminCache.requests.length);
+    setCount("tabCountAudit", this._adminCache.audit.length);
+
+    const tabBody = container.querySelector("#adminTabBody");
+    if (tabBody) this._renderAdminTabContent(tabBody);
+    window.i18n.applyLanguage(window.i18n.currentLang);
+  }
+
+  _renderAdminTabContent(panel) {
+    const isAr = window.i18n.currentLang === "ar";
+    const tab = this.adminActiveTab || "centers";
+    const cache = this._adminCache || { centers: [], users: [], requests: [], audit: [], errors: {} };
+    const align = isAr ? "right" : "left";
+
+    if (tab === "centers") {
+      if (cache.errors.centers) {
+        panel.innerHTML = `<p style="color: #FCA5A5;">${this._esc(cache.errors.centers)}</p>`;
+        return;
+      }
+      const list = cache.centers || [];
+      if (list.length === 0) {
+        panel.innerHTML = `
+          <h3 style="font-size: 18px; margin-bottom: 12px;" data-i18n="admin_tab_approvals">${isAr ? 'إدارة المراكز والفنيين والاعتمادات' : 'Maintenance Centers & Technicians'}</h3>
+          <p style="color: var(--color-text-muted); font-size: 14px;">${isAr ? 'لا توجد طلبات أو مراكز صيانة مسجلة بعد.' : 'No maintenance centers or technician applications yet.'}</p>
+        `;
+        return;
+      }
+      panel.innerHTML = `
+        <h3 style="font-size: 18px; margin-bottom: 16px;" data-i18n="admin_tab_approvals">${isAr ? 'إدارة المراكز والفنيين والاعتمادات' : 'Maintenance Centers & Technicians'}</h3>
+        <div style="overflow-x: auto;">
+          <table class="admin-table">
+            <thead>
+              <tr style="text-align: ${align};">
+                <th>${isAr ? 'المركز / الفني' : 'Center / Tech'}</th>
+                <th>${isAr ? 'مقدم الطلب والاتصال' : 'Applicant & Contact'}</th>
+                <th>${isAr ? 'المدينة والعنوان' : 'City & Address'}</th>
+                <th>${isAr ? 'التخصصات' : 'Specialties'}</th>
+                <th>${isAr ? 'الحالة' : 'Status'}</th>
+                <th>${isAr ? 'الإجراء' : 'Action'}</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${list.map(t => {
+                const st = String(t.status || "pending").toLowerCase();
+                let stBadge = `<span class="tag" style="background: rgba(245, 158, 11, 0.16); color: #FBBF24; border-color: rgba(245, 158, 11, 0.35);">${isAr ? 'بانتظار الموافقة' : 'Pending'}</span>`;
+                if (st === "approved") {
+                  stBadge = `<span class="tag" style="background: rgba(16, 185, 129, 0.16); color: #34D399; border-color: rgba(16, 185, 129, 0.35);">${isAr ? 'معتمد ومفعل' : 'Approved'}</span>`;
+                } else if (st === "suspended") {
+                  stBadge = `<span class="tag" style="background: rgba(148, 163, 184, 0.16); color: #CBD5E1; border-color: rgba(148, 163, 184, 0.35);">${isAr ? 'موقوف مؤقتاً' : 'Suspended'}</span>`;
+                } else if (st === "rejected") {
+                  stBadge = `<span class="tag" style="background: rgba(239, 68, 68, 0.16); color: #F87171; border-color: rgba(239, 68, 68, 0.35);">${isAr ? 'مرفوض' : 'Rejected'}</span>`;
+                }
+                const kindLbl = String(t.kind || "").toUpperCase() === "CENTER" ? (isAr ? "مركز صيانة" : "Center") : (isAr ? "فني مستقل" : "Tech");
+                const specs = Array.isArray(t.specializations) ? (t.specializations.join(", ") || "-") : (t.specializations || "-");
+                return `
+                  <tr>
+                    <td>
+                      <strong style="color: #FFFFFF;">${this._esc(t.business_name || t.name)}</strong>
+                      <div style="margin-top: 4px; display: flex; gap: 6px; flex-wrap: wrap;">
+                        <span class="tag" style="font-size: 11px;">${kindLbl}</span>
+                        ${t.home_service || t.home_service_available ? `<span class="tech-home-badge">${isAr ? 'خدمة منزلية' : 'Home Service'}</span>` : ''}
+                      </div>
+                    </td>
+                    <td>
+                      <div>${this._esc(t.technician_name || t.name || "-")}</div>
+                      <div style="font-size: 12px; color: #94A3B8;" dir="ltr">${this._esc(t.email || "")} ${t.phone ? "· " + this._esc(t.phone) : ""}</div>
+                    </td>
+                    <td>${this._esc(t.city || "-")}${t.address ? " · " + this._esc(t.address) : ""}</td>
+                    <td style="max-width: 200px;">${this._esc(specs)}</td>
+                    <td>${stBadge}</td>
+                    <td>
+                      <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                        ${st !== "approved" ? `<button class="btn btn-sm btn-primary" onclick="app.approveTech('${t.id}')">${isAr ? (st === "pending" ? "موافقة واعتماد" : "إعادة تفعيل") : (st === "pending" ? "Approve" : "Reactivate")}</button>` : ''}
+                        ${st === "approved" ? `<button class="btn btn-sm btn-outline" style="color: #FBBF24; border-color: rgba(245, 158, 11, 0.4);" onclick="app.suspendTech('${t.id}')">${isAr ? 'إيقاف مؤقت' : 'Suspend'}</button>` : ''}
+                        ${st === "pending" ? `<button class="btn btn-sm btn-outline" style="color: var(--color-danger); border-color: rgba(239, 68, 68, 0.35);" onclick="app.rejectTech('${t.id}')">${isAr ? 'رفض' : 'Reject'}</button>` : ''}
+                      </div>
                     </td>
                   </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          </div>
-        `;
-      }
-    } catch (e) {
-      console.error(e);
+                `;
+              }).join("")}
+            </tbody>
+          </table>
+        </div>
+      `;
+      return;
     }
 
-    // Load Users
-    try {
-      const users = await window.api.getAdminUsers();
-      container.querySelector("#adminUsersList").innerHTML = `
+    if (tab === "users") {
+      if (cache.errors.users) {
+        panel.innerHTML = `<p style="color: #FCA5A5;">${this._esc(cache.errors.users)}</p>`;
+        return;
+      }
+      const users = cache.users || [];
+      panel.innerHTML = `
+        <h3 style="font-size: 18px; margin-bottom: 16px;" data-i18n="admin_tab_users">${isAr ? 'إدارة حسابات المستخدمين' : 'User Accounts'}</h3>
         <div style="overflow-x: auto;">
-          <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+          <table class="admin-table">
             <thead>
-              <tr style="border-bottom: 2px solid var(--color-border); text-align: ${isAr ? 'right' : 'left'};">
-                <th style="padding: 8px;">ID</th>
-                <th style="padding: 8px;">Name</th>
-                <th style="padding: 8px;">Email</th>
-                <th style="padding: 8px;">Role</th>
-                <th style="padding: 8px;">Status</th>
-                <th style="padding: 8px;">Action</th>
+              <tr style="text-align: ${align};">
+                <th>${isAr ? 'المعرّف' : 'ID'}</th>
+                <th>${isAr ? 'الاسم' : 'Name'}</th>
+                <th>${isAr ? 'البريد الإلكتروني' : 'Email'}</th>
+                <th>${isAr ? 'الدور' : 'Role'}</th>
+                <th>${isAr ? 'الحالة' : 'Status'}</th>
+                <th>${isAr ? 'الإجراء' : 'Action'}</th>
               </tr>
             </thead>
             <tbody>
               ${users.map(u => {
                 const isActive = u.is_active !== false;
-                const isSelfAdmin = (u.email || '').toLowerCase().trim() === 'snsr19344@gmail.com';
+                const isSelfAdmin = String(u.email || "").toLowerCase().trim() === "snsr19344@gmail.com";
+                const rawRole = isSelfAdmin ? "admin" : (u.role || "user");
+                const roleLabel = rawRole === "admin"
+                  ? (isAr ? "مدير النظام" : "Admin")
+                  : rawRole === "technician"
+                    ? (isAr ? "صيانة / فني" : "Maintenance")
+                    : (isAr ? "مستخدم" : "User");
                 return `
-                <tr style="border-bottom: 1px solid var(--color-border);">
-                  <td style="padding: 8px; font-family: monospace; font-size: 12px;">${String(u.id).slice(0, 8)}</td>
-                  <td style="padding: 8px; font-weight: 600;">${u.full_name || '-'}</td>
-                  <td style="padding: 8px;">${u.email || '-'}</td>
-                  <td style="padding: 8px;"><span class="tag">${u.role || 'user'}</span></td>
-                  <td style="padding: 8px;">
-                    <span style="color: ${isActive ? 'var(--color-success)' : 'var(--color-danger)'}; font-weight: 600;">
-                      ${isActive ? (isAr ? 'نشط' : 'Active') : (isAr ? 'معطل' : 'Deactivated')}
-                    </span>
-                  </td>
-                  <td style="padding: 8px;">
-                    ${isSelfAdmin
-                      ? `<span style="font-size: 12px; color: #94A3B8;">${isAr ? 'المدير الرئيسي' : 'Primary Admin'}</span>`
-                      : `<button class="btn btn-sm btn-outline" onclick="app.toggleUser('${u.id}')">${isActive ? (isAr ? 'تعطيل' : 'Deactivate') : (isAr ? 'تفعيل' : 'Activate')}</button>`
-                    }
-                  </td>
-                </tr>
-              `;
-              }).join('')}
+                  <tr>
+                    <td style="font-family: monospace; font-size: 12px; color: #94A3B8;">${this._esc(String(u.id).slice(0, 8))}</td>
+                    <td style="font-weight: 600; color: #FFFFFF;">${this._esc(u.full_name || "-")}</td>
+                    <td dir="ltr">${this._esc(u.email || "-")}</td>
+                    <td><span class="tag">${roleLabel}</span></td>
+                    <td>
+                      <span style="color: ${isActive ? 'var(--color-success)' : 'var(--color-danger)'}; font-weight: 700;">
+                        ${isActive ? (isAr ? 'نشط' : 'Active') : (isAr ? 'معطل' : 'Suspended')}
+                      </span>
+                    </td>
+                    <td>
+                      ${isSelfAdmin
+                        ? `<span style="font-size: 12px; color: #38BDF8; font-weight: 600;">${isAr ? 'المدير الرئيسي (محمي)' : 'Primary Admin (Protected)'}</span>`
+                        : `<button class="btn btn-sm btn-outline" style="color: ${isActive ? '#FCA5A5' : '#6EE7B7'}; border-color: ${isActive ? 'rgba(239,68,68,0.4)' : 'rgba(16,185,129,0.4)'};" onclick="app.toggleUser('${this._esc(u.id)}')">${isActive ? (isAr ? 'إيقاف الحساب' : 'Suspend') : (isAr ? 'تفعيل الحساب' : 'Reactivate')}</button>`
+                      }
+                    </td>
+                  </tr>
+                `;
+              }).join("")}
             </tbody>
           </table>
         </div>
       `;
-    } catch (e) {
-      console.error(e);
+      return;
     }
+
+    if (tab === "requests") {
+      if (cache.errors.requests) {
+        panel.innerHTML = `<p style="color: #FCA5A5;">${this._esc(cache.errors.requests)}</p>`;
+        return;
+      }
+      const reqs = cache.requests || [];
+      if (reqs.length === 0) {
+        panel.innerHTML = `
+          <h3 style="font-size: 18px; margin-bottom: 12px;" data-i18n="admin_tab_requests">${isAr ? 'جميع طلبات الصيانة' : 'All Repair Requests'}</h3>
+          <p style="color: var(--color-text-muted); font-size: 14px;">${isAr ? 'لا توجد طلبات صيانة مسجلة على المنصة حتى الآن.' : 'No repair requests have been submitted yet.'}</p>
+        `;
+        return;
+      }
+      panel.innerHTML = `
+        <h3 style="font-size: 18px; margin-bottom: 16px;" data-i18n="admin_tab_requests">${isAr ? 'جميع طلبات الصيانة' : 'All Repair Requests'}</h3>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          ${reqs.map(r => `
+            <div style="padding: 14px 16px; background: #0F131C; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                <strong style="color: #FFFFFF;">#${this._esc(String(r.id).slice(0, 8))} · ${this._esc(r.device_info || r.device_model || 'Device')}</strong>
+                <span class="tag">${this._esc(r.status || 'NEW')}</span>
+              </div>
+              <div style="font-size: 13px; color: #94A3B8; margin-top: 6px; display: flex; flex-wrap: wrap; gap: 14px;">
+                <span><b>${isAr ? 'العميل:' : 'Customer:'}</b> ${this._esc(r.customer_name || r.user_name || '-')} (<span dir="ltr">${this._esc(r.user_email || '-')}</span>)</span>
+                <span><b>${isAr ? 'المركز / الفني:' : 'Center / Tech:'}</b> ${this._esc(r.technician_business || r.technician_name || '-')}</span>
+                ${r.estimate != null ? `<span><b>${isAr ? 'التقدير:' : 'Estimate:'}</b> ${this._esc(r.estimate)}</span>` : ''}
+                ${r.final_cost != null ? `<span><b>${isAr ? 'النهائي:' : 'Final:'}</b> ${this._esc(r.final_cost)}</span>` : ''}
+              </div>
+              <p style="font-size: 13px; color: #CBD5E1; margin-top: 6px;">${this._esc(r.problem_summary || r.issue_description || '')}</p>
+            </div>
+          `).join("")}
+        </div>
+      `;
+      return;
+    }
+
+    // Tab 4: Audit Log
+    if (cache.errors.audit) {
+      panel.innerHTML = `<p style="color: #FCA5A5;">${this._esc(cache.errors.audit)}</p>`;
+      return;
+    }
+    const logs = cache.audit || [];
+    panel.innerHTML = `
+      <h3 style="font-size: 18px; margin-bottom: 16px;" data-i18n="admin_tab_audit">${isAr ? 'سجل تدقيق الإدارة' : 'Admin Audit Log'}</h3>
+      ${logs.length === 0 ? `<p style="color: var(--color-text-muted); font-size: 14px;">${isAr ? 'لا توجد عمليات إدارية مسجلة في السجل بعد.' : 'No administrative actions recorded yet.'}</p>` : `
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          ${logs.map(l => `
+            <div style="padding: 12px 14px; background: #0F131C; border: 1px solid rgba(255,255,255,0.07); border-radius: 8px; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 8px;">
+              <div>
+                <strong style="color: #FFFFFF; font-size: 13.5px;">${this._esc(l.title)}</strong>
+                <div style="color: #94A3B8; font-size: 12.5px; margin-top: 2px;">${this._esc(l.message)}</div>
+              </div>
+              <span style="color: #64748B; font-size: 12px;" dir="ltr">${l.created_at ? new Date(l.created_at).toLocaleString() : ''}</span>
+            </div>
+          `).join("")}
+        </div>
+      `}
+    `;
   }
 
   async approveTech(id) {
-    await window.api.approveTechnician(id);
-    alert("Technician approved!");
+    const isAr = window.i18n.currentLang === "ar";
+    try {
+      await window.api.approveTechnician(id);
+      this._setAdminNotice("success", isAr ? "تم اعتماد المركز/الفني وتفعيله للظهور في المنصة." : "Technician/center approved and activated.");
+    } catch (e) {
+      this._setAdminNotice("error", (isAr ? "تعذر الاعتماد: " : "Approval failed: ") + (e.message || ""));
+    }
+    this.navigate("admin");
+  }
+
+  async suspendTech(id) {
+    const isAr = window.i18n.currentLang === "ar";
+    try {
+      await window.api.suspendTechnician(id);
+      this._setAdminNotice("success", isAr ? "تم إيقاف ظهور المركز/الفني مؤقتاً وتسجيل العملية." : "Technician/center suspended and audit logged.");
+    } catch (e) {
+      this._setAdminNotice("error", (isAr ? "تعذر الإيقاف: " : "Suspension failed: ") + (e.message || ""));
+    }
     this.navigate("admin");
   }
 
   async rejectTech(id) {
-    await window.api.rejectTechnician(id);
-    alert("Technician application rejected.");
+    const isAr = window.i18n.currentLang === "ar";
+    try {
+      await window.api.rejectTechnician(id);
+      this._setAdminNotice("success", isAr ? "تم رفض طلب الانضمام وإشعار المتقدم." : "Technician application rejected.");
+    } catch (e) {
+      this._setAdminNotice("error", (isAr ? "تعذر الرفض: " : "Rejection failed: ") + (e.message || ""));
+    }
     this.navigate("admin");
   }
 
   async toggleUser(id) {
-    await window.api.toggleUserStatus(id);
+    const isAr = window.i18n.currentLang === "ar";
+    try {
+      await window.api.toggleUserStatus(id);
+      this._setAdminNotice("success", isAr ? "تم تحديث حالة الحساب وتسجيل العملية في سجل التدقيق." : "User account status updated.");
+    } catch (e) {
+      this._setAdminNotice("error", (isAr ? "تعذر تعديل حالة المستخدم: " : "User update failed: ") + (e.message || ""));
+    }
     this.navigate("admin");
   }
 
@@ -3493,7 +3745,7 @@ class ByteForceApp {
             this.pendingNavigation = null;
             this.navigate(dest);
           } else {
-            this.navigate("dashboard");
+            this.navigate(this.isExclusiveAdmin(userProfile) ? "admin" : "dashboard");
           }
         } catch (err) {
           let msg = err.message || "";
@@ -3576,7 +3828,7 @@ class ByteForceApp {
             this.pendingNavigation = null;
             this.navigate(dest);
           } else {
-            this.navigate("dashboard");
+            this.navigate(this.isExclusiveAdmin(userProfile) ? "admin" : "dashboard");
           }
         } catch (err) {
           let msg = err.message || "";

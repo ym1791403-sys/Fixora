@@ -194,5 +194,44 @@ class TestProductionIntegrity(unittest.TestCase):
         self.assertEqual(diag_watch["status"], "completed")
         self.assertIsNotNone(diag_watch.get("verified_guide"))
 
+    def test_08_exclusive_admin_security_and_endpoints(self):
+        """Verifies /api/admin/* endpoints reject unauthenticated/non-admin callers and serve snsr19344@gmail.com."""
+        from unittest.mock import patch
+
+        admin_routes = [
+            "/api/admin/stats",
+            "/api/admin/centers",
+            "/api/admin/users",
+            "/api/admin/requests",
+            "/api/admin/audit",
+        ]
+        # 1. Unauthenticated access must fail with 401
+        for route in admin_routes:
+            resp = self.client.get(route)
+            self.assertEqual(resp.status_code, 401, f"Expected 401 without token on {route}")
+
+        # 2. Non-admin email token must fail with 403
+        with patch("api.routers.admin._verify_supabase_bearer_user", return_value={"id": "70cac9af-2369-4a11-8060-2ee06214b2a0", "email": "ym1791403@gmail.com"}):
+            for route in admin_routes:
+                resp = self.client.get(route, headers={"Authorization": "Bearer mock-user-token"})
+                self.assertEqual(resp.status_code, 403, f"Expected 403 for non-admin on {route}")
+
+        # 3. Exclusive admin snsr19344@gmail.com succeeds and cannot deactivate self
+        with patch("api.routers.admin._verify_supabase_bearer_user", return_value={"id": "3a1610f8-c0a2-4b3e-8c6a-ce07e7349cff", "email": "snsr19344@gmail.com"}):
+            stats_resp = self.client.get("/api/admin/stats", headers={"Authorization": "Bearer mock-admin-token"})
+            self.assertEqual(stats_resp.status_code, 200)
+            stats_data = stats_resp.json()
+            self.assertIn("total_users", stats_data)
+            self.assertIn("active_requests", stats_data)
+            self.assertIn("completed_requests", stats_data)
+
+            for route in ["/api/admin/centers", "/api/admin/users", "/api/admin/requests", "/api/admin/audit"]:
+                r = self.client.get(route, headers={"Authorization": "Bearer mock-admin-token"})
+                self.assertEqual(r.status_code, 200, f"Expected 200 for exclusive admin on {route}")
+                self.assertIsInstance(r.json(), list)
+
+            toggle_self = self.client.post("/api/admin/users/3a1610f8-c0a2-4b3e-8c6a-ce07e7349cff/toggle", headers={"Authorization": "Bearer mock-admin-token"})
+            self.assertEqual(toggle_self.status_code, 400)
+
 if __name__ == "__main__":
     unittest.main()

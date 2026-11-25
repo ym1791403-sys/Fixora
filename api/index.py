@@ -14,7 +14,8 @@ from api.routers.analysis import router as analysis_router
 from api.routers.guides import router as guides_router
 from api.routers.prediction import router as prediction_router
 from api.routers.diagnosis import router as diagnosis_router
-from api.services.db import DatabaseUnavailableError, get_table_count, postgrest_request
+from api.routers.admin import router as admin_router
+from api.services.db import DatabaseUnavailableError
 
 from urllib.parse import parse_qs
 
@@ -57,12 +58,13 @@ async def db_unavailable_exception_handler(request: Request, exc: DatabaseUnavai
         }
     )
 
-# Mount genuine dataset status, empirical analysis, verified guides, prediction, and diagnosis routers
+# Mount genuine dataset status, empirical analysis, verified guides, prediction, diagnosis, and exclusive admin routers
 app.include_router(datasets_router)
 app.include_router(analysis_router)
 app.include_router(guides_router)
 app.include_router(prediction_router)
 app.include_router(diagnosis_router)
+app.include_router(admin_router)
 
 def get_content_type(path: str) -> str:
     ext = os.path.splitext(path)[1].lower()
@@ -89,32 +91,6 @@ def health_check():
         "database": "Supabase PostgreSQL",
         "policy": "Strict empirical evidence only; zero synthetic records or mock fallback."
     }
-
-# Admin / System Statistics Endpoint (derived from real Supabase table counts)
-@app.api_route("/api/admin/stats", methods=["GET"])
-@app.api_route("/api/v1/admin/stats", methods=["GET"])
-def get_admin_stats():
-    try:
-        guides = get_table_count("repair_guides")
-        incidents = get_table_count("repair_incidents")
-        techs_approved = get_table_count("technicians", {"status": "eq.approved"}, use_service_role=True)
-        techs_pending = get_table_count("technicians", {"status": "eq.pending"}, use_service_role=True)
-        requests = get_table_count("repair_requests", use_service_role=True)
-        users_count = get_table_count("profiles", use_service_role=True)
-        diagnoses_count = get_table_count("diagnosis_reports", use_service_role=True)
-        return {
-            "verified_guides_count": guides,
-            "repair_incidents_count": incidents,
-            "active_technicians_count": techs_approved,
-            "repair_requests_count": requests,
-            "total_users": users_count,
-            "total_technicians": techs_approved,
-            "pending_approvals": techs_pending,
-            "total_diagnoses": diagnoses_count,
-            "source": "Supabase Production Database"
-        }
-    except DatabaseUnavailableError as e:
-        return JSONResponse(status_code=503, content={"error": "Dataset unavailable", "detail": str(e)})
 
 # Fallback for unmatched API routes
 @app.api_route("/api/{full_path:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE"])

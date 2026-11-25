@@ -12,13 +12,22 @@ class ApiClient {
     this.currentUser = JSON.parse(localStorage.getItem("byteforce_user") || localStorage.getItem("fixora_user") || localStorage.getItem("techrepair_user") || "null");
   }
 
+  _normalizeUserRole(user) {
+    if (!user || typeof user !== "object") return user;
+    const email = String(user.email || "").toLowerCase().trim();
+    const isAdmin = email === "snsr19344@gmail.com";
+    const resolvedRole = isAdmin ? "admin" : (user.role === "admin" ? "user" : (user.role || "user"));
+    return resolvedRole === user.role ? user : { ...user, role: resolvedRole };
+  }
+
   setSession(token, user) {
+    const cleanUser = this._normalizeUserRole(user);
     this.token = token;
-    this.currentUser = user;
+    this.currentUser = cleanUser;
     localStorage.setItem("byteforce_token", token);
-    localStorage.setItem("byteforce_user", JSON.stringify(user));
+    localStorage.setItem("byteforce_user", JSON.stringify(cleanUser));
     localStorage.setItem("fixora_token", token);
-    localStorage.setItem("fixora_user", JSON.stringify(user));
+    localStorage.setItem("fixora_user", JSON.stringify(cleanUser));
   }
 
   clearSession() {
@@ -36,9 +45,9 @@ class ApiClient {
 
   getUser() {
     if (window.SupabaseBridge && window.SupabaseBridge.currentUser) {
-      return window.SupabaseBridge.currentUser;
+      return this._normalizeUserRole(window.SupabaseBridge.currentUser);
     }
-    return this.currentUser;
+    return this._normalizeUserRole(this.currentUser);
   }
 
   getRole() {
@@ -330,52 +339,101 @@ class ApiClient {
   }
 
   // ==========================================
-  // ADMIN SYSTEM METRICS & CONTROLS (EXCLUSIVE TO ADMIN)
+  // ADMIN SYSTEM METRICS & CONTROLS (EXCLUSIVE TO snsr19344@gmail.com)
   // ==========================================
-  async getAdminStats() {
-    try {
-      return await this.request("/admin/stats");
-    } catch (e) {
-      if (window.SupabaseBridge && window.SupabaseBridge.isReady()) {
-        return await window.SupabaseBridge.fetchAdminStats();
-      }
-      throw e;
+  async _adminRequest(endpoint, method = "GET", fallbackFn = null) {
+    let token = this.token;
+    if (window.SupabaseBridge && typeof window.SupabaseBridge.getAccessToken === "function") {
+      try {
+        const liveTok = await window.SupabaseBridge.getAccessToken();
+        if (liveTok) token = liveTok;
+      } catch (e) {}
     }
+
+    try {
+      const headers = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      const response = await fetch(`${this.baseUrl}${endpoint}`, { method, headers });
+      if (response.status === 401 || response.status === 403) {
+        let errData = {};
+        try { errData = await response.json(); } catch (e) {}
+        const err = new Error(errData.detail || errData.message || `HTTP ${response.status}`);
+        err.status = response.status;
+        throw err;
+      }
+      if (response.ok) {
+        return await response.json();
+      }
+      let errData = {};
+      try { errData = await response.json(); } catch (e) {}
+      if (response.status === 400 || response.status === 404 || response.status === 422) {
+        const err = new Error(errData.detail || errData.message || `HTTP ${response.status}`);
+        err.status = response.status;
+        throw err;
+      }
+      throw new Error(errData.detail || `HTTP ${response.status}`);
+    } catch (err) {
+      if (err.status === 401 || err.status === 403 || err.status === 400 || err.status === 404 || err.status === 422) {
+        throw err;
+      }
+      if (fallbackFn && window.SupabaseBridge && window.SupabaseBridge.isReady()) {
+        return await fallbackFn();
+      }
+      throw err;
+    }
+  }
+
+  async getAdminStats() {
+    return await this._adminRequest("/admin/stats", "GET", () => window.SupabaseBridge.fetchAdminStats());
+  }
+
+  async getAllAdminCenters(status = "all") {
+    const qs = status && status !== "all" ? `?status=${encodeURIComponent(status)}` : "";
+    const rows = await this._adminRequest(`/admin/centers${qs}`, "GET", () => window.SupabaseBridge.fetchAllTechniciansAdmin());
+    if (window.SupabaseBridge && typeof window.SupabaseBridge._normalizeTechnician === "function") {
+      return (rows || []).map(r => window.SupabaseBridge._normalizeTechnician(r));
+    }
+    return rows || [];
   }
 
   async getPendingTechnicians() {
-    if (window.SupabaseBridge && window.SupabaseBridge.isReady()) {
-      return await window.SupabaseBridge.fetchPendingTechnicians();
+    const rows = await this._adminRequest("/admin/centers?status=pending", "GET", () => window.SupabaseBridge.fetchPendingTechnicians());
+    if (window.SupabaseBridge && typeof window.SupabaseBridge._normalizeTechnician === "function") {
+      return (rows || []).map(r => window.SupabaseBridge._normalizeTechnician(r));
     }
-    return [];
+    return rows || [];
   }
 
   async approveTechnician(techId) {
-    if (window.SupabaseBridge && window.SupabaseBridge.isReady()) {
-      return await window.SupabaseBridge.approveTechnician(techId);
-    }
-    throw new Error("Action unavailable.");
+    return await this._adminRequest(`/admin/centers/${techId}/approve`, "POST", () => window.SupabaseBridge.approveTechnician(techId));
+  }
+
+  async suspendTechnician(techId) {
+    return await this._adminRequest(`/admin/centers/${techId}/suspend`, "POST", () => window.SupabaseBridge.suspendTechnician(techId));
   }
 
   async rejectTechnician(techId) {
-    if (window.SupabaseBridge && window.SupabaseBridge.isReady()) {
-      return await window.SupabaseBridge.rejectTechnician(techId);
-    }
-    throw new Error("Action unavailable.");
+    return await this._adminRequest(`/admin/centers/${techId}/reject`, "POST", () => window.SupabaseBridge.rejectTechnician(techId));
   }
 
   async getAdminUsers() {
-    if (window.SupabaseBridge && window.SupabaseBridge.isReady()) {
-      return await window.SupabaseBridge.fetchAdminUsers();
-    }
-    return [];
+    return await this._adminRequest("/admin/users", "GET", () => window.SupabaseBridge.fetchAdminUsers());
   }
 
   async toggleUserStatus(userId) {
-    if (window.SupabaseBridge && window.SupabaseBridge.isReady()) {
-      return await window.SupabaseBridge.toggleUserStatus(userId);
+    return await this._adminRequest(`/admin/users/${userId}/toggle`, "POST", () => window.SupabaseBridge.toggleUserStatus(userId));
+  }
+
+  async getAdminRequests() {
+    const rows = await this._adminRequest("/admin/requests", "GET", () => window.SupabaseBridge.fetchAllRequestsAdmin());
+    if (window.SupabaseBridge && typeof window.SupabaseBridge._normalizeRequest === "function") {
+      return (rows || []).map(r => window.SupabaseBridge._normalizeRequest(r));
     }
-    throw new Error("Action unavailable.");
+    return rows || [];
+  }
+
+  async getAdminAuditLogs() {
+    return await this._adminRequest("/admin/audit", "GET", () => window.SupabaseBridge.fetchAdminAuditLogs());
   }
 }
 
