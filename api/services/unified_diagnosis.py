@@ -22,6 +22,7 @@ from api.services.backblaze_service import BackblazeFailurePredictionService
 from api.services.symptom_extractor import extract_fault_signals
 from api.services.media_resolver import resolve_device_image, fetch_ifixit_live_guide
 from api.services.ai_engine import AIAssistantService
+from api.services.usb_diagnostics import analyze_cable_telemetry
 from api.services.db import save_diagnosis_report, save_verified_repair_feedback
 from api.services.translator import (
     translate_repair_text,
@@ -194,6 +195,23 @@ class UnifiedDiagnosisEngine:
         desc = (request_data.get("description") or "").strip()
         err_msg = (request_data.get("error_message") or "").strip()
         telemetry = request_data.get("smart_telemetry") or {}
+        usb_telemetry = request_data.get("usb_telemetry")
+        serial_logs = (request_data.get("serial_logs") or "").strip()
+        cable_result = analyze_cable_telemetry(usb_telemetry=usb_telemetry, serial_logs=serial_logs)
+        skip_ai = bool(request_data.get("skip_ai", False)) or bool(cable_result and not request_data.get("force_ai", False))
+
+        if cable_result:
+            if (not raw_cat or raw_cat == "Unknown") and cable_result.get("detected_category"):
+                raw_cat = cable_result["detected_category"]
+            if not brand and cable_result.get("detected_brand") and cable_result["detected_brand"] != "Unknown":
+                brand = cable_result["detected_brand"]
+            if not model and cable_result.get("detected_model"):
+                model = cable_result["detected_model"]
+            if not err_msg and cable_result.get("vid_hex"):
+                err_msg = f"USB {cable_result['vid_hex']}:{cable_result.get('pid_hex') or ''} {cable_result.get('mode') or ''}".strip()
+            if not desc:
+                desc = cable_result.get("summary_ar") or cable_result.get("summary_en") or "فحص عبر وصلة USB"
+
         attempt_number = max(1, int(request_data.get("attempt_number") or 1))
         raw_excluded = request_data.get("exclude_guide_ids") or []
         exclude_guide_ids = [int(x) for x in raw_excluded if x is not None and str(x).isdigit()]
@@ -297,7 +315,7 @@ class UnifiedDiagnosisEngine:
                 "created_at": datetime.now().isoformat() + "Z",
             }
 
-        # 6. Smart Reasoning + Single-Call Arabic Step/Case Translation (ZERO redundant token calls)
+        # 6. Smart Reasoning (strictly skipped when skip_ai=True or wired cable check runs to preserve limits!)
         raw_guide_step_texts = [
             (st.get("instruction_en") or "").strip()
             for st in ((matched_guide or {}).get("steps") or [])[:8]
@@ -308,22 +326,25 @@ class UnifiedDiagnosisEngine:
             for inc in (sample_incidents or [])[:5]
             if isinstance(inc, dict) and (inc.get("problem") or "").strip()
         ]
-        ai_analysis = self.ai_assistant.analyze_with_datasets(
-            device_info={
-                "device_category": normalized_cat,
-                "brand": brand or "Standard",
-                "model": model or "Standard",
-                "error_message": err_msg,
-                "description": desc,
-            },
-            ora_summary=ora_analysis,
-            guide_summary=matched_guide,
-            timeout=14.0,
-            guide_steps=raw_guide_step_texts,
-            ora_incidents=raw_inc_texts,
-            failed_attempts=failed_solutions,
-            attempt_number=attempt_number,
-        )
+        if skip_ai:
+            ai_analysis = {"configured": False, "status": "skipped_zero_token"}
+        else:
+            ai_analysis = self.ai_assistant.analyze_with_datasets(
+                device_info={
+                    "device_category": normalized_cat,
+                    "brand": brand or "Standard",
+                    "model": model or "Standard",
+                    "error_message": err_msg,
+                    "description": desc,
+                },
+                ora_summary=ora_analysis,
+                guide_summary=matched_guide,
+                timeout=14.0,
+                guide_steps=raw_guide_step_texts,
+                ora_incidents=raw_inc_texts,
+                failed_attempts=failed_solutions,
+                attempt_number=attempt_number,
+            )
 
         # If refined visual query returned and no guide exists OR zero photos exist, fetch matching manual
         ai_query = (ai_analysis.get("visual_image_query") or "").strip() if ai_analysis.get("status") == "completed" else ""
@@ -536,7 +557,7 @@ class UnifiedDiagnosisEngine:
             if len(possible_causes) >= 3:
                 break
 
-        # 8d. Prepend ByteForce Smart Engine root causes cleanly without exposing external model/provider names
+        # 8d. Prepend ByteForce Smart Engine root causes + Wired USB/Cable findings cleanly
         if ai_analysis.get("status") == "completed":
             for ai_c in (ai_analysis.get("root_causes") or [])[:2]:
                 if isinstance(ai_c, dict) and (ai_c.get("title_en") or ai_c.get("title_ar")):
@@ -544,7 +565,7 @@ class UnifiedDiagnosisEngine:
                         "title_en": ai_c.get("title_en") or ai_c.get("title_ar"),
                         "title_ar": ai_c.get("title_ar") or ai_c.get("title_en"),
                         "empirical_repairability_pct": empirical_fix_rate,
-                        "source_dataset": "ByteForce Smart Engine + Empirical Grounding",
+                        "source_dataset": "قواعد بيانات ByteForce الموثقة",
                         "explanation_en": ai_c.get("explanation_en") or "",
                         "explanation_ar": ai_c.get("explanation_ar") or "",
                         "repair_method_en": ai_c.get("repair_method_en") or "",
@@ -552,6 +573,24 @@ class UnifiedDiagnosisEngine:
                         "repair_images": solution_photos[:3],
                         "is_hardware": True,
                     })
+
+        if cable_result:
+            for c_cause in reversed(cable_result.get("causes") or []):
+                possible_causes.insert(0, {**c_cause, "repair_images": solution_photos[:2]})
+            for idx_cs, c_step in enumerate(reversed(cable_result.get("steps_ar") or [])):
+                troubleshooting_steps.insert(0, {
+                    "step_number": 0,
+                    "title_en": "Wired Hardware Check",
+                    "title_ar": "فحص الوصلة المباشر",
+                    "instruction_en": str(c_step),
+                    "instruction_ar": str(c_step),
+                    "images": [],
+                    "requires_tools": False,
+                })
+            for renum_i, st_item in enumerate(troubleshooting_steps, 1):
+                st_item["step_number"] = renum_i
+                st_item["title_ar"] = f"الخطوة {renum_i}"
+                st_item["title_en"] = f"Step {renum_i}"
 
         # Sanitize public diagnostic insights so third-party AI model/provider names never leak
         public_ai_summary = {
@@ -603,6 +642,7 @@ class UnifiedDiagnosisEngine:
             "device_image_url": device_image_url,
             "guide_image_url": guide_image_url,
             "visual_solution_steps": visual_solution_steps,
+            "cable_diagnostics": cable_result,
             "ai_analysis": public_ai_summary,
             "empirical_statistics": {
                 "source": "Open Repair Alliance (416,282 real records)",

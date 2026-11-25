@@ -274,6 +274,10 @@ class ApiClient {
     return [];
   }
 
+  async getNearbyRepairShops(lat, lng, radiusKm = 6) {
+    return await this.request(`/marketplace/nearby-shops?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}&radius_km=${encodeURIComponent(radiusKm)}`);
+  }
+
   async bookTechnician(booking) {
     if (window.SupabaseBridge && window.SupabaseBridge.isReady()) {
       return await window.SupabaseBridge.bookTechnician(booking);

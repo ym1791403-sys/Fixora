@@ -6,13 +6,139 @@ server-verified customer review submission with real rating recalculation.
 """
 
 from datetime import datetime, timezone
-from typing import Any, Dict, List
-from fastapi import APIRouter, HTTPException, Request
+import json
+import math
+import time
+import urllib.parse
+import urllib.request
+from typing import Any, Dict, List, Optional
+from fastapi import APIRouter, HTTPException, Query, Request
 
 from api.services.db import DatabaseUnavailableError, postgrest_request
 from api.routers import admin as admin_mod
 
 router = APIRouter(tags=["marketplace"])
+
+_NEARBY_SHOPS_CACHE: Dict[str, Any] = {}
+
+
+def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    r = 6371.0
+    d_lat = math.radians(lat2 - lat1)
+    d_lon = math.radians(lon2 - lon1)
+    a = (
+        math.sin(d_lat / 2) ** 2
+        + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(d_lon / 2) ** 2
+    )
+    return 2 * r * math.asin(min(1.0, math.sqrt(a)))
+
+
+def _categorize_osm_shop(tags: Dict[str, Any]) -> str:
+    craft = str(tags.get("craft") or "").lower()
+    shop = str(tags.get("shop") or "").lower()
+    if "electronics_repair" in craft:
+        return "مركز صيانة إلكترونيات"
+    if "appliance_repair" in craft:
+        return "صيانة أجهزة منزلية"
+    if shop == "mobile_phone":
+        return "مبيعات وصيانة هواتف محمولة"
+    if shop == "computer":
+        return "صيانة كمبيوتر ولابتوب"
+    if shop == "electronics":
+        return "إلكترونيات وصيانة أجهزة"
+    return "ورشة / محل صيانة تقنية"
+
+
+@router.get("/api/marketplace/nearby-shops")
+@router.get("/api/v1/marketplace/nearby-shops")
+def get_nearby_public_repair_shops(
+    lat: float = Query(..., ge=-90.0, le=90.0),
+    lng: float = Query(..., ge=-180.0, le=180.0),
+    radius_km: float = Query(6.0, ge=1.0, le=30.0),
+) -> Dict[str, Any]:
+    """
+    Fetches real public electronics/mobile/computer repair shops near user coordinates
+    from OpenStreetMap Overpass API alongside direct Google Maps navigation links.
+    Never fabricates shops when upstream map providers time out.
+    """
+    cache_key = f"{round(lat, 2)}_{round(lng, 2)}_{int(radius_km)}"
+    now = time.time()
+    cached = _NEARBY_SHOPS_CACHE.get(cache_key)
+    if cached and (now - cached["ts"]) < 900.0:
+        return cached["data"]
+
+    radius_m = int(min(max(radius_km, 1.0), 30.0) * 1000)
+    google_search_url = f"https://www.google.com/maps/search/{urllib.parse.quote('صيانة موبايل ولابتوب والالكترونيات')}/@{lat},{lng},14z"
+    overpass_q = (
+        f"[out:json][timeout:8];"
+        f"("
+        f'nwr["craft"~"electronics_repair|appliance_repair"](around:{radius_m},{lat},{lng});'
+        f'nwr["shop"~"mobile_phone|computer|electronics|appliance"](around:{radius_m},{lat},{lng});'
+        f'nwr["name"~"صيانة|تصليح|Repair|Service Center|Fix",i](around:{radius_m},{lat},{lng});'
+        f");out center 45;"
+    )
+
+    shops: List[Dict[str, Any]] = []
+    source_used = "Google Maps & OpenStreetMap"
+    try:
+        req = urllib.request.Request(
+            "https://overpass-api.de/api/interpreter",
+            data=urllib.parse.urlencode({"data": overpass_q}).encode("utf-8"),
+            headers={"User-Agent": "ByteForce-Platform/4.0", "Content-Type": "application/x-www-form-urlencoded"},
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=9) as resp:
+            raw = json.loads(resp.read().decode("utf-8"))
+        seen_coords = set()
+        for el in (raw.get("elements") or []):
+            tags = el.get("tags") or {}
+            name = (tags.get("name:ar") or tags.get("name") or tags.get("brand") or "").strip()
+            if not name:
+                continue
+            c_lat = el.get("lat") if el.get("lat") is not None else (el.get("center") or {}).get("lat")
+            c_lng = el.get("lon") if el.get("lon") is not None else (el.get("center") or {}).get("lon")
+            if c_lat is None or c_lng is None:
+                continue
+            coord_key = (round(float(c_lat), 4), round(float(c_lng), 4), name.lower())
+            if coord_key in seen_coords:
+                continue
+            seen_coords.add(coord_key)
+
+            dist = round(_haversine_km(lat, lng, float(c_lat), float(c_lng)), 2)
+            addr_parts = [tags.get("addr:street"), tags.get("addr:suburb") or tags.get("addr:district"), tags.get("addr:city")]
+            addr = " - ".join(str(p).strip() for p in addr_parts if p)
+            phone = (tags.get("phone") or tags.get("contact:phone") or tags.get("mobile") or "").strip()
+            hours = (tags.get("opening_hours") or "").strip()
+            gm_query = urllib.parse.quote(f"{name} {c_lat},{c_lng}")
+            shops.append({
+                "id": f"osm_{el.get('type', 'n')}_{el.get('id')}",
+                "name": name,
+                "category_ar": _categorize_osm_shop(tags),
+                "lat": float(c_lat),
+                "lng": float(c_lng),
+                "distance_km": dist,
+                "address": addr,
+                "phone": phone,
+                "opening_hours": hours,
+                "google_maps_url": f"https://www.google.com/maps/search/?api=1&query={gm_query}",
+                "source": "OpenStreetMap / Public Maps",
+            })
+        shops.sort(key=lambda x: x["distance_km"])
+        shops = shops[:25]
+    except Exception:
+        source_used = "Google Maps Direct"
+
+    out = {
+        "lat": lat,
+        "lng": lng,
+        "radius_km": radius_km,
+        "count": len(shops),
+        "shops": shops,
+        "source": source_used,
+        "google_maps_search_url": google_search_url,
+    }
+    _NEARBY_SHOPS_CACHE[cache_key] = {"ts": now, "data": out}
+    return out
 
 
 def _public_reviewer_name(raw_name: Any) -> str:

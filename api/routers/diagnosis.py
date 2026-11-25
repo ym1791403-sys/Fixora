@@ -25,6 +25,9 @@ class DiagnosisRequest(BaseModel):
     description: Optional[str] = Field(None, description="Detailed problem description")
     device_age_years: Optional[float] = Field(None, description="Age of the device in years")
     smart_telemetry: Optional[Dict[str, Any]] = Field(None, description="SMART attributes dictionary for storage devices")
+    usb_telemetry: Optional[Dict[str, Any]] = Field(None, description="Wired WebUSB/Serial descriptor metadata")
+    serial_logs: Optional[str] = Field(None, description="Captured UART/Serial diagnostic text logs")
+    skip_ai: Optional[bool] = Field(False, description="Skip external LLM calls for instant zero-token diagnosis")
 
 @router.api_route("/api/diagnosis/analyze", methods=["POST", "GET"])
 @router.api_route("/api/v1/diagnosis/analyze", methods=["POST", "GET"])

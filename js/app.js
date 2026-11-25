@@ -952,7 +952,37 @@ class ByteForceApp {
           </div>
 
           <div class="card" style="padding: 36px;">
-            
+
+            <!-- Zero-Token Wired USB / Serial Cable Hardware Diagnostics Panel -->
+            <div style="margin-bottom: 26px; padding: 18px 20px; border-radius: 12px; background: linear-gradient(135deg, #EFF6FF 0%, #F8FAFC 100%); border: 1px solid #BFDBFE;">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 10px;">
+                <div>
+                  <h4 style="margin: 0 0 4px 0; font-size: 15.5px; color: var(--color-primary); display: flex; align-items: center; gap: 8px;">
+                    <i class="fab fa-usb" style="color: var(--color-secondary); font-size: 17px;"></i>
+                    <span>${isAr ? 'فحص الجهاز عبر وصلة كابل USB / Serial (فوري بدون استهلاك رصيد)' : 'Direct Wired USB / Serial Diagnostics (Zero Token Usage)'}</span>
+                  </h4>
+                  <p style="margin: 0; font-size: 12.5px; color: var(--color-text-muted); line-height: 1.55;">
+                    ${isAr
+                      ? 'قم بتوصيل الجهاز المعطل بجهازك عبر كابل USB (يدعم هواتف Android/iPhone في أوضاع الطوارئ EDL/DFU/Recovery/Fastboot/ADB وأقراص التخزين ومنافذ UART) لقراءة بيانات الهاردوير وتحديد العطل فوراً.'
+                      : 'Plug the broken device via USB/Serial cable to inspect hardware descriptors (VID/PID, EDL/DFU/Recovery/Fastboot/ADB, Storage, UART logs) and diagnose instantly with zero token usage.'}
+                  </p>
+                </div>
+              </div>
+              <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                <button type="button" id="scanUsbCableBtn" class="btn btn-primary btn-sm" onclick="app.scanUsbCableDevice()">
+                  <i class="fab fa-usb"></i>
+                  <span>${isAr ? 'ربط وفحص عبر كابل USB' : 'Connect & Scan USB Cable'}</span>
+                </button>
+                <button type="button" id="scanSerialPortBtn" class="btn btn-outline btn-sm" onclick="app.scanSerialCablePort()">
+                  <i class="fas fa-terminal"></i>
+                  <span>${isAr ? 'قراءة منفذ السيريال (UART)' : 'Read Serial / UART Port'}</span>
+                </button>
+              </div>
+              <div id="usbCableStatusBox" style="display: ${this.wizardData?.usb_telemetry || this.wizardData?.serial_logs ? 'block' : 'none'}; margin-top: 12px; padding: 12px 14px; border-radius: 8px; background: #FFFFFF; border: 1px solid #CBD5E1; font-size: 13px;">
+                ${this._renderUsbStatusMarkup(isAr)}
+              </div>
+            </div>
+
             <!-- Step 1: Device Category -->
             <div class="form-group" style="margin-bottom: 28px;">
               <label class="form-label" style="font-size: 15px; font-weight: 700; color: var(--color-text-main); margin-bottom: 12px; display: block;" data-i18n="diag_step1">1. فئة ونوع الجهاز</label>
@@ -1088,8 +1118,8 @@ class ByteForceApp {
 
             <!-- Submit Button -->
             <button id="submitDiagnosisBtn" class="btn btn-primary btn-lg" style="width: 100%;">
-              <i class="fas fa-brain"></i>
-              <span data-i18n="diag_submit_btn">Run AI Diagnosis</span>
+              <i class="fas fa-wrench"></i>
+              <span data-i18n="diag_submit_btn">Run Device Diagnosis</span>
             </button>
 
           </div>
@@ -1166,7 +1196,187 @@ class ByteForceApp {
     }
   }
 
-  async submitDiagnosis() {
+  _renderUsbStatusMarkup(isAr = window.i18n.currentLang === "ar") {
+    const u = this.wizardData?.usb_telemetry;
+    const logs = this.wizardData?.serial_logs;
+    if (!u && !logs) return "";
+    const parts = [];
+    if (u) {
+      const vidHex = u.vendorId != null ? `0x${Number(u.vendorId).toString(16).toUpperCase().padStart(4, "0")}` : "";
+      const pidHex = u.productId != null ? `0x${Number(u.productId).toString(16).toUpperCase().padStart(4, "0")}` : "";
+      parts.push(`<div><strong style="color: var(--color-success);"><i class="fas fa-check-circle"></i> ${isAr ? 'تم التقاط بيانات الكابل بنجاح:' : 'USB Device Captured:'}</strong> ${this._esc(u.manufacturerName || '')} ${this._esc(u.productName || (isAr ? 'جهاز USB' : 'USB Device'))} <span dir="ltr" style="color: var(--color-text-muted);">(${vidHex}:${pidHex})</span></div>`);
+      if (u.openError) {
+        parts.push(`<div style="font-size: 12px; color: var(--color-text-muted); margin-top: 4px;">${isAr ? 'تمت قراءة بصمة الهاردوير مباشرة رغم قفل تعريف الويندوز (مؤكد أن خطوط الداتا تعمل).' : 'Hardware descriptors read directly.'}</div>`);
+      }
+    }
+    if (logs) {
+      parts.push(`<div style="margin-top: 6px; font-size: 12px;"><strong>${isAr ? 'سجلات السيريال الملتقطة:' : 'Captured Serial Logs:'}</strong> <code dir="ltr">${this._esc(logs.slice(0, 140))}${logs.length > 140 ? '...' : ''}</code></div>`);
+    }
+    parts.push(`
+      <div style="margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap;">
+        <button type="button" class="btn btn-primary btn-sm" style="background: var(--color-success); border-color: var(--color-success);" onclick="app.runWiredZeroTokenDiagnosis()">
+          <i class="fas fa-bolt"></i>
+          <span>${isAr ? 'تحديد العطل فوراً من الوصلة (بدون استهلاك رصيد)' : 'Detect Cable Fault Instantly (0 Token)'}</span>
+        </button>
+        <button type="button" class="btn btn-outline btn-sm" onclick="app.clearCableTelemetry()">
+          <i class="fas fa-times"></i> <span>${isAr ? 'مسح' : 'Clear'}</span>
+        </button>
+      </div>
+    `);
+    return parts.join("");
+  }
+
+  clearCableTelemetry() {
+    this.wizardData.usb_telemetry = null;
+    this.wizardData.serial_logs = null;
+    const box = document.getElementById("usbCableStatusBox");
+    if (box) {
+      box.innerHTML = "";
+      box.style.display = "none";
+    }
+  }
+
+  async scanUsbCableDevice() {
+    const isAr = window.i18n.currentLang === "ar";
+    if (!navigator.usb || typeof navigator.usb.requestDevice !== "function") {
+      alert(isAr
+        ? "ميزة فحص كابل WebUSB تتطلب متصفح Chrome أو Edge حديث على كمبيوتر أو هاتف Android عبر رابط HTTPS."
+        : "WebUSB inspection requires modern Chrome or Edge over HTTPS.");
+      return;
+    }
+    try {
+      const dev = await navigator.usb.requestDevice({ filters: [] });
+      if (!dev) return;
+      const interfaces = [];
+      (dev.configurations || []).forEach(cfg => {
+        (cfg.interfaces || []).forEach(iface => {
+          (iface.alternates || []).forEach(alt => {
+            interfaces.push({
+              interfaceClass: alt.interfaceClass,
+              interfaceSubclass: alt.interfaceSubclass,
+              interfaceProtocol: alt.interfaceProtocol
+            });
+          });
+        });
+      });
+      let openError = "";
+      try {
+        await dev.open();
+        if (dev.configuration === null && dev.configurations?.length) {
+          await dev.selectConfiguration(dev.configurations[0].configurationValue);
+        }
+        await dev.close();
+      } catch (e) {
+        openError = e?.message || String(e || "");
+      }
+
+      const telemetry = {
+        vendorId: dev.vendorId,
+        productId: dev.productId,
+        manufacturerName: dev.manufacturerName || "",
+        productName: dev.productName || "",
+        serialNumber: dev.serialNumber || "",
+        deviceClass: dev.deviceClass,
+        deviceSubclass: dev.deviceSubclass,
+        deviceProtocol: dev.deviceProtocol,
+        usbVersionMajor: dev.usbVersionMajor,
+        interfaces,
+        openError
+      };
+      this.wizardData.usb_telemetry = telemetry;
+
+      const brandEl = document.getElementById("diagBrand");
+      const modelEl = document.getElementById("diagModel");
+      const errEl = document.getElementById("diagError");
+      const descEl = document.getElementById("diagDesc");
+      const vidHex = `0x${Number(dev.vendorId).toString(16).toUpperCase().padStart(4, "0")}`;
+      const pidHex = `0x${Number(dev.productId).toString(16).toUpperCase().padStart(4, "0")}`;
+
+      if (brandEl && !brandEl.value && telemetry.manufacturerName) brandEl.value = telemetry.manufacturerName;
+      if (modelEl && !modelEl.value && telemetry.productName) modelEl.value = telemetry.productName;
+      if (errEl && !errEl.value) errEl.value = `USB ${vidHex}:${pidHex}`;
+      if (descEl && !descEl.value) {
+        descEl.value = isAr
+          ? `فحص جهاز موصل عبر كابل USB (${telemetry.manufacturerName || ''} ${telemetry.productName || vidHex + ':' + pidHex})`
+          : `Wired USB device inspection (${telemetry.manufacturerName || ''} ${telemetry.productName || vidHex + ':' + pidHex})`;
+      }
+
+      const box = document.getElementById("usbCableStatusBox");
+      if (box) {
+        box.innerHTML = this._renderUsbStatusMarkup(isAr);
+        box.style.display = "block";
+      }
+    } catch (err) {
+      if (err?.name === "NotFoundError") return; // User closed picker cleanly
+      alert((isAr ? "تعذر قراءة الجهاز عبر كابل USB: " : "USB read notice: ") + (err?.message || err));
+    }
+  }
+
+  async scanSerialCablePort() {
+    const isAr = window.i18n.currentLang === "ar";
+    if (!("serial" in navigator) || typeof navigator.serial.requestPort !== "function") {
+      alert(isAr
+        ? "قراءة منفذ السيريال (Web Serial) متاحة في Chrome و Edge على سطح المكتب فقط."
+        : "Web Serial UART reader is supported in desktop Chrome and Edge browsers.");
+      return;
+    }
+    let port = null;
+    try {
+      port = await navigator.serial.requestPort();
+      const info = typeof port.getInfo === "function" ? port.getInfo() : {};
+      if (info.usbVendorId && !this.wizardData.usb_telemetry) {
+        this.wizardData.usb_telemetry = {
+          vendorId: info.usbVendorId,
+          productId: info.usbProductId || 0,
+          productName: "UART / Serial Cable Bridge",
+          interfaces: []
+        };
+      }
+      await port.open({ baudRate: 115200 });
+      const reader = port.readable?.getReader();
+      let captured = "";
+      if (reader) {
+        const decoder = new TextDecoder();
+        const deadline = Date.now() + 2200;
+        try {
+          while (Date.now() < deadline && captured.length < 1500) {
+            const timeoutPromise = new Promise(res => setTimeout(() => res({ timeout: true }), 700));
+            const res = await Promise.race([reader.read(), timeoutPromise]);
+            if (res.timeout || res.done) break;
+            if (res.value) captured += decoder.decode(res.value, { stream: true });
+          }
+        } finally {
+          try { reader.releaseLock(); } catch (e) {}
+        }
+      }
+      try { await port.close(); } catch (e) {}
+      this.wizardData.serial_logs = captured.trim() || "Serial port opened (no active console panic output within 2.2s)";
+      const descEl = document.getElementById("diagDesc");
+      if (descEl && !descEl.value) {
+        descEl.value = isAr ? "فحص الجهاز عبر منفذ السيريال UART بالكابل" : "Wired UART Serial console diagnostic inspection";
+      }
+      const box = document.getElementById("usbCableStatusBox");
+      if (box) {
+        box.innerHTML = this._renderUsbStatusMarkup(isAr);
+        box.style.display = "block";
+      }
+    } catch (err) {
+      try { if (port) await port.close(); } catch (e) {}
+      if (err?.name === "NotFoundError") return;
+      alert((isAr ? "تعذر فتح منفذ السيريال: " : "Serial port notice: ") + (err?.message || err));
+    }
+  }
+
+  runWiredZeroTokenDiagnosis() {
+    this.wizardData.brand = document.getElementById("diagBrand")?.value.trim() || "";
+    this.wizardData.model = document.getElementById("diagModel")?.value.trim() || "";
+    this.wizardData.problem_category = document.getElementById("diagProbCat")?.value || "Hardware";
+    this.wizardData.description = document.getElementById("diagDesc")?.value.trim() || "فحص عبر الوصلة المباشرة";
+    this.wizardData.error_message = document.getElementById("diagError")?.value.trim() || "";
+    this.submitDiagnosis({ skipAi: true });
+  }
+
+  async submitDiagnosis(options = {}) {
     const isAr = window.i18n.currentLang === "ar";
     const mainContainer = document.getElementById("mainContent");
     
@@ -1179,7 +1389,7 @@ class ByteForceApp {
           </div>
           <h2 style="font-size: 24px; margin-bottom: 12px;" data-i18n="diag_analyzing">Analyzing symptoms against repair datasets...</h2>
           <p style="color: var(--color-text-muted); font-size: 14px;">
-            ${isAr ? 'نقوم بفحص معايير الأمان وتحليل الأعراض ومقارنتها بقواعد بيانات Open Repair Alliance و MyFixit.' : 'Evaluating safety hazards, extracting symptom vectors, and ranking root causes.'}
+            ${isAr ? 'نقوم بفحص معايير الأمان وتحليل الأعراض ومقارنتها بقواعد بيانات الصيانة الموثقة.' : 'Evaluating safety hazards, extracting symptom vectors, and ranking root causes.'}
           </p>
         </div>
       </section>
@@ -1189,6 +1399,7 @@ class ByteForceApp {
       this._diagAttemptNumber = 1;
       this._diagExcludedGuideIds = [];
       this._diagFailedSolutions = [];
+      const hasCableData = !!(this.wizardData.usb_telemetry || this.wizardData.serial_logs);
       const response = await window.api.runDiagnosis({
         device_category: this.wizardData.device_category,
         brand: this.wizardData.brand || null,
@@ -1199,6 +1410,9 @@ class ByteForceApp {
         error_message: this.wizardData.error_message || null,
         recent_changes: this.wizardData.recent_changes || null,
         smart_telemetry: this.wizardData.smart_telemetry || null,
+        usb_telemetry: this.wizardData.usb_telemetry || null,
+        serial_logs: this.wizardData.serial_logs || null,
+        skip_ai: Boolean(options.skipAi || hasCableData),
         attempt_number: 1
       });
 
@@ -1268,15 +1482,22 @@ class ByteForceApp {
             </div>
           ` : ''}
 
+          ${report.cable_diagnostics ? `
+            <div class="card" style="margin-bottom: 20px; background: #EFF6FF; border: 1px solid #BFDBFE;">
+              <div style="display: flex; align-items: center; gap: 8px; color: var(--color-secondary); font-weight: 700; margin-bottom: 6px; font-size: 14px;">
+                <i class="fab fa-usb"></i>
+                <span>${isAr ? 'نتيجة الفحص المباشر عبر الوصلة (USB / Cable):' : 'Wired Cable Hardware Readout:'}</span>
+                ${report.cable_diagnostics.vid_hex ? `<span class="tag" dir="ltr" style="font-size: 11px;">${this._esc(report.cable_diagnostics.vid_hex)}:${this._esc(report.cable_diagnostics.pid_hex || '')}</span>` : ''}
+              </div>
+              <p style="margin: 0; font-size: 13.5px; color: var(--color-text-main); line-height: 1.6;">
+                ${this._esc(isAr ? report.cable_diagnostics.summary_ar : report.cable_diagnostics.summary_en)}
+              </p>
+            </div>
+          ` : ''}
+
           ${report.ai_analysis && report.ai_analysis.status === 'completed' ? `
             <div class="card" style="margin-bottom: 24px; background: var(--ai-card-bg); border: 1px solid rgba(16, 185, 129, 0.3);">
-              <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
-                <div style="display: flex; align-items: center; gap: 8px; color: var(--color-success); font-weight: 700;">
-                  <i class="fas fa-microchip"></i>
-                  <span>${isAr ? 'التحليل الهندسي الذكي — محرك ByteForce' : 'ByteForce Smart Diagnostic Engine'}</span>
-                </div>
-              </div>
-              <p style="color: var(--color-text-main); font-size: 14px; line-height: 1.7; margin: 0 0 12px 0;">
+              <p style="color: var(--color-text-main); font-size: 14.5px; line-height: 1.75; margin: 0 0 12px 0; font-weight: 500;">
                 ${this._esc(isAr ? (report.ai_analysis.diagnosis_summary_ar || report.ai_analysis.diagnosis_summary_en) : (report.ai_analysis.diagnosis_summary_en || report.ai_analysis.diagnosis_summary_ar))}
               </p>
               ${((isAr ? report.ai_analysis.repair_steps_ar : report.ai_analysis.repair_steps_en) || []).length > 0 ? `
@@ -2094,25 +2315,54 @@ class ByteForceApp {
             </div>
           </div>
 
-          <!-- Interactive Centers & Technicians Map -->
+          <!-- Interactive Centers, Public Map Shops & Google Maps -->
           <div class="card" style="margin-bottom: 24px; padding: 14px; background: var(--color-card); border: 1px solid var(--color-border); border-radius: 12px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
               <span style="font-size: 14px; font-weight: 700; color: var(--color-text-main);">
-                <i class="fas fa-map-marked-alt" style="color: var(--color-accent); margin-inline-end: 6px;"></i>${isAr ? 'خريطة مراكز وفنيي الصيانة المعتمدين' : 'Verified Repair Centers & Technicians Map'}
+                <i class="fas fa-map-marked-alt" style="color: var(--color-accent); margin-inline-end: 6px;"></i>${isAr ? 'خريطة المراكز المعتمدة ومحلات الصيانة القريبة (Google Maps)' : 'Verified Centers & Nearby Repair Shops (Google Maps)'}
               </span>
-              <button id="useLocationBtn" class="btn btn-outline btn-sm" style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px;">
-                <i class="fas fa-crosshairs" style="color: #10B981;"></i>
-                <span>${isAr ? 'تحديد موقعي الأقرب' : 'Find Nearest to Me'}</span>
-              </button>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                <button id="useLocationBtn" class="btn btn-primary btn-sm" style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px;">
+                  <i class="fas fa-crosshairs"></i>
+                  <span>${isAr ? 'تحديد موقعي وجلب المحلات القريبة' : 'Locate Me & Nearby Shops'}</span>
+                </button>
+                <button id="toggleGoogleMapsBtn" type="button" class="btn btn-outline btn-sm" style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px;">
+                  <i class="fab fa-google" style="color: #EA4335;"></i>
+                  <span>${isAr ? 'عرض خرائط جوجل (Google Maps)' : 'Switch to Google Maps'}</span>
+                </button>
+                <a id="openGoogleMapsDirectLink" href="https://www.google.com/maps/search/%D8%B5%D9%8A%D8%A7%D9%86%D8%A9+%D9%85%D9%88%D8%A8%D8%A7%D9%8A%D9%84+%D9%88%D9%84%D8%A7%D8%A8%D8%AA%D9%88%D8%A8+%D9%88%D8%A7%D9%84%D9%83%D8%AA%D8%B1%D9%88%D9%86%D9%8A%D8%A7%D8%AA/@30.0444,31.2357,13z" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm" style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px;">
+                  <i class="fas fa-external-link-alt"></i>
+                  <span>${isAr ? 'فتح في Google Maps' : 'Open Google Maps'}</span>
+                </a>
+              </div>
             </div>
-            <div id="techMap" style="height: 280px; border-radius: 8px; border: 1px solid var(--color-border); z-index: 1;"></div>
+            <div id="techMap" style="height: 300px; border-radius: 8px; border: 1px solid var(--color-border); z-index: 1;"></div>
+            <div id="googleMapsEmbedContainer" style="display: none; height: 320px; border-radius: 8px; overflow: hidden; border: 1px solid var(--color-border);">
+              <iframe id="googleMapsEmbedFrame" title="Google Maps Nearby Repair Shops" style="width: 100%; height: 100%; border: 0;" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src=""></iframe>
+            </div>
           </div>
 
-          <!-- Technicians Grid -->
+          <!-- Technicians Grid (Platform Verified Centers) -->
           <div id="techGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 24px;">
             <div style="text-align: center; grid-column: 1/-1; padding: 40px; color: var(--color-text-muted);">
               <i class="fas fa-spinner fa-spin fa-2x"></i>
             </div>
+          </div>
+
+          <!-- Nearby Public Repair Shops from Maps (Not Necessarily Registered on ByteForce) -->
+          <div id="nearbyPublicShopsSection" style="margin-top: 40px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 16px;">
+              <div>
+                <h2 style="font-size: 21px; margin: 0 0 4px 0; color: var(--color-text-main); display: flex; align-items: center; gap: 8px;">
+                  <i class="fas fa-map-pin" style="color: #EA580C;"></i>
+                  <span>${isAr ? 'محلات الصيانة القريبة منك على الخريطة (غير مسجلة بالموقع)' : 'Nearby Public Repair Shops on Maps (All Local Shops)'}</span>
+                </h2>
+                <p id="nearbyShopsSubtitle" style="font-size: 13px; color: var(--color-text-muted); margin: 0;">
+                  ${isAr ? 'يتم جلب محلات تصليح الهواتف والإلكترونيات والكمبيوتر الحقيقية حول موقعك أو المدينة المختارة مع رابط مباشر لخرائط جوجل.' : 'Real public electronics, phone, and computer repair shops around your location with direct Google Maps links.'}
+                </p>
+              </div>
+            </div>
+            <div id="nearbyShopsGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px;"></div>
           </div>
 
         </div>
@@ -2122,8 +2372,29 @@ class ByteForceApp {
     let leafMap = null;
     let mapMarkers = [];
     let currentUserLoc = null;
+    let showingGoogleMap = false;
 
-    const updateMapMarkers = (techList, userLoc = null) => {
+    const getActiveMapCoords = () => {
+      if (currentUserLoc) return currentUserLoc;
+      const cityVal = container.querySelector("#techCityFilter")?.value;
+      if (cityVal && cityVal !== "all") {
+        const c = this._lookupCityCoords(cityVal);
+        if (c) return c;
+      }
+      return { lat: 30.0444, lng: 31.2357 }; // Default Cairo center
+    };
+
+    const syncGoogleMapsUrls = (coords) => {
+      const linkEl = container.querySelector("#openGoogleMapsDirectLink");
+      const iframeEl = container.querySelector("#googleMapsEmbedFrame");
+      const qTerm = encodeURIComponent(isAr ? "صيانة موبايل ولابتوب والالكترونيات" : "electronics mobile laptop repair shop");
+      const directUrl = `https://www.google.com/maps/search/${qTerm}/@${coords.lat},${coords.lng},14z`;
+      const embedUrl = `https://maps.google.com/maps?q=${qTerm}&ll=${coords.lat},${coords.lng}&z=14&output=embed`;
+      if (linkEl) linkEl.href = directUrl;
+      if (iframeEl && showingGoogleMap) iframeEl.src = embedUrl;
+    };
+
+    const updateMapMarkers = (techList, userLoc = null, publicShops = []) => {
       const mapEl = container.querySelector("#techMap");
       if (!mapEl || typeof L === "undefined") return;
 
@@ -2156,7 +2427,7 @@ class ByteForceApp {
           fillOpacity: 0.9
         }).addTo(leafMap).bindPopup(isAr ? "<b>موقعك الحالي</b>" : "<b>Your Current Location</b>").openPopup();
         mapMarkers.push(userIcon);
-        leafMap.setView([userLoc.lat, userLoc.lng], 12);
+        leafMap.setView([userLoc.lat, userLoc.lng], 13);
       }
 
       techList.forEach(t => {
@@ -2177,6 +2448,89 @@ class ByteForceApp {
         `);
         mapMarkers.push(marker);
       });
+
+      (publicShops || []).forEach(shop => {
+        if (shop.lat == null || shop.lng == null) return;
+        const pMarker = L.circleMarker([shop.lat, shop.lng], {
+          radius: 7,
+          fillColor: "#EA580C",
+          color: "#FFFFFF",
+          weight: 2,
+          opacity: 1,
+          fillOpacity: 0.92
+        }).addTo(leafMap);
+        pMarker.bindPopup(`
+          <div style="font-family: inherit; font-size: 12.5px; min-width: 165px;">
+            <b style="color: #0F172A;">${this._esc(shop.name)}</b>
+            <div style="color: #EA580C; font-size: 11px; margin: 2px 0;">${this._esc(shop.category_ar || '')} · ${shop.distance_km} ${isAr ? 'كم' : 'km'}</div>
+            <a href="${this._esc(shop.google_maps_url)}" target="_blank" rel="noopener noreferrer" style="display: inline-block; margin-top: 5px; color: #2563EB; font-weight: 700; text-decoration: underline;">
+              ${isAr ? 'فتح على خرائط جوجل ↗' : 'Open in Google Maps ↗'}
+            </a>
+          </div>
+        `);
+        mapMarkers.push(pMarker);
+      });
+    };
+
+    let lastLoadedTechs = [];
+    const loadNearbyPublicShops = async () => {
+      const shopsGrid = container.querySelector("#nearbyShopsGrid");
+      if (!shopsGrid) return;
+      const coords = getActiveMapCoords();
+      syncGoogleMapsUrls(coords);
+      const radiusVal = container.querySelector("#techRadiusFilter")?.value;
+      const radiusKm = (radiusVal && radiusVal !== "all") ? Math.min(25, Number(radiusVal)) : 6;
+      shopsGrid.innerHTML = `<div style="grid-column: 1/-1; padding: 18px; text-align: center; color: var(--color-text-muted); font-size: 13px;"><i class="fas fa-spinner fa-spin"></i> ${isAr ? 'جاري البحث عن محلات الصيانة الحقيقية القريبة على الخرائط...' : 'Fetching nearby public repair shops...'}</div>`;
+
+      try {
+        const res = await window.api.getNearbyRepairShops(coords.lat, coords.lng, radiusKm);
+        if (renderToken !== this._techRenderToken || !document.body.contains(shopsGrid)) return;
+        const shops = Array.isArray(res?.shops) ? res.shops : [];
+        updateMapMarkers(lastLoadedTechs, currentUserLoc, shops);
+
+        if (shops.length === 0) {
+          shopsGrid.innerHTML = `
+            <div class="card" style="grid-column: 1/-1; padding: 20px; text-align: center; background: var(--color-card);">
+              <p style="margin: 0 0 12px 0; font-size: 13.5px; color: var(--color-text-muted);">
+                ${isAr ? 'يمكنك تصفح كافة ورش ومراكز الصيانة المحيطة بك مباشرة عبر خرائط Google Maps:' : 'Browse all nearby repair shops directly on Google Maps:'}
+              </p>
+              <a href="${this._esc(res?.google_maps_search_url || '#')}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm">
+                <i class="fab fa-google"></i>
+                <span>${isAr ? 'فتح كل محلات الصيانة القريبة في Google Maps ↗' : 'Open All Nearby Shops in Google Maps ↗'}</span>
+              </a>
+            </div>
+          `;
+          return;
+        }
+
+        shopsGrid.innerHTML = shops.map(shop => `
+          <div class="card" style="padding: 16px; display: flex; flex-direction: column; justify-content: space-between; gap: 10px;">
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 6px;">
+                <strong style="font-size: 15px; color: var(--color-text-main);">${this._esc(shop.name)}</strong>
+                <span class="tag" style="background: rgba(234, 88, 12, 0.1); color: #EA580C; font-size: 11px; white-space: nowrap;">${shop.distance_km} ${isAr ? 'كم' : 'km'}</span>
+              </div>
+              <div style="font-size: 12px; color: var(--color-secondary); margin-bottom: 6px; font-weight: 600;">${this._esc(shop.category_ar)}</div>
+              ${shop.address ? `<div style="font-size: 12px; color: var(--color-text-muted); margin-bottom: 4px;"><i class="fas fa-location-dot" style="margin-inline-end: 5px;"></i>${this._esc(shop.address)}</div>` : ''}
+              ${shop.phone ? `<div style="font-size: 12px; color: var(--color-text-muted);" dir="ltr"><i class="fas fa-phone" style="margin-inline-end: 5px;"></i>${this._esc(shop.phone)}</div>` : ''}
+            </div>
+            <a href="${this._esc(shop.google_maps_url)}" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm" style="justify-content: center; border-color: #CBD5E1;">
+              <i class="fab fa-google" style="color: #EA4335;"></i>
+              <span>${isAr ? 'الاتجاه على خرائط Google Maps ↗' : 'Directions in Google Maps ↗'}</span>
+            </a>
+          </div>
+        `).join('');
+      } catch (e) {
+        const gmUrl = `https://www.google.com/maps/search/${encodeURIComponent(isAr ? 'صيانة موبايل ولابتوب والالكترونيات' : 'electronics repair shop')}/@${coords.lat},${coords.lng},14z`;
+        shopsGrid.innerHTML = `
+          <div class="card" style="grid-column: 1/-1; padding: 18px; text-align: center;">
+            <a href="${gmUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm">
+              <i class="fab fa-google"></i>
+              <span>${isAr ? 'عرض محلات الصيانة القريبة في Google Maps ↗' : 'Open Nearby Repair Shops in Google Maps ↗'}</span>
+            </a>
+          </div>
+        `;
+      }
     };
 
     const loadTechs = async () => {
@@ -2213,7 +2567,9 @@ class ByteForceApp {
           techs.sort((a, b) => (a.distance_km ?? 9999) - (b.distance_km ?? 9999));
         }
 
+        lastLoadedTechs = techs;
         updateMapMarkers(techs, currentUserLoc);
+        loadNearbyPublicShops();
 
         if (techs.length === 0) {
           grid.innerHTML = `
@@ -2305,6 +2661,27 @@ class ByteForceApp {
     container.querySelector("#techRadiusFilter").addEventListener("change", loadTechs);
     container.querySelector("#techHomeOnly").addEventListener("change", loadTechs);
 
+    const gmToggleBtn = container.querySelector("#toggleGoogleMapsBtn");
+    if (gmToggleBtn) {
+      gmToggleBtn.addEventListener("click", () => {
+        showingGoogleMap = !showingGoogleMap;
+        const leafEl = container.querySelector("#techMap");
+        const gmWrap = container.querySelector("#googleMapsEmbedContainer");
+        if (leafEl && gmWrap) {
+          leafEl.style.display = showingGoogleMap ? "none" : "block";
+          gmWrap.style.display = showingGoogleMap ? "block" : "none";
+        }
+        gmToggleBtn.innerHTML = showingGoogleMap
+          ? `<i class="fas fa-map"></i> <span>${isAr ? 'العودة لخريطة المنصة' : 'Back to Platform Map'}</span>`
+          : `<i class="fab fa-google" style="color: #EA4335;"></i> <span>${isAr ? 'عرض خرائط جوجل (Google Maps)' : 'Switch to Google Maps'}</span>`;
+        if (showingGoogleMap) {
+          syncGoogleMapsUrls(getActiveMapCoords());
+        } else if (leafMap) {
+          setTimeout(() => { try { leafMap.invalidateSize(); } catch (e) {} }, 100);
+        }
+      });
+    }
+
     const locBtn = container.querySelector("#useLocationBtn");
     if (locBtn) {
       locBtn.addEventListener("click", () => {
@@ -2315,7 +2692,7 @@ class ByteForceApp {
         locBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${isAr ? 'جاري التحديد...' : 'Locating...'}`;
         navigator.geolocation.getCurrentPosition(
           (pos) => {
-            locBtn.innerHTML = `<i class="fas fa-check" style="color: #10B981;"></i> ${isAr ? 'تم تحديد موقعك الفعلي' : 'Real Location Active'}`;
+            locBtn.innerHTML = `<i class="fas fa-check"></i> ${isAr ? 'تم تحديد موقعك الفعلي' : 'Real Location Active'}`;
             currentUserLoc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
             loadTechs();
           },

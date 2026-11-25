@@ -457,5 +457,43 @@ class TestProductionIntegrity(unittest.TestCase):
         self.assertNotIn("Model Confidence", app_js)
         self.assertNotIn('this.navigate(this.isExclusiveAdmin', app_js)
 
+    def test_12_usb_cable_zero_token_and_nearby_shops(self):
+        """Verifies wired USB/Serial diagnostics use ZERO AI tokens, AI headings are gone, and nearby Google Maps endpoint works."""
+        from unittest.mock import patch
+
+        # 1. Wired Qualcomm EDL 9008 + Serial log diagnosis must NOT invoke external AI
+        with patch.object(self.diagnosis_engine.ai_assistant, "analyze_with_datasets") as mock_ai:
+            resp = self.client.post("/api/diagnosis/analyze", json={
+                "device_category": "Smartphone",
+                "usb_telemetry": {"vendorId": 0x05C6, "productId": 0x9008, "productName": "Qualcomm HS-USB QDLoader 9008"},
+                "serial_logs": "emmc i/o error: kernel panic during boot",
+                "skip_ai": True,
+            })
+            self.assertEqual(resp.status_code, 200)
+            mock_ai.assert_not_called()
+            data = resp.json()
+            self.assertEqual((data.get("ai_analysis") or {}).get("status"), "skipped_zero_token")
+            self.assertIsNotNone(data.get("cable_diagnostics"))
+            self.assertEqual(data["cable_diagnostics"]["vid_hex"], "0x05C6")
+            self.assertEqual(data["cable_diagnostics"]["pid_hex"], "0x9008")
+            self.assertGreater(len(data.get("possible_causes") or []), 0)
+            self.assertIn("EDL 9008", data["possible_causes"][0].get("title_ar", ""))
+
+        # 2. Nearby public repair shops endpoint responds cleanly with Google Maps link
+        shops_resp = self.client.get("/api/marketplace/nearby-shops?lat=30.0444&lng=31.2357&radius_km=5")
+        self.assertEqual(shops_resp.status_code, 200)
+        sdata = shops_resp.json()
+        self.assertIn("google_maps_search_url", sdata)
+        self.assertIn("google.com/maps", sdata["google_maps_search_url"])
+        self.assertIsInstance(sdata.get("shops"), list)
+
+        # 3. Verify AI heading removed completely from diagnosis UI and wired/maps features exist
+        with open(os.path.join(PROJECT_ROOT, "js", "app.js"), "r", encoding="utf-8") as f:
+            app_js = f.read()
+        self.assertNotIn("تحليل الذكاء الاصطناعي", app_js)
+        self.assertNotIn("التحليل الهندسي الذكي", app_js)
+        self.assertIn("scanUsbCableDevice", app_js)
+        self.assertIn("toggleGoogleMapsBtn", app_js)
+
 if __name__ == "__main__":
     unittest.main()
