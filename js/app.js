@@ -88,6 +88,28 @@ class ByteForceApp {
     }[c]));
   }
 
+  toggleTheme() {
+    const current = document.documentElement.getAttribute("data-theme") || "light";
+    const next = current === "dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+    try {
+      localStorage.setItem("byteforce_theme", next);
+    } catch (e) {}
+    this._updateThemeButtonUI();
+  }
+
+  _updateThemeButtonUI() {
+    const theme = document.documentElement.getAttribute("data-theme") || "light";
+    const btn = document.getElementById("themeToggleBtn");
+    if (btn) {
+      const isDark = theme === "dark";
+      btn.innerHTML = `<i class="fas ${isDark ? "fa-sun" : "fa-moon"}"></i>`;
+      btn.title = isDark
+        ? "تفعيل المظهر الفاتح (الأساسي) / Switch to Light Theme"
+        : "تفعيل المظهر الداكن / Switch to Dark Theme";
+    }
+  }
+
   applyHomeSectionOrder() {
     const main = document.getElementById("mainContent");
     if (!main) return;
@@ -103,6 +125,7 @@ class ByteForceApp {
   }
 
   async init() {
+    this._updateThemeButtonUI();
     this.applyHomeSectionOrder();
     this.bindEvents();
     this.updateNavAuth();
@@ -228,7 +251,7 @@ class ByteForceApp {
     list.innerHTML = this.notifications.map(n => `
       <div class="notif-item ${n.read ? '' : 'unread'}" style="cursor: pointer;" onclick="app.markNotifRead('${n.id}')">
         <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
-          <strong style="color: #FFFFFF; font-size: 13px;">${n.title}</strong>
+          <strong style="color: var(--color-text-main); font-size: 13px;">${n.title}</strong>
           ${!n.read ? '<span style="width: 8px; height: 8px; border-radius: 50%; background: #38BDF8; flex-shrink: 0; margin-top: 4px;"></span>' : ''}
         </div>
         <p style="color: #94A3B8; font-size: 12px; margin-top: 4px; line-height: 1.4;">${n.message}</p>
@@ -340,12 +363,12 @@ class ByteForceApp {
     if (obBadge && obTitle && obDesc && obActions) {
       if (isLoggedIn && user) {
         const isAdminUser = this.isExclusiveAdmin(user);
-        obBadge.innerHTML = `<span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #10B981; border: 1px solid rgba(16, 185, 129, 0.3); font-size: 12px; padding: 4px 10px;"><i class="fas fa-check-circle"></i> ${isAr ? 'حساب نشط وموثق' : 'Verified Account Active'}</span>${isAdminUser ? `<span class="badge" style="background: rgba(239, 68, 68, 0.16); color: #F87171; border: 1px solid rgba(239, 68, 68, 0.35); font-size: 12px; padding: 4px 10px;"><i class="fas fa-shield-alt"></i> ${isAr ? 'مدير النظام' : 'System Admin'}</span>` : ''}<span style="color: #94A3B8; font-size: 13px;">${this._esc(user.email || '')}</span>`;
+        obBadge.innerHTML = `<span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #10B981; border: 1px solid rgba(16, 185, 129, 0.3); font-size: 12px; padding: 4px 10px;"><i class="fas fa-check-circle"></i> ${isAr ? 'حساب نشط وموثق' : 'Verified Account Active'}</span>${isAdminUser ? `<span class="badge" style="background: rgba(239, 68, 68, 0.16); color: var(--color-danger); border: 1px solid rgba(239, 68, 68, 0.35); font-size: 12px; padding: 4px 10px;"><i class="fas fa-shield-alt"></i> ${isAr ? 'مدير النظام' : 'System Admin'}</span>` : ''}<span style="color: #94A3B8; font-size: 13px;">${this._esc(user.email || '')}</span>`;
         obTitle.textContent = isAr ? `مرحباً بك مجدداً، ${user.full_name || user.email}! أدوات الفحص الذكي مفعلة` : `Welcome back, ${user.full_name || user.email}! Diagnostic tools unlocked`;
         obDesc.textContent = isAr ? "تم التحقق من حسابك بنجاح. يمكنك الآن بدء تشخيص أي جهاز ومطابقة الأعطال مع قواعد بيانات الصيانة العالمية وتحميل التقارير المعتمدة." : "Your account is authenticated. You have full access to hardware diagnosis, empirical dataset matching, and verified repair manuals.";
         obActions.innerHTML = `
           ${isAdminUser ? `
-            <button class="btn btn-md" onclick="app.navigate('admin')" style="background: rgba(239, 68, 68, 0.18); color: #FCA5A5; border: 1px solid rgba(239, 68, 68, 0.45); display: inline-flex; align-items: center; gap: 8px; font-weight: 700;">
+            <button class="btn btn-md" onclick="app.navigate('admin')" style="background: rgba(239, 68, 68, 0.18); color: var(--color-danger); border: 1px solid rgba(239, 68, 68, 0.45); display: inline-flex; align-items: center; gap: 8px; font-weight: 700;">
               <i class="fas fa-shield-alt" style="color: #EF4444;"></i>
               <span>${isAr ? 'فتح لوحة تحكم الإدارة (Admin Panel)' : 'Open Admin Control Center'}</span>
             </button>
@@ -356,7 +379,7 @@ class ByteForceApp {
           </button>
         `;
       } else {
-        obBadge.innerHTML = `<span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #F87171; border: 1px solid rgba(239, 68, 68, 0.3); font-size: 12px; padding: 4px 10px;"><i class="fas fa-lock"></i> ${isAr ? 'وصول محمي وموثق' : 'Authentication Required'}</span><span style="color: #94A3B8; font-size: 13px;">${isAr ? 'حماية البيانات وتوثيق تاريخ الأجهزة' : 'Device history & data protection'}</span>`;
+        obBadge.innerHTML = `<span class="badge" style="background: rgba(239, 68, 68, 0.15); color: var(--color-danger); border: 1px solid rgba(239, 68, 68, 0.3); font-size: 12px; padding: 4px 10px;"><i class="fas fa-lock"></i> ${isAr ? 'وصول محمي وموثق' : 'Authentication Required'}</span><span style="color: #94A3B8; font-size: 13px;">${isAr ? 'حماية البيانات وتوثيق تاريخ الأجهزة' : 'Device history & data protection'}</span>`;
         obTitle.textContent = isAr ? 'أدوات الفحص الذكي وتقارير الصيانة مخصصة للأعضاء المسجلين' : 'Diagnostic Tools & Reports are Reserved for Verified Accounts';
         obDesc.textContent = isAr ? 'للحفاظ على سرية مواصفات أجهزتك وحفظ سجلات الفحص ومطابقتها مستقبلاً، يتطلب استخدام معالج التشخيص وتسجيل الأعراض إنشاء حساب موثق أو تسجيل الدخول السريع.' : 'To safeguard technical records, maintain device repair histories, and generate certified inspection reports, access to diagnostic tools requires signing in.';
         obActions.innerHTML = `
@@ -529,13 +552,13 @@ class ByteForceApp {
       <div class="hero-social-bar">
         <a href="#" class="hero-social-link" title="Facebook"><i class="fab fa-facebook-f"></i></a>
         <a href="#" class="hero-social-link" title="Instagram"><i class="fab fa-instagram"></i></a>
-        <a href="#" class="hero-social-link" title="X (Twitter)"><i class="fab fa-x-twitter"></i></a>
+        <a href="#" class="hero-social-link" title="Twitter / X"><i class="fab fa-twitter"></i></a>
         <a href="#" class="hero-social-link" title="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
       </div>
 
       <div class="container">
         <div class="hero-content-col">
-          <div class="hero-badge" style="display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: var(--radius-full); font-size: 12px; font-weight: 600; color: #38BDF8; margin-bottom: 18px;">
+          <div class="hero-badge" style="display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: var(--radius-full); font-size: 12px; font-weight: 600; color: var(--color-accent); margin-bottom: 18px;">
             <i class="fas fa-microchip"></i>
             <span data-i18n="hero_badge">${window.i18n.t('hero_badge')}</span>
           </div>
@@ -567,11 +590,11 @@ class ByteForceApp {
         
         <!-- Onboarding Header -->
         <div style="text-align: center; max-width: 820px; margin: 0 auto 46px;">
-          <div style="display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px; background: rgba(37, 99, 235, 0.12); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 9999px; font-size: 13px; font-weight: 600; color: #38BDF8; margin-bottom: 16px;">
+          <div style="display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px; background: rgba(37, 99, 235, 0.12); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 9999px; font-size: 13px; font-weight: 600; color: var(--color-accent); margin-bottom: 16px;">
             <i class="fas fa-certificate"></i>
             <span data-i18n="onboarding_badge">${window.i18n.t('onboarding_badge')}</span>
           </div>
-          <h2 style="font-size: 34px; font-weight: 800; color: #FFFFFF; line-height: 1.3; margin-bottom: 16px;" data-i18n="onboarding_title">
+          <h2 style="font-size: 34px; font-weight: 800; color: var(--color-text-main); line-height: 1.3; margin-bottom: 16px;" data-i18n="onboarding_title">
             ${window.i18n.t('onboarding_title')}
           </h2>
           <p style="font-size: 15px; color: #94A3B8; line-height: 1.7;" data-i18n="onboarding_subtitle">
@@ -583,61 +606,61 @@ class ByteForceApp {
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-bottom: 40px;">
           
           <!-- Step 1 Card -->
-          <div class="card onboarding-card" style="padding: 28px 24px; border: 1px solid rgba(255,255,255,0.08); background: #0E131F; border-radius: 14px;">
+          <div class="card onboarding-card" style="padding: 28px 24px; border: 1px solid var(--color-border); background: var(--color-card); border-radius: 14px;">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
-              <div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(56, 189, 248, 0.12); color: #38BDF8; display: flex; align-items: center; justify-content: center; font-size: 22px;">
+              <div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(56, 189, 248, 0.12); color: var(--color-accent); display: flex; align-items: center; justify-content: center; font-size: 22px;">
                 <i class="fas fa-layer-group"></i>
               </div>
-              <span style="font-size: 12px; font-weight: 700; color: #38BDF8; background: rgba(56, 189, 248, 0.1); padding: 4px 10px; border-radius: 20px;">${isAr ? 'الخطوة 01' : 'Step 01'}</span>
+              <span style="font-size: 12px; font-weight: 700; color: var(--color-accent); background: rgba(56, 189, 248, 0.1); padding: 4px 10px; border-radius: 20px;">${isAr ? 'الخطوة 01' : 'Step 01'}</span>
             </div>
-            <h3 style="font-size: 18px; font-weight: 700; color: #FFFFFF; margin-bottom: 10px;" data-i18n="onboarding_step1_h">
+            <h3 style="font-size: 18px; font-weight: 700; color: var(--color-text-main); margin-bottom: 10px;" data-i18n="onboarding_step1_h">
               ${window.i18n.t('onboarding_step1_h')}
             </h3>
             <p style="font-size: 14px; color: #94A3B8; line-height: 1.6;" data-i18n="onboarding_step1_p">
               ${window.i18n.t('onboarding_step1_p')}
             </p>
-            <div style="margin-top: 18px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 12px; color: #64748B; display: flex; align-items: center; gap: 6px;">
+            <div style="margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--color-border); font-size: 12px; color: #64748B; display: flex; align-items: center; gap: 6px;">
               <i class="fas fa-shield-alt" style="color: #10B981;"></i>
               <span>${isAr ? 'فحص الأمان الفوري وتفادي مخاطر البطاريات' : 'Instant safety triage & battery hazard check'}</span>
             </div>
           </div>
 
           <!-- Step 2 Card -->
-          <div class="card onboarding-card" style="padding: 28px 24px; border: 1px solid rgba(37, 99, 235, 0.35); background: #0E131F; border-radius: 14px;">
+          <div class="card onboarding-card" style="padding: 28px 24px; border: 1px solid rgba(37, 99, 235, 0.35); background: var(--color-card); border-radius: 14px;">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
               <div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(37, 99, 235, 0.15); color: #60A5FA; display: flex; align-items: center; justify-content: center; font-size: 22px;">
                 <i class="fas fa-brain"></i>
               </div>
               <span style="font-size: 12px; font-weight: 700; color: #60A5FA; background: rgba(37, 99, 235, 0.15); padding: 4px 10px; border-radius: 20px;">${isAr ? 'الخطوة 02' : 'Step 02'}</span>
             </div>
-            <h3 style="font-size: 18px; font-weight: 700; color: #FFFFFF; margin-bottom: 10px;" data-i18n="onboarding_step2_h">
+            <h3 style="font-size: 18px; font-weight: 700; color: var(--color-text-main); margin-bottom: 10px;" data-i18n="onboarding_step2_h">
               ${window.i18n.t('onboarding_step2_h')}
             </h3>
             <p style="font-size: 14px; color: #94A3B8; line-height: 1.6;" data-i18n="onboarding_step2_p">
               ${window.i18n.t('onboarding_step2_p')}
             </p>
-            <div style="margin-top: 18px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 12px; color: #64748B; display: flex; align-items: center; gap: 6px;">
+            <div style="margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--color-border); font-size: 12px; color: #64748B; display: flex; align-items: center; gap: 6px;">
               <i class="fas fa-check-circle" style="color: #10B981;"></i>
               <span>${isAr ? 'دقة تنبؤ SMART للأقراص ROC-AUC = 0.912' : 'SMART Drive failure ML test ROC-AUC = 0.912'}</span>
             </div>
           </div>
 
           <!-- Step 3 Card -->
-          <div class="card onboarding-card" style="padding: 28px 24px; border: 1px solid rgba(255,255,255,0.08); background: #0E131F; border-radius: 14px;">
+          <div class="card onboarding-card" style="padding: 28px 24px; border: 1px solid var(--color-border); background: var(--color-card); border-radius: 14px;">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
               <div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(16, 185, 129, 0.12); color: #10B981; display: flex; align-items: center; justify-content: center; font-size: 22px;">
                 <i class="fas fa-tools"></i>
               </div>
               <span style="font-size: 12px; font-weight: 700; color: #10B981; background: rgba(16, 185, 129, 0.1); padding: 4px 10px; border-radius: 20px;">${isAr ? 'الخطوة 03' : 'Step 03'}</span>
             </div>
-            <h3 style="font-size: 18px; font-weight: 700; color: #FFFFFF; margin-bottom: 10px;" data-i18n="onboarding_step3_h">
+            <h3 style="font-size: 18px; font-weight: 700; color: var(--color-text-main); margin-bottom: 10px;" data-i18n="onboarding_step3_h">
               ${window.i18n.t('onboarding_step3_h')}
             </h3>
             <p style="font-size: 14px; color: #94A3B8; line-height: 1.6;" data-i18n="onboarding_step3_p">
               ${window.i18n.t('onboarding_step3_p')}
             </p>
-            <div style="margin-top: 18px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 12px; color: #64748B; display: flex; align-items: center; gap: 6px;">
-              <i class="fas fa-file-pdf" style="color: #38BDF8;"></i>
+            <div style="margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--color-border); font-size: 12px; color: #64748B; display: flex; align-items: center; gap: 6px;">
+              <i class="fas fa-file-pdf" style="color: var(--color-accent);"></i>
               <span>${isAr ? 'توليد تقرير فني معتمد قابل للطباعة PDF' : 'Downloadable PDF technical diagnosis reports'}</span>
             </div>
           </div>
@@ -645,15 +668,15 @@ class ByteForceApp {
         </div>
 
         <!-- Protected Diagnostic Access Gate Card -->
-        <div class="onboarding-auth-gate-card" id="onboardingAuthCard" style="background: linear-gradient(135deg, rgba(37,99,235,0.1) 0%, rgba(15,23,42,0.85) 100%); border: 1px solid rgba(56,189,248,0.25); border-radius: 16px; padding: 28px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 24px;">
+        <div class="onboarding-auth-gate-card" id="onboardingAuthCard" style="background: var(--auth-gate-bg); border: 1px solid rgba(56,189,248,0.25); border-radius: 16px; padding: 28px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 24px;">
           <div style="max-width: 620px;">
             <div id="onboardingAuthBadge" style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-              <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #F87171; border: 1px solid rgba(239, 68, 68, 0.3); font-size: 12px; padding: 4px 10px;">
+              <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: var(--color-danger); border: 1px solid rgba(239, 68, 68, 0.3); font-size: 12px; padding: 4px 10px;">
                 <i class="fas fa-lock"></i> ${window.i18n.t('auth_gate_locked_badge')}
               </span>
               <span style="color: #94A3B8; font-size: 13px;">${isAr ? 'حماية البيانات وتوثيق تاريخ الأجهزة' : 'Device history & data protection'}</span>
             </div>
-            <h3 id="onboardingAuthTitle" style="font-size: 20px; font-weight: 700; color: #FFFFFF; margin-bottom: 8px;" data-i18n="auth_gate_title">
+            <h3 id="onboardingAuthTitle" style="font-size: 20px; font-weight: 700; color: var(--color-text-main); margin-bottom: 8px;" data-i18n="auth_gate_title">
               ${window.i18n.t('auth_gate_title')}
             </h3>
             <p id="onboardingAuthDesc" style="font-size: 14px; color: #94A3B8; line-height: 1.6;" data-i18n="auth_gate_desc">
@@ -711,7 +734,7 @@ class ByteForceApp {
 
           <div class="about-stats-row">
             <div class="about-stat-box">
-              <div id="homeStatIncidents" class="about-stat-num" style="color: #38BDF8;">${this._liveStats?.incidents || '...'}</div>
+              <div id="homeStatIncidents" class="about-stat-num" style="color: var(--color-accent);">${this._liveStats?.incidents || '...'}</div>
               <div class="about-stat-lbl" data-i18n="stat_records_lbl">${window.i18n.t('stat_records_lbl')}</div>
             </div>
             <div class="about-stat-box">
@@ -735,7 +758,7 @@ class ByteForceApp {
           <div style="display: inline-block; padding: 4px 14px; background: rgba(56, 189, 248, 0.1); border-radius: var(--radius-full); font-size: 12px; font-weight: 700; color: var(--color-accent); text-transform: uppercase; margin-bottom: 12px; letter-spacing: 1px;">
             Universal Hardware Coverage
           </div>
-          <h2 style="font-size: 34px; margin-bottom: 12px; color: #FFFFFF;" data-i18n="demo_devices">${window.i18n.t('demo_devices')}</h2>
+          <h2 style="font-size: 34px; margin-bottom: 12px; color: var(--color-text-main);" data-i18n="demo_devices">${window.i18n.t('demo_devices')}</h2>
           <p style="color: var(--color-text-muted); font-size: 15px;">
             ${isAr ? 'تغطية شاملة ومدروسة لكافة الأجهزة الاستهلاكية والمنزلية والتقنية عبر نماذج تشخيص مبنية على قواعد بيانات الصيانة العالمية.' : 'Comprehensive diagnostic support across all personal computing, mobile, entertainment, storage, and home electronics.'}
           </p>
@@ -771,7 +794,7 @@ class ByteForceApp {
     <section style="padding: 85px 0; background-color: var(--color-bg); border-bottom: none;">
       <div class="container">
         <div style="text-align: center; max-width: 650px; margin: 0 auto 52px;">
-          <h2 style="font-size: 34px; margin-bottom: 14px; color: #FFFFFF;" data-i18n="how_title">${window.i18n.t('how_title')}</h2>
+          <h2 style="font-size: 34px; margin-bottom: 14px; color: var(--color-text-main);" data-i18n="how_title">${window.i18n.t('how_title')}</h2>
           <p style="color: var(--color-text-muted); font-size: 15px;" data-i18n="how_desc">
             ${window.i18n.t('how_desc')}
           </p>
@@ -779,18 +802,18 @@ class ByteForceApp {
 
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px;">
           <div class="card" style="text-align: center; padding: 32px 20px;">
-            <div style="width: 50px; height: 50px; border-radius: 50%; background: rgba(37,99,235,0.15); color: #38BDF8; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-size: 22px;">
+            <div style="width: 50px; height: 50px; border-radius: 50%; background: rgba(37,99,235,0.15); color: var(--color-accent); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-size: 22px;">
               <i class="fas fa-laptop-medical"></i>
             </div>
-            <h4 style="margin-bottom: 8px; color: #FFFFFF; font-size: 16px;" data-i18n="how_step1_title">${window.i18n.t('how_step1_title')}</h4>
+            <h4 style="margin-bottom: 8px; color: var(--color-text-main); font-size: 16px;" data-i18n="how_step1_title">${window.i18n.t('how_step1_title')}</h4>
             <p style="font-size: 13px; color: var(--color-text-muted);">${window.i18n.t('how_step1_desc')}</p>
           </div>
 
           <div class="card" style="text-align: center; padding: 32px 20px;">
-            <div style="width: 50px; height: 50px; border-radius: 50%; background: rgba(56,189,248,0.15); color: #38BDF8; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-size: 22px;">
+            <div style="width: 50px; height: 50px; border-radius: 50%; background: rgba(56,189,248,0.15); color: var(--color-accent); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-size: 22px;">
               <i class="fas fa-comment-dots"></i>
             </div>
-            <h4 style="margin-bottom: 8px; color: #FFFFFF; font-size: 16px;" data-i18n="how_step2_title">${window.i18n.t('how_step2_title')}</h4>
+            <h4 style="margin-bottom: 8px; color: var(--color-text-main); font-size: 16px;" data-i18n="how_step2_title">${window.i18n.t('how_step2_title')}</h4>
             <p style="font-size: 13px; color: var(--color-text-muted);">${window.i18n.t('how_step2_desc')}</p>
           </div>
 
@@ -798,7 +821,7 @@ class ByteForceApp {
             <div style="width: 50px; height: 50px; border-radius: 50%; background: rgba(37,99,235,0.15); color: #1D64F2; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-size: 22px;">
               <i class="fas fa-brain"></i>
             </div>
-            <h4 style="margin-bottom: 8px; color: #FFFFFF; font-size: 16px;" data-i18n="how_step3_title">${window.i18n.t('how_step3_title')}</h4>
+            <h4 style="margin-bottom: 8px; color: var(--color-text-main); font-size: 16px;" data-i18n="how_step3_title">${window.i18n.t('how_step3_title')}</h4>
             <p style="font-size: 13px; color: var(--color-text-muted);">${window.i18n.t('how_step3_desc')}</p>
           </div>
 
@@ -806,7 +829,7 @@ class ByteForceApp {
             <div style="width: 50px; height: 50px; border-radius: 50%; background: rgba(16,185,129,0.15); color: #10B981; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-size: 22px;">
               <i class="fas fa-tools"></i>
             </div>
-            <h4 style="margin-bottom: 8px; color: #FFFFFF; font-size: 16px;" data-i18n="how_step4_title">${window.i18n.t('how_step4_title')}</h4>
+            <h4 style="margin-bottom: 8px; color: var(--color-text-main); font-size: 16px;" data-i18n="how_step4_title">${window.i18n.t('how_step4_title')}</h4>
             <p style="font-size: 13px; color: var(--color-text-muted);">${window.i18n.t('how_step4_desc')}</p>
           </div>
         </div>
@@ -814,10 +837,10 @@ class ByteForceApp {
     </section>
 
     <!-- Certified Technician Marketplace Teaser Banner -->
-    <section style="padding: 60px 0; background: #0F131C; border-bottom: 1px solid var(--color-border);">
+    <section style="padding: 60px 0; background: var(--color-card); border-bottom: 1px solid var(--color-border);">
       <div class="container" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 24px;">
         <div>
-          <h3 style="color: #FFFFFF; font-size: 26px; margin-bottom: 8px;">
+          <h3 style="color: var(--color-text-main); font-size: 26px; margin-bottom: 8px;">
             ${isAr ? 'هل أنت فني أو مركز صيانة محترف؟' : 'Are you a professional repair technician or lab?'}
           </h3>
           <p style="color: #94A3B8; font-size: 14px; max-width: 580px;">
@@ -954,7 +977,7 @@ class ByteForceApp {
             
             <!-- Step 1: Device Category -->
             <div class="form-group" style="margin-bottom: 28px;">
-              <label class="form-label" style="font-size: 15px; font-weight: 700; color: #FFFFFF; margin-bottom: 12px; display: block;" data-i18n="diag_step1">1. فئة ونوع الجهاز</label>
+              <label class="form-label" style="font-size: 15px; font-weight: 700; color: var(--color-text-main); margin-bottom: 12px; display: block;" data-i18n="diag_step1">1. فئة ونوع الجهاز</label>
               <div class="wizard-cat-grid">
                 ${[
                   { cat: "Smartphone", icon: "fa-mobile-screen-button", key: "cat_smartphone", sub: isAr ? "آيفون / أندرويد" : "iPhone / Android" },
@@ -1016,11 +1039,11 @@ class ByteForceApp {
             </div>
 
             <!-- Live Device Visual Match Preview (resolved automatically from iFixit/Wikimedia) -->
-            <div id="diagDevicePreview" style="display: none; margin-bottom: 18px; padding: 12px 14px; background: #0E131F; border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 10px; align-items: center; gap: 14px;">
-              <img id="diagPreviewImg" src="" alt="Device Preview" style="width: 64px; height: 64px; border-radius: 10px; object-fit: cover; border: 1px solid rgba(255,255,255,0.12);" />
+            <div id="diagDevicePreview" style="display: none; margin-bottom: 18px; padding: 12px 14px; background: var(--color-card); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 10px; align-items: center; gap: 14px;">
+              <img id="diagPreviewImg" src="" alt="Device Preview" style="width: 64px; height: 64px; border-radius: 10px; object-fit: cover; border: 1px solid var(--color-border);" />
               <div>
-                <div style="font-size: 12px; color: #38BDF8; font-weight: 700;" id="diagPreviewSource"></div>
-                <div style="font-size: 14px; color: #FFFFFF; font-weight: 600;" id="diagPreviewTitle"></div>
+                <div style="font-size: 12px; color: var(--color-accent); font-weight: 700;" id="diagPreviewSource"></div>
+                <div style="font-size: 14px; color: var(--color-text-main); font-weight: 600;" id="diagPreviewTitle"></div>
               </div>
             </div>
 
@@ -1034,8 +1057,8 @@ class ByteForceApp {
             </div>
 
             <!-- Step 5: Optional Details Accordion -->
-            <div style="margin-bottom: 24px; padding: 16px; background-color: #0E131F; border-radius: var(--radius-md); border: 1px solid rgba(255, 255, 255, 0.08);">
-              <h5 style="margin-bottom: 12px; font-size: 14px; color: #FFFFFF;" data-i18n="diag_step5">5. Additional Details (Optional)</h5>
+            <div style="margin-bottom: 24px; padding: 16px; background-color: var(--color-card); border-radius: var(--radius-md); border: 1px solid var(--color-border);">
+              <h5 style="margin-bottom: 12px; font-size: 14px; color: var(--color-text-main);" data-i18n="diag_step5">5. Additional Details (Optional)</h5>
               <div class="form-row-2">
                 <div>
                   <label style="font-size: 12px; font-weight: 600; color: var(--color-text-muted);" data-i18n="diag_age_label">Device Age</label>
@@ -1050,7 +1073,7 @@ class ByteForceApp {
 
             <!-- Conditional Storage SMART Telemetry Panel (Backblaze ML Model - Storage ONLY) -->
             <div id="storageSmartSection" style="display: ${this.wizardData.device_category === 'Storage' ? 'block' : 'none'}; margin-bottom: 24px; padding: 16px; background-color: rgba(16, 185, 129, 0.06); border-radius: var(--radius-md); border: 1px solid rgba(16, 185, 129, 0.25);">
-              <h5 style="margin-bottom: 6px; font-size: 14px; color: #34D399; display: flex; align-items: center; gap: 8px;">
+              <h5 style="margin-bottom: 6px; font-size: 14px; color: var(--color-success); display: flex; align-items: center; gap: 8px;">
                 <i class="fas fa-hdd"></i>
                 <span>${isAr ? 'قياسات S.M.A.R.T للأقراص (لتشغيل نموذج Backblaze التنبؤي - اختياري)' : 'Storage S.M.A.R.T Telemetry (Backblaze ML Prediction - Optional)'}</span>
               </h5>
@@ -1059,27 +1082,27 @@ class ByteForceApp {
               </p>
               <div class="form-row-2">
                 <div>
-                  <label style="font-size: 12px; color: #CBD5E1;">SMART 5 (Reallocated Sectors)</label>
+                  <label style="font-size: 12px; color: var(--color-text-body);">SMART 5 (Reallocated Sectors)</label>
                   <input type="number" id="smart5Raw" class="form-control" min="0" placeholder="0" value="${this.wizardData.smart_telemetry?.smart_5_raw ?? ''}">
                 </div>
                 <div>
-                  <label style="font-size: 12px; color: #CBD5E1;">SMART 187 (Uncorrectable Errors)</label>
+                  <label style="font-size: 12px; color: var(--color-text-body);">SMART 187 (Uncorrectable Errors)</label>
                   <input type="number" id="smart187Raw" class="form-control" min="0" placeholder="0" value="${this.wizardData.smart_telemetry?.smart_187_raw ?? ''}">
                 </div>
                 <div>
-                  <label style="font-size: 12px; color: #CBD5E1;">SMART 188 (Command Timeout)</label>
+                  <label style="font-size: 12px; color: var(--color-text-body);">SMART 188 (Command Timeout)</label>
                   <input type="number" id="smart188Raw" class="form-control" min="0" placeholder="0" value="${this.wizardData.smart_telemetry?.smart_188_raw ?? ''}">
                 </div>
                 <div>
-                  <label style="font-size: 12px; color: #CBD5E1;">SMART 197 (Current Pending Sectors)</label>
+                  <label style="font-size: 12px; color: var(--color-text-body);">SMART 197 (Current Pending Sectors)</label>
                   <input type="number" id="smart197Raw" class="form-control" min="0" placeholder="0" value="${this.wizardData.smart_telemetry?.smart_197_raw ?? ''}">
                 </div>
                 <div>
-                  <label style="font-size: 12px; color: #CBD5E1;">SMART 198 (Offline Uncorrectable)</label>
+                  <label style="font-size: 12px; color: var(--color-text-body);">SMART 198 (Offline Uncorrectable)</label>
                   <input type="number" id="smart198Raw" class="form-control" min="0" placeholder="0" value="${this.wizardData.smart_telemetry?.smart_198_raw ?? ''}">
                 </div>
                 <div>
-                  <label style="font-size: 12px; color: #CBD5E1;">${isAr ? 'سعة القرص (تيرابايت TB)' : 'Drive Capacity (TB)'}</label>
+                  <label style="font-size: 12px; color: var(--color-text-body);">${isAr ? 'سعة القرص (تيرابايت TB)' : 'Drive Capacity (TB)'}</label>
                   <input type="number" id="smartCapacityTb" class="form-control" step="0.1" min="0.1" placeholder="e.g. 2.0" value="${this.wizardData.smart_telemetry?.capacity_tb ?? ''}">
                 </div>
               </div>
@@ -1236,7 +1259,7 @@ class ByteForceApp {
                 <img src="${this._esc(report.device_image_url || report.guide_image_url)}" alt="${this._esc(report.model || report.device_category)}" class="report-device-thumb" onerror="this.style.display='none'" />
               ` : ''}
               <div>
-                <span class="tag" style="background-color: rgba(56, 189, 248, 0.15); color: #38BDF8; border: 1px solid rgba(56, 189, 248, 0.3); margin-bottom: 6px;">Report #${this._esc(report.report_id || 'TEMP')}</span>
+                <span class="tag" style="background-color: rgba(56, 189, 248, 0.15); color: var(--color-accent); border: 1px solid rgba(56, 189, 248, 0.3); margin-bottom: 6px;">Report #${this._esc(report.report_id || 'TEMP')}</span>
                 <h1 style="font-size: 28px;" data-i18n="results_title">Diagnostic Report</h1>
                 <p style="color: var(--color-text-muted); font-size: 14px;">
                   ${this._esc(report.brand || '')} ${this._esc(report.model || '')} (${this._esc(report.device_category || '')})
@@ -1256,21 +1279,21 @@ class ByteForceApp {
           </div>
 
           ${report.ai_analysis && report.ai_analysis.status === 'completed' ? `
-            <div class="card" style="margin-bottom: 24px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(15, 23, 42, 0.9) 100%); border: 1px solid rgba(16, 185, 129, 0.3);">
+            <div class="card" style="margin-bottom: 24px; background: var(--ai-card-bg); border: 1px solid rgba(16, 185, 129, 0.3);">
               <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
-                <div style="display: flex; align-items: center; gap: 8px; color: #34D399; font-weight: 700;">
+                <div style="display: flex; align-items: center; gap: 8px; color: var(--color-success); font-weight: 700;">
                   <i class="fas fa-robot"></i>
                   <span>${isAr ? `تحليل الذكاء الاصطناعي (${String(report.ai_analysis.provider || 'AI').toUpperCase()})` : `AI Deep Analysis (${String(report.ai_analysis.provider || 'AI').toUpperCase()})`}</span>
                 </div>
-                ${report.ai_analysis.model_used ? `<span class="tag" style="background: rgba(16,185,129,0.16); color: #6EE7B7; border-color: rgba(16,185,129,0.3); font-size: 11px;">${this._esc(report.ai_analysis.model_used)}</span>` : ''}
+                ${report.ai_analysis.model_used ? `<span class="tag" style="background: rgba(16,185,129,0.16); color: var(--color-success); border-color: rgba(16,185,129,0.3); font-size: 11px;">${this._esc(report.ai_analysis.model_used)}</span>` : ''}
               </div>
-              <p style="color: #F1F5F9; font-size: 14px; line-height: 1.7; margin: 0 0 12px 0;">
+              <p style="color: var(--color-text-main); font-size: 14px; line-height: 1.7; margin: 0 0 12px 0;">
                 ${this._esc(isAr ? (report.ai_analysis.diagnosis_summary_ar || report.ai_analysis.diagnosis_summary_en) : (report.ai_analysis.diagnosis_summary_en || report.ai_analysis.diagnosis_summary_ar))}
               </p>
               ${((isAr ? report.ai_analysis.repair_steps_ar : report.ai_analysis.repair_steps_en) || []).length > 0 ? `
-                <div style="padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.08);">
-                  <strong style="display: block; font-size: 13px; color: #38BDF8; margin-bottom: 6px;">${isAr ? 'خطة الإصلاح المقترحة بالذكاء الاصطناعي:' : 'AI-Guided Repair Sequence:'}</strong>
-                  <ol style="margin: 0; padding-inline-start: 20px; font-size: 13px; color: #CBD5E1; line-height: 1.7;">
+                <div style="padding-top: 10px; border-top: 1px solid var(--color-border);">
+                  <strong style="display: block; font-size: 13px; color: var(--color-accent); margin-bottom: 6px;">${isAr ? 'خطة الإصلاح المقترحة بالذكاء الاصطناعي:' : 'AI-Guided Repair Sequence:'}</strong>
+                  <ol style="margin: 0; padding-inline-start: 20px; font-size: 13px; color: var(--color-text-body); line-height: 1.7;">
                     ${((isAr ? report.ai_analysis.repair_steps_ar : report.ai_analysis.repair_steps_en) || []).slice(0, 6).map(st => `<li>${this._esc(st)}</li>`).join('')}
                   </ol>
                 </div>
@@ -1280,11 +1303,11 @@ class ByteForceApp {
 
           ${isInsufficient ? `
             <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 12px; padding: 20px; margin-bottom: 24px;">
-              <h3 style="color: #FBBF24; font-size: 17px; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+              <h3 style="color: var(--color-warning); font-size: 17px; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
                 <i class="fas fa-info-circle"></i>
                 <span>${isAr ? 'تنبيه: أدلة تجريبية غير كافية لهذا الجهاز' : 'Insufficient Empirical Evidence'}</span>
               </h3>
-              <p style="color: #E2E8F0; font-size: 14px; line-height: 1.6; margin: 0;">
+              <p style="color: var(--color-text-main); font-size: 14px; line-height: 1.6; margin: 0;">
                 ${report.message || (isAr ? 'لم يتم العثور على سجلات موثقة مطابقة تماماً لهذه الفئة أو الأعراض؛ لذلك ترفض المنصة تخمين أو اختلاق خطوات غير موثقة.' : 'No verified matching manual or empirical record exists for this exact device/symptom combination.')}
               </p>
             </div>
@@ -1341,23 +1364,23 @@ class ByteForceApp {
 
           <!-- Authentic Dataset Sources Badge -->
           ${report.empirical_statistics ? `
-            <div class="card" style="margin-bottom: 24px; background: linear-gradient(135deg, rgba(14, 165, 233, 0.08) 0%, rgba(30, 41, 59, 0.4) 100%); border: 1px solid rgba(56, 189, 248, 0.2);">
+            <div class="card" style="margin-bottom: 24px; background: var(--dataset-card-bg); border: 1px solid rgba(56, 189, 248, 0.2);">
               <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
                 <div style="display: flex; align-items: center; gap: 8px;">
-                  <i class="fas fa-database" style="color: #38BDF8; font-size: 18px;"></i>
-                  <h4 style="margin: 0; font-size: 16px; color: #FFFFFF;">
+                  <i class="fas fa-database" style="color: var(--color-accent); font-size: 18px;"></i>
+                  <h4 style="margin: 0; font-size: 16px; color: var(--color-text-main);">
                     ${isAr ? 'بيانات معتمدة من المصادر المفتوحة العالمية' : 'Verified Open Dataset Diagnostics'}
                   </h4>
                 </div>
                 <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                  <span class="tag" style="background: rgba(56, 189, 248, 0.15); color: #38BDF8; font-size: 11px;">
+                  <span class="tag" style="background: rgba(56, 189, 248, 0.15); color: var(--color-accent); font-size: 11px;">
                     <i class="fas fa-check-circle"></i> Open Repair Alliance (416k)
                   </span>
-                  <span class="tag" style="background: rgba(168, 85, 247, 0.15); color: #C084FC; font-size: 11px;">
+                  <span class="tag" style="background: rgba(168, 85, 247, 0.15); color: var(--color-purple); font-size: 11px;">
                     <i class="fas fa-check-circle"></i> MyFixit (Verified Guides)
                   </span>
                   ${report.hard_drive_ml_prediction && report.hard_drive_ml_prediction.applicable ? `
-                    <span class="tag" style="background: rgba(34, 197, 94, 0.15); color: #4ADE80; font-size: 11px;">
+                    <span class="tag" style="background: rgba(34, 197, 94, 0.15); color: var(--color-success); font-size: 11px;">
                       <i class="fas fa-microchip"></i> Backblaze Q2 2026 ML
                     </span>
                   ` : ''}
@@ -1365,34 +1388,34 @@ class ByteForceApp {
               </div>
 
               <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; font-size: 13px;">
-                <div style="padding: 10px; background: rgba(0, 0, 0, 0.25); border-radius: 6px;">
+                <div style="padding: 10px; background: var(--color-surface-alt); border-radius: 6px;">
                   <div style="color: var(--color-text-muted); font-size: 12px; margin-bottom: 4px;">
                     ${isAr ? 'معدل نجاح الإصلاح الواقعي (ORA):' : 'Empirical Success Rate (ORA):'}
                   </div>
-                  <div style="font-size: 18px; font-weight: 700; color: #38BDF8;">
+                  <div style="font-size: 18px; font-weight: 700; color: var(--color-accent);">
                     ${report.empirical_statistics.empirical_repair_success_rate}%
                     <span style="font-size: 12px; font-weight: normal; color: var(--color-text-muted);">(${report.empirical_statistics.sample_size.toLocaleString()} ${isAr ? 'حالة موثقة' : 'cases'})</span>
                   </div>
                 </div>
 
                 ${report.verified_guide && report.verified_guide.url ? `
-                  <div style="padding: 10px; background: rgba(0, 0, 0, 0.25); border-radius: 6px;">
+                  <div style="padding: 10px; background: var(--color-surface-alt); border-radius: 6px;">
                     <div style="color: var(--color-text-muted); font-size: 12px; margin-bottom: 4px;">
                       ${isAr ? 'دليل الصيانة المعتمد (MyFixit):' : 'Verified Guide (MyFixit):'}
                     </div>
-                    <a href="${report.verified_guide.url}" target="_blank" rel="noopener noreferrer" style="color: #38BDF8; font-weight: 600; text-decoration: underline; font-size: 13px; display: inline-block;">
+                    <a href="${report.verified_guide.url}" target="_blank" rel="noopener noreferrer" style="color: var(--color-accent); font-weight: 600; text-decoration: underline; font-size: 13px; display: inline-block;">
                       ${report.verified_guide.title} <i class="fas fa-external-link-alt" style="font-size: 10px;"></i>
                     </a>
                   </div>
                 ` : ''}
 
                 ${report.hard_drive_ml_prediction && report.hard_drive_ml_prediction.applicable ? `
-                  <div style="padding: 10px; background: rgba(0, 0, 0, 0.25); border-radius: 6px;">
+                  <div style="padding: 10px; background: var(--color-surface-alt); border-radius: 6px;">
                     <div style="color: var(--color-text-muted); font-size: 12px; margin-bottom: 4px;">
                       ${isAr ? 'تنبؤ الفشل بالذكاء الاصطناعي (Backblaze):' : 'ML Failure Prediction (Backblaze):'}
                     </div>
                     ${report.hard_drive_ml_prediction.status === 'awaiting_telemetry' || report.hard_drive_ml_prediction.failure_probability == null ? `
-                      <div style="font-size: 13px; font-weight: 600; color: #38BDF8;">
+                      <div style="font-size: 13px; font-weight: 600; color: var(--color-accent);">
                         ${isAr ? 'أدخل قياسات SMART لتشغيل التنبؤ الرقمي' : 'Supply SMART telemetry for failure probability'}
                       </div>
                     ` : `
@@ -1417,13 +1440,13 @@ class ByteForceApp {
                   ? c.repair_images
                   : (idx === 0 && Array.isArray(report.visual_solution_steps) ? report.visual_solution_steps.slice(0, 4).map(v => v.image_url) : []);
                 return `
-                <div style="padding: 18px; background-color: #0E131F; border-radius: var(--radius-sm); border: 1px solid rgba(255, 255, 255, 0.08);">
+                <div style="padding: 18px; background-color: var(--color-card); border-radius: var(--radius-sm); border: 1px solid var(--color-border);">
                   <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
                     <div>
-                      <strong style="color: #FFFFFF; font-size: 15.5px; display: block;">${this._esc(isAr ? c.title_ar : c.title_en)}</strong>
-                      ${c.source_dataset ? `<span style="font-size: 11px; color: #94A3B8;"><i class="fas fa-database" style="color: #38BDF8;"></i> ${this._esc(c.source_dataset)}</span>` : ''}
+                      <strong style="color: var(--color-text-main); font-size: 15.5px; display: block;">${this._esc(isAr ? c.title_ar : c.title_en)}</strong>
+                      ${c.source_dataset ? `<span style="font-size: 11px; color: #94A3B8;"><i class="fas fa-database" style="color: var(--color-accent);"></i> ${this._esc(c.source_dataset)}</span>` : ''}
                     </div>
-                    <span style="font-weight: 700; color: #38BDF8; font-size: 14px;">${fixRate}% ${isAr ? '(نجاح الإصلاح واقعياً)' : '(Empirical Fix Rate)'}</span>
+                    <span style="font-weight: 700; color: var(--color-accent); font-size: 14px;">${fixRate}% ${isAr ? '(نجاح الإصلاح واقعياً)' : '(Empirical Fix Rate)'}</span>
                   </div>
                   <!-- Progress bar -->
                   <div style="width: 100%; height: 6px; background-color: rgba(255, 255, 255, 0.1); border-radius: var(--radius-full); margin-bottom: 10px; overflow: hidden;">
@@ -1436,11 +1459,11 @@ class ByteForceApp {
                   <!-- Dedicated Instant Repair Method Banner -->
                   ${(c.repair_method_ar || c.repair_method_en) ? `
                     <div style="margin-top: 10px; padding: 12px 14px; background: rgba(56, 189, 248, 0.08); border-left: 3px solid #38BDF8; border-right: ${isAr ? '3px solid #38BDF8' : 'none'}; border-radius: 6px; font-size: 13px; line-height: 1.6;">
-                      <div style="display: flex; align-items: center; gap: 6px; color: #38BDF8; font-weight: 700; margin-bottom: 4px;">
+                      <div style="display: flex; align-items: center; gap: 6px; color: var(--color-accent); font-weight: 700; margin-bottom: 4px;">
                         <i class="fas fa-tools"></i>
                         <span>${isAr ? 'طريقة التصليح المعتمدة:' : 'Verified Repair Solution:'}</span>
                       </div>
-                      <div style="color: #F1F5F9; font-weight: 500;">
+                      <div style="color: var(--color-text-main); font-weight: 500;">
                         ${this._esc((isAr ? (c.repair_method_ar || c.repair_method_en) : (c.repair_method_en || c.repair_method_ar)).replace(/^(طريقة التصليح المعتمدة:\s*|Repair Method:\s*)/i, ''))}
                       </div>
                     </div>
@@ -1448,8 +1471,8 @@ class ByteForceApp {
 
                   <!-- Real Illustrated Fix Photos Directly Under the Cause -->
                   ${causeImages.length > 0 ? `
-                    <div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.07);">
-                      <div style="font-size: 12.5px; font-weight: 700; color: #38BDF8; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                    <div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--color-border);">
+                      <div style="font-size: 12.5px; font-weight: 700; color: var(--color-accent); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
                         <i class="fas fa-images"></i>
                         <span data-i18n="results_visual_solution_title">${isAr ? 'صور خطوات الإصلاح التوضيحية لهذا العطل' : 'Illustrated Fix & Disassembly Photos'}</span>
                       </div>
@@ -1460,8 +1483,8 @@ class ByteForceApp {
                           return `
                             <div class="visual-step-card" style="cursor: pointer;" onclick="app.showImagePreview('${this._esc(imgUrl)}', '${this._esc(cap)}')">
                               <img src="${this._esc(imgUrl)}" alt="${this._esc(cap)}" class="visual-step-thumb" loading="lazy" onerror="this.parentElement.style.display='none'" />
-                              <div style="padding: 7px 10px; font-size: 11.5px; color: #CBD5E1; line-height: 1.4;">
-                                <strong style="color: #38BDF8;">${this._esc(cap)}</strong>
+                              <div style="padding: 7px 10px; font-size: 11.5px; color: var(--color-text-body); line-height: 1.4;">
+                                <strong style="color: var(--color-accent);">${this._esc(cap)}</strong>
                               </div>
                             </div>
                           `;
@@ -1479,17 +1502,17 @@ class ByteForceApp {
           ${(report.empirical_statistics?.matching_incidents && report.empirical_statistics.matching_incidents.length > 0) ? `
             <div class="card" style="margin-bottom: 24px;">
               <h3 style="font-size: 18px; margin-bottom: 14px; display: flex; align-items: center; gap: 8px;">
-                <i class="fas fa-history" style="color: #38BDF8;"></i>
+                <i class="fas fa-history" style="color: var(--color-accent);"></i>
                 <span data-i18n="results_ora_incidents_title">${isAr ? 'حالات أعطال حقيقية مطابقة (Open Repair Alliance)' : 'Matching Real-World Cases (Open Repair Alliance)'}</span>
               </h3>
               <div style="display: flex; flex-direction: column; gap: 10px;">
                 ${report.empirical_statistics.matching_incidents.map(inc => `
                   <div class="ora-incident-row">
                     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 4px;">
-                      <strong style="color: #FFFFFF;">${this._esc(inc.brand || report.device_category)} · ${this._esc(inc.normalized_category || '')}</strong>
+                      <strong style="color: var(--color-text-main);">${this._esc(inc.brand || report.device_category)} · ${this._esc(inc.normalized_category || '')}</strong>
                       <div style="display: flex; gap: 6px; align-items: center;">
                         ${inc.problem_cluster ? `<span class="tag" style="font-size: 11px;">${this._esc(inc.problem_cluster)}</span>` : ''}
-                        <span class="tag" style="font-size: 11px; background: ${inc.repair_status === 'Fixed' ? 'rgba(16,185,129,0.15)' : 'rgba(245,158,11,0.15)'}; color: ${inc.repair_status === 'Fixed' ? '#34D399' : '#FBBF24'};">${this._esc(inc.repair_status || 'Recorded')}</span>
+                        <span class="tag" style="font-size: 11px; background: ${inc.repair_status === 'Fixed' ? 'rgba(16,185,129,0.15)' : 'rgba(245,158,11,0.15)'}; color: ${inc.repair_status === 'Fixed' ? 'var(--color-success)' : 'var(--color-warning)'};">${this._esc(inc.repair_status || 'Recorded')}</span>
                       </div>
                     </div>
                     <p style="color: #94A3B8; margin: 0; line-height: 1.5;" dir="ltr">${this._esc(inc.problem || '-')}</p>
@@ -1534,7 +1557,7 @@ class ByteForceApp {
                       <span style="width: 26px; height: 26px; border-radius: 50%; background-color: var(--color-secondary); color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0;">
                         ${step.step_number}
                       </span>
-                      <strong style="font-size: 16px; color: #FFFFFF;">${isAr ? step.title_ar : step.title_en}</strong>
+                      <strong style="font-size: 16px; color: var(--color-text-main);">${isAr ? step.title_ar : step.title_en}</strong>
                     </div>
                     <p style="font-size: 14px; color: var(--color-text-main); margin-bottom: 8px; line-height: 1.65;" ${isLtrText ? 'dir="ltr"' : ''}>
                       ${instr}
@@ -1542,12 +1565,12 @@ class ByteForceApp {
                     ${step.images && step.images.length > 0 ? `
                       <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px;">
                         ${step.images.slice(0, 3).map(imgUrl => `
-                          <img src="${imgUrl}" alt="${step.title_en || 'Step diagram'}" style="max-width: 260px; width: 100%; max-height: 180px; border-radius: 8px; object-fit: cover; border: 1px solid rgba(255,255,255,0.12);" loading="lazy" onerror="this.style.display='none'" />
+                          <img src="${imgUrl}" alt="${step.title_en || 'Step diagram'}" style="max-width: 260px; width: 100%; max-height: 180px; border-radius: 8px; object-fit: cover; border: 1px solid var(--color-border);" loading="lazy" onerror="this.style.display='none'" />
                         `).join('')}
                       </div>
                     ` : ''}
                     ${(step.caution_en || step.caution_ar) ? `
-                      <div style="font-size: 12px; color: #FBBF24; background-color: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.25); padding: 6px 12px; border-radius: 6px; display: flex; align-items: center; gap: 6px; margin-top: 8px;">
+                      <div style="font-size: 12px; color: var(--color-warning); background-color: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.25); padding: 6px 12px; border-radius: 6px; display: flex; align-items: center; gap: 6px; margin-top: 8px;">
                         <i class="fas fa-shield-alt"></i>
                         <span>${isAr ? step.caution_ar : step.caution_en}</span>
                       </div>
@@ -1559,11 +1582,11 @@ class ByteForceApp {
 
               <!-- Reassembly & Post-Repair Installation Sequence -->
               <div style="margin-top: 18px; padding: 16px; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 10px;">
-                <h4 style="font-size: 15px; color: #34D399; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                <h4 style="font-size: 15px; color: var(--color-success); margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
                   <i class="fas fa-sync-alt"></i>
                   <span>${isAr ? 'خطوات إعادة التركيب والتجميع بعد الإصلاح (Installation & Reassembly)' : 'Post-Repair Installation & Reassembly Steps'}</span>
                 </h4>
-                <ul style="margin: 0; padding-inline-start: 20px; font-size: 13px; color: #E2E8F0; line-height: 1.75;">
+                <ul style="margin: 0; padding-inline-start: 20px; font-size: 13px; color: var(--color-text-main); line-height: 1.75;">
                   <li>${isAr
                     ? `بعد تركيب القطعة البديلة أو تنظيف المكون، أعد تجميع الجهاز باتباع الخطوات من <b>الخطوة ${report.troubleshooting_steps[report.troubleshooting_steps.length - 1]?.step_number || report.troubleshooting_steps.length} وصولاً إلى الخطوة 1</b> بالترتيب العكسي.`
                     : `After installing the replacement component, reassemble the device in reverse order from <b>Step ${report.troubleshooting_steps[report.troubleshooting_steps.length - 1]?.step_number || report.troubleshooting_steps.length} back to Step 1</b>.`}</li>
@@ -1577,14 +1600,14 @@ class ByteForceApp {
 
           <!-- Professional Technician Recommendation Banner -->
           ${report.requires_technician ? `
-            <div class="card" style="background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%); color: #FFFFFF; padding: 28px;">
+            <div class="card" style="background: var(--callout-card-bg); border: 1px solid var(--callout-card-border); color: var(--color-text-main); padding: 28px;">
               <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
                 <div>
                   <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; color: var(--color-accent);">
                     <i class="fas fa-user-shield"></i>
                     <strong data-i18n="results_tech_referral">Professional Technician Recommended</strong>
                   </div>
-                  <p style="font-size: 14px; color: #CBD5E1; max-width: 580px; margin: 0;">
+                  <p style="font-size: 14px; color: var(--color-text-body); max-width: 580px; margin: 0;">
                     ${report.technician_recommendation_reason || (isAr ? 'يتطلب هذا العطل تدخلاً عتادياً بأجهزة فحص مخصصة لضمان عدم تلف الجهاز بشكل نهائي.' : 'This procedure carries electrical risks or requires specialized board-level repair tools.')}
                   </p>
                 </div>
@@ -1605,8 +1628,8 @@ class ByteForceApp {
     if (!imgUrl) return;
     this.openModal(`
       <div style="text-align: center;">
-        <h4 style="color: #FFFFFF; margin-bottom: 12px;">${this._esc(caption)}</h4>
-        <img src="${this._esc(imgUrl)}" alt="${this._esc(caption)}" style="max-width: 100%; max-height: 70vh; border-radius: 10px; border: 1px solid rgba(255,255,255,0.14);" />
+        <h4 style="color: var(--color-text-main); margin-bottom: 12px;">${this._esc(caption)}</h4>
+        <img src="${this._esc(imgUrl)}" alt="${this._esc(caption)}" style="max-width: 100%; max-height: 70vh; border-radius: 10px; border: 1px solid var(--color-border);" />
       </div>
     `);
   }
@@ -1783,7 +1806,7 @@ class ByteForceApp {
         <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
           <span class="tag"><i class="far fa-clock"></i> ~${duration} min</span>
           <span class="tag"><i class="fas fa-layer-group"></i> ${difficulty}</span>
-          ${guide.url ? `<a href="${guide.url}" target="_blank" rel="noopener" class="tag" style="color: var(--color-secondary); text-decoration: none;"><i class="fas fa-external-link-alt"></i> ${isAr ? 'المصدر الأصلي (iFixit)' : 'Original Source (iFixit)'}</a>` : ''}
+          ${guide.url ? `<a href="${guide.url}" target="_blank" rel="noopener" class="tag" style="color: var(--color-secondary); text-decoration: none; padding: 4px 12px; white-space: nowrap;"><i class="fas fa-external-link-alt"></i> ${isAr ? 'المصدر الأصلي <span dir="ltr">(iFixit)</span>' : 'Original Source (iFixit)'}</a>` : ''}
         </div>
 
         ${tools && tools.length > 0 ? `
@@ -1830,8 +1853,8 @@ class ByteForceApp {
           `).join('')}
         </div>
         ${steps.length > 0 ? `
-          <div style="margin-top: 14px; padding: 12px 14px; background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.25); border-radius: 8px; font-size: 12.5px; color: #E2E8F0; line-height: 1.6;">
-            <strong style="color: #34D399;"><i class="fas fa-sync-alt"></i> ${isAr ? 'إعادة التركيب والتجميع:' : 'Reassembly & Installation:'}</strong>
+          <div style="margin-top: 14px; padding: 12px 14px; background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.25); border-radius: 8px; font-size: 12.5px; color: var(--color-text-main); line-height: 1.6;">
+            <strong style="color: var(--color-success);"><i class="fas fa-sync-alt"></i> ${isAr ? 'إعادة التركيب والتجميع:' : 'Reassembly & Installation:'}</strong>
             <span>${isAr ? `لإعادة تجميع الجهاز بعد انتهاء الإصلاح، نفذ الخطوات من ${steps.length} إلى 1 بالترتيب العكسي.` : `To reassemble your device after replacement, follow Steps ${steps.length} down to 1 in reverse order.`}</span>
           </div>
         ` : ''}
@@ -1876,7 +1899,7 @@ class ByteForceApp {
           </div>
 
          <!-- Enhanced Filter Bar (City, Specialty & Home Service) -->
-          <div class="card" style="margin-bottom: 30px; padding: 20px; background: #0E131F; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px;">
+          <div class="card" style="margin-bottom: 30px; padding: 20px; background: var(--color-card); border: 1px solid var(--color-border); border-radius: 12px;">
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; align-items: center;">
               <div>
                 <label style="font-size: 12px; color: #94A3B8; margin-bottom: 4px; display: block;">${isAr ? 'المدينة / المحافظة' : 'City / Governorate'}</label>
@@ -1942,7 +1965,7 @@ class ByteForceApp {
               </div>
 
               <div style="padding-top: 18px;">
-                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: #FFFFFF; font-size: 13px;">
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--color-text-main); font-size: 13px;">
                   <input type="checkbox" id="techHomeOnly" style="width: auto; cursor: pointer;">
                   <span><i class="fas fa-home" style="color: #10B981;"></i> ${isAr ? 'خدمة منزلية فقط' : 'Home Service Only'}</span>
                 </label>
@@ -1951,17 +1974,17 @@ class ByteForceApp {
           </div>
 
           <!-- Interactive Centers & Technicians Map -->
-          <div class="card" style="margin-bottom: 24px; padding: 14px; background: #0E131F; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px;">
+          <div class="card" style="margin-bottom: 24px; padding: 14px; background: var(--color-card); border: 1px solid var(--color-border); border-radius: 12px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
-              <span style="font-size: 14px; font-weight: 700; color: #FFFFFF;">
-                <i class="fas fa-map-marked-alt" style="color: #38BDF8; margin-inline-end: 6px;"></i>${isAr ? 'خريطة مراكز وفنيي الصيانة المعتمدين' : 'Verified Repair Centers & Technicians Map'}
+              <span style="font-size: 14px; font-weight: 700; color: var(--color-text-main);">
+                <i class="fas fa-map-marked-alt" style="color: var(--color-accent); margin-inline-end: 6px;"></i>${isAr ? 'خريطة مراكز وفنيي الصيانة المعتمدين' : 'Verified Repair Centers & Technicians Map'}
               </span>
               <button id="useLocationBtn" class="btn btn-outline btn-sm" style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px;">
                 <i class="fas fa-crosshairs" style="color: #10B981;"></i>
                 <span>${isAr ? 'تحديد موقعي الأقرب' : 'Find Nearest to Me'}</span>
               </button>
             </div>
-            <div id="techMap" style="height: 280px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); z-index: 1;"></div>
+            <div id="techMap" style="height: 280px; border-radius: 8px; border: 1px solid var(--color-border); z-index: 1;"></div>
           </div>
 
           <!-- Technicians Grid -->
@@ -2073,9 +2096,9 @@ class ByteForceApp {
 
         if (techs.length === 0) {
           grid.innerHTML = `
-            <div class="card" style="text-align: center; grid-column: 1/-1; padding: 48px 24px; background: #0E131F; border: 1px solid rgba(255,255,255,0.08);">
-              <i class="fas fa-tools" style="font-size: 34px; color: #38BDF8; margin-bottom: 14px;"></i>
-              <h3 style="color: #FFFFFF; font-size: 18px; margin-bottom: 8px;">${isAr ? 'لا توجد مراكز أو فنيون معتمدون مطابقون لهذا البحث حالياً' : 'No verified technicians or repair centers match right now'}</h3>
+            <div class="card" style="text-align: center; grid-column: 1/-1; padding: 48px 24px; background: var(--color-card); border: 1px solid var(--color-border);">
+              <i class="fas fa-tools" style="font-size: 34px; color: var(--color-accent); margin-bottom: 14px;"></i>
+              <h3 style="color: var(--color-text-main); font-size: 18px; margin-bottom: 8px;">${isAr ? 'لا توجد مراكز أو فنيون معتمدون مطابقون لهذا البحث حالياً' : 'No verified technicians or repair centers match right now'}</h3>
               <p style="color: #94A3B8; font-size: 13.5px; max-width: 520px; margin: 0 auto 20px;">
                 ${isAr ? 'نحن نعرض فقط الفنيين ومراكز الصيانة الحقيقية التي تم التحقق منها واعتمادها من قِبل الإدارة (بدون أي بيانات افتراضية).' : 'Only authentic repair centers and certified technicians verified and approved by administration appear here.'}
               </p>
@@ -2104,7 +2127,7 @@ class ByteForceApp {
                 <div style="display: flex; gap: 12px; align-items: center;">
                   <div class="tech-avatar">${this._esc((bName || 'T').charAt(0).toUpperCase())}</div>
                   <div>
-                    <h4 style="font-size: 16px; margin-bottom: 3px; color: #FFFFFF;">${this._esc(bName)}</h4>
+                    <h4 style="font-size: 16px; margin-bottom: 3px; color: var(--color-text-main);">${this._esc(bName)}</h4>
                     <span style="font-size: 12px; color: var(--color-text-muted); display: inline-flex; align-items: center; gap: 5px;">
                       <i class="fas fa-check-circle" style="color: var(--color-success);"></i>
                       ${this._esc(tName)} · ${t.is_verified_center ? (isAr ? 'مركز صيانة معتمد' : 'Verified Center') : (isAr ? 'فني معتمد' : 'Certified Tech')}
@@ -2115,17 +2138,17 @@ class ByteForceApp {
               </div>
 
               <div style="display: flex; gap: 12px; font-size: 12px; color: var(--color-text-muted); margin-bottom: 12px; flex-wrap: wrap;">
-                ${t.city ? `<span><i class="fas fa-map-marker-alt" style="color: #38BDF8;"></i> ${this._esc(t.city)}${t.address ? ` - ${this._esc(t.address)}` : ''}</span>` : ''}
-                ${t.distance_km != null ? `<span><i class="fas fa-route" style="color: #34D399;"></i> ${Number(t.distance_km).toFixed(1)} ${isAr ? 'كم' : 'km'}</span>` : ''}
+                ${t.city ? `<span><i class="fas fa-map-marker-alt" style="color: var(--color-accent);"></i> ${this._esc(t.city)}${t.address ? ` - ${this._esc(t.address)}` : ''}</span>` : ''}
+                ${t.distance_km != null ? `<span><i class="fas fa-route" style="color: var(--color-success);"></i> ${Number(t.distance_km).toFixed(1)} ${isAr ? 'كم' : 'km'}</span>` : ''}
                 <button type="button" onclick="app.showTechReviewsModal('${this._esc(t.id)}', '${safeName}')" style="background: none; border: none; padding: 0; color: inherit; cursor: pointer; font: inherit; display: inline-flex; align-items: center; gap: 4px; text-decoration: underline dotted;">
                   ${reviews > 0
-                    ? `<i class="fas fa-star" style="color: #F59E0B;"></i> <b style="color:#FBBF24;">${rating.toFixed(1)}</b> (${reviews})`
+                    ? `<i class="fas fa-star" style="color: #F59E0B;"></i> <b style="color: var(--color-warning);">${rating.toFixed(1)}</b> (${reviews})`
                     : `<i class="fas fa-star" style="color: #64748B;"></i> ${isAr ? 'جديد · التقييمات' : 'New · Reviews'}`
                   }
                 </button>
                 ${expYears ? `<span><i class="fas fa-award" style="color: #60A5FA;"></i> ${this._esc(expYears)} ${isAr ? 'سنوات خبرة' : 'yrs exp'}</span>` : ''}
                 ${t.working_hours ? `<span><i class="fas fa-clock" style="color: #94A3B8;"></i> ${this._esc(t.working_hours)}</span>` : ''}
-                ${t.phone ? `<span dir="ltr"><i class="fas fa-phone-alt" style="color: #34D399;"></i> ${this._esc(t.phone)}</span>` : ''}
+                ${t.phone ? `<span dir="ltr"><i class="fas fa-phone-alt" style="color: var(--color-success);"></i> ${this._esc(t.phone)}</span>` : ''}
               </div>
 
               ${t.bio ? `<p style="font-size: 13px; color: #94A3B8; margin-bottom: 14px; line-height: 1.5;">${this._esc(t.bio)}</p>` : ''}
@@ -2203,13 +2226,13 @@ class ByteForceApp {
             </button>
           </div>
           
-          <div style="background: #0E131F; border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: 36px; box-shadow: 0 8px 32px rgba(0,0,0,0.4);">
-            <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 20px;">
+          <div style="background: var(--color-card); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: 36px; box-shadow: 0 8px 32px rgba(0,0,0,0.4);">
+            <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px; border-bottom: 1px solid var(--color-border); padding-bottom: 20px;">
               <div style="width: 52px; height: 52px; border-radius: 50%; background: rgba(16, 185, 129, 0.15); color: #10B981; display: flex; align-items: center; justify-content: center; font-size: 24px;">
                 <i class="fas fa-user-shield"></i>
               </div>
               <div>
-                <h1 style="font-size: 26px; color: #FFFFFF; margin-bottom: 4px;">
+                <h1 style="font-size: 26px; color: var(--color-text-main); margin-bottom: 4px;">
                   ${isAr ? 'سياسة الخصوصية وحماية بيانات المستخدم' : 'Privacy & Data Protection Policy'}
                 </h1>
                 <p style="font-size: 13px; color: #94A3B8;">
@@ -2218,9 +2241,9 @@ class ByteForceApp {
               </div>
             </div>
 
-            <div style="display: flex; flex-direction: column; gap: 20px; font-size: 14px; color: #CBD5E1; line-height: 1.8;">
-              <div style="background: #070A10; border-radius: var(--radius-md); padding: 18px; border: 1px solid rgba(255,255,255,0.05);">
-                <h3 style="color: #38BDF8; font-size: 16px; margin-bottom: 8px;">
+            <div style="display: flex; flex-direction: column; gap: 20px; font-size: 14px; color: var(--color-text-body); line-height: 1.8;">
+              <div style="background: var(--color-surface-alt); border-radius: var(--radius-md); padding: 18px; border: 1px solid var(--color-border);">
+                <h3 style="color: var(--color-accent); font-size: 16px; margin-bottom: 8px;">
                   <i class="fas fa-lock"></i> ${isAr ? '1. التشفير التام للبيانات (TLS 1.3)' : '1. End-to-End Encryption'}
                 </h3>
                 <p>
@@ -2228,7 +2251,7 @@ class ByteForceApp {
                 </p>
               </div>
 
-              <div style="background: #070A10; border-radius: var(--radius-md); padding: 18px; border: 1px solid rgba(255,255,255,0.05);">
+              <div style="background: var(--color-surface-alt); border-radius: var(--radius-md); padding: 18px; border: 1px solid var(--color-border);">
                 <h3 style="color: #10B981; font-size: 16px; margin-bottom: 8px;">
                   <i class="fas fa-ban"></i> ${isAr ? '2. حظر جمع الصور الشخصية أو البيانات الحساسة' : '2. Zero Personal Files or Photos Retention'}
                 </h3>
@@ -2237,7 +2260,7 @@ class ByteForceApp {
                 </p>
               </div>
 
-              <div style="background: #070A10; border-radius: var(--radius-md); padding: 18px; border: 1px solid rgba(255,255,255,0.05);">
+              <div style="background: var(--color-surface-alt); border-radius: var(--radius-md); padding: 18px; border: 1px solid var(--color-border);">
                 <h3 style="color: #F59E0B; font-size: 16px; margin-bottom: 8px;">
                   <i class="fas fa-trash-alt"></i> ${isAr ? '3. حق المستخدم في حذف كافة البيانات فوراً' : '3. Immediate Data Purge & User Sovereignty'}
                 </h3>
@@ -2246,7 +2269,7 @@ class ByteForceApp {
                 </p>
               </div>
 
-              <div style="background: #070A10; border-radius: var(--radius-md); padding: 18px; border: 1px solid rgba(255,255,255,0.05);">
+              <div style="background: var(--color-surface-alt); border-radius: var(--radius-md); padding: 18px; border: 1px solid var(--color-border);">
                 <h3 style="color: #A855F7; font-size: 16px; margin-bottom: 8px;">
                   <i class="fas fa-hand-holding-heart"></i> ${isAr ? '4. الالتزام بحق الإصلاح ودعم الاستدامة' : '4. Supporting the Right to Repair & E-Waste Reduction'}
                 </h3>
@@ -2281,13 +2304,13 @@ class ByteForceApp {
             </button>
           </div>
 
-          <div style="background: #0E131F; border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: 36px; box-shadow: 0 8px 32px rgba(0,0,0,0.4);">
-            <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 20px;">
-              <div style="width: 52px; height: 52px; border-radius: 50%; background: rgba(56, 189, 248, 0.15); color: #38BDF8; display: flex; align-items: center; justify-content: center; font-size: 24px;">
+          <div style="background: var(--color-card); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: 36px; box-shadow: 0 8px 32px rgba(0,0,0,0.4);">
+            <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px; border-bottom: 1px solid var(--color-border); padding-bottom: 20px;">
+              <div style="width: 52px; height: 52px; border-radius: 50%; background: rgba(56, 189, 248, 0.15); color: var(--color-accent); display: flex; align-items: center; justify-content: center; font-size: 24px;">
                 <i class="fas fa-file-contract"></i>
               </div>
               <div>
-                <h1 style="font-size: 26px; color: #FFFFFF; margin-bottom: 4px;">
+                <h1 style="font-size: 26px; color: var(--color-text-main); margin-bottom: 4px;">
                   ${isAr ? 'شروط الاستخدام وإخلاء المسؤولية الهندسية' : 'Terms of Service & Safety Protocols'}
                 </h1>
                 <p style="font-size: 13px; color: #94A3B8;">
@@ -2296,8 +2319,8 @@ class ByteForceApp {
               </div>
             </div>
 
-            <div style="display: flex; flex-direction: column; gap: 20px; font-size: 14px; color: #CBD5E1; line-height: 1.8;">
-              <div style="background: #070A10; border-radius: var(--radius-md); padding: 18px; border: 1px solid rgba(255,255,255,0.05);">
+            <div style="display: flex; flex-direction: column; gap: 20px; font-size: 14px; color: var(--color-text-body); line-height: 1.8;">
+              <div style="background: var(--color-surface-alt); border-radius: var(--radius-md); padding: 18px; border: 1px solid var(--color-border);">
                 <h3 style="color: #EF4444; font-size: 16px; margin-bottom: 8px;">
                   <i class="fas fa-exclamation-triangle"></i> ${isAr ? '1. إخلاء المسؤولية الفنية وبروتوكولات الأمان' : '1. Technical Disclaimer & Mandatory Safety'}
                 </h3>
@@ -2306,7 +2329,7 @@ class ByteForceApp {
                 </p>
               </div>
 
-              <div style="background: #070A10; border-radius: var(--radius-md); padding: 18px; border: 1px solid rgba(255,255,255,0.05);">
+              <div style="background: var(--color-surface-alt); border-radius: var(--radius-md); padding: 18px; border: 1px solid var(--color-border);">
                 <h3 style="color: #F59E0B; font-size: 16px; margin-bottom: 8px;">
                   <i class="fas fa-fire"></i> ${isAr ? '2. بروتوكول الحالات الحرجة وبطاريات الليثيوم' : '2. Critical Hazards Protocol'}
                 </h3>
@@ -2315,8 +2338,8 @@ class ByteForceApp {
                 </p>
               </div>
 
-              <div style="background: #070A10; border-radius: var(--radius-md); padding: 18px; border: 1px solid rgba(255,255,255,0.05);">
-                <h3 style="color: #38BDF8; font-size: 16px; margin-bottom: 8px;">
+              <div style="background: var(--color-surface-alt); border-radius: var(--radius-md); padding: 18px; border: 1px solid var(--color-border);">
+                <h3 style="color: var(--color-accent); font-size: 16px; margin-bottom: 8px;">
                   <i class="fas fa-balance-scale"></i> ${isAr ? '3. رخص المصادر المفتوحة والنسب العلمي' : '3. Open Source Licenses & Dataset Attributions'}
                 </h3>
                 <p>
@@ -2555,8 +2578,8 @@ class ByteForceApp {
       const pct = total > 0 ? Math.round((cnt / total) * 100) : 0;
       return `
         <div style="display: flex; align-items: center; gap: 10px; font-size: 12px;">
-          <span style="width: 36px; color: #FBBF24; font-weight: 700;">${star} ★</span>
-          <div style="flex: 1; height: 8px; background: rgba(255,255,255,0.06); border-radius: 99px; overflow: hidden;">
+          <span style="width: 36px; color: var(--color-warning); font-weight: 700;">${star} ★</span>
+          <div style="flex: 1; height: 8px; background: var(--color-surface-alt); border-radius: 99px; overflow: hidden;">
             <div style="width: ${pct}%; height: 100%; background: linear-gradient(90deg, #F59E0B, #FBBF24);"></div>
           </div>
           <span style="width: 28px; text-align: end; color: #94A3B8;">${cnt}</span>
@@ -2565,7 +2588,7 @@ class ByteForceApp {
     }).join("");
 
     const listHtml = reviews.length === 0
-      ? `<div style="padding: 24px; text-align: center; color: #94A3B8; background: rgba(255,255,255,0.02); border-radius: 10px; border: 1px dashed rgba(255,255,255,0.1);">
+      ? `<div style="padding: 24px; text-align: center; color: #94A3B8; background: var(--color-surface-alt); border-radius: 10px; border: 1px dashed rgba(255,255,255,0.1);">
            <i class="fas fa-comment-slash" style="font-size: 24px; color: #64748B; margin-bottom: 8px; display: block;"></i>
            ${isAr ? 'لا توجد تقييمات معتمدة لهذا المركز حتى الآن — كن أول من يقيّم بعد إتمام الصيانة.' : 'No verified customer reviews yet for this center.'}
          </div>`
@@ -2574,13 +2597,13 @@ class ByteForceApp {
           const starsStr = "★".repeat(stars) + "☆".repeat(5 - stars);
           const dateStr = rev.created_at ? String(rev.created_at).slice(0, 10) : "";
           return `
-            <div style="padding: 14px; background: #0F131C; border: 1px solid rgba(255,255,255,0.07); border-radius: 10px;">
+            <div style="padding: 14px; background: var(--color-card); border: 1px solid var(--color-border); border-radius: 10px;">
               <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 6px;">
-                <strong style="color: #FFFFFF; font-size: 14px;">${this._esc(rev.reviewer_name || (isAr ? 'عميل موثق' : 'Verified Customer'))}</strong>
+                <strong style="color: var(--color-text-main); font-size: 14px;">${this._esc(rev.reviewer_name || (isAr ? 'عميل موثق' : 'Verified Customer'))}</strong>
                 <span style="color: #F59E0B; font-size: 14px; letter-spacing: 1px;">${starsStr} <small style="color:#94A3B8;">(${Number(rev.rating || 0).toFixed(1)})</small></span>
               </div>
-              ${rev.device_info ? `<div style="font-size: 12px; color: #38BDF8; margin-bottom: 6px;"><i class="fas fa-microchip"></i> ${this._esc(rev.device_info)}</div>` : ''}
-              ${rev.review_comment ? `<p style="font-size: 13px; color: #CBD5E1; margin: 0 0 6px; line-height: 1.5;">${this._esc(rev.review_comment)}</p>` : ''}
+              ${rev.device_info ? `<div style="font-size: 12px; color: var(--color-accent); margin-bottom: 6px;"><i class="fas fa-microchip"></i> ${this._esc(rev.device_info)}</div>` : ''}
+              ${rev.review_comment ? `<p style="font-size: 13px; color: var(--color-text-body); margin: 0 0 6px; line-height: 1.5;">${this._esc(rev.review_comment)}</p>` : ''}
               ${dateStr ? `<div style="font-size: 11px; color: #64748B;">${this._esc(dateStr)}</div>` : ''}
             </div>
           `;
@@ -2591,14 +2614,14 @@ class ByteForceApp {
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
           <div>
             <h3 style="margin: 0 0 4px; font-size: 18px;" data-i18n="reviews_modal_title">${isAr ? 'تقييمات العملاء الموثقة' : 'Verified Customer Reviews'}</h3>
-            <div style="font-size: 13px; color: #38BDF8; font-weight: 600;">${this._esc(techName || `#${techId}`)}</div>
+            <div style="font-size: 13px; color: var(--color-accent); font-weight: 600;">${this._esc(techName || `#${techId}`)}</div>
           </div>
           <button type="button" class="btn btn-outline btn-sm" onclick="app.closeModal()">&times;</button>
         </div>
 
         <div style="display: grid; grid-template-columns: auto 1fr; gap: 18px; align-items: center; padding: 16px; background: rgba(245, 158, 11, 0.06); border: 1px solid rgba(245, 158, 11, 0.22); border-radius: 12px; margin-bottom: 16px;">
           <div style="text-align: center; min-width: 90px;">
-            <div style="font-size: 32px; font-weight: 800; color: #FBBF24; line-height: 1;">${avg.toFixed(1)}</div>
+            <div style="font-size: 32px; font-weight: 800; color: var(--color-warning); line-height: 1;">${avg.toFixed(1)}</div>
             <div style="font-size: 12px; color: #94A3B8; margin-top: 6px;">${total} ${isAr ? 'تقييم موثق' : 'verified reviews'}</div>
           </div>
           <div style="display: flex; flex-direction: column; gap: 5px;">
@@ -2624,7 +2647,7 @@ class ByteForceApp {
     const defaultCat = this.currentReport?.device_category || "Other";
     const content = `
       <div>
-        <h3 style="font-size: 20px; color: #FFFFFF; margin-bottom: 6px;">
+        <h3 style="font-size: 20px; color: var(--color-text-main); margin-bottom: 6px;">
           ${isAr ? `طلب صيانة لدى: ${techName}` : `Request Repair: ${techName}`}
         </h3>
         <p style="font-size: 13px; color: #94A3B8; margin-bottom: 18px;">
@@ -2712,7 +2735,7 @@ class ByteForceApp {
             </div>
             <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
               ${this.isExclusiveAdmin(user) ? `
-                <button class="btn btn-sm" onclick="app.navigate('admin')" style="background: rgba(239, 68, 68, 0.18); color: #F87171; border: 1px solid rgba(239, 68, 68, 0.45); border-radius: 8px; font-weight: 700; padding: 8px 16px; font-size: 13px; display: inline-flex; align-items: center; gap: 8px; cursor: pointer;" title="لوحة تحكم الإدارة">
+                <button class="btn btn-sm" onclick="app.navigate('admin')" style="background: rgba(239, 68, 68, 0.18); color: var(--color-danger); border: 1px solid rgba(239, 68, 68, 0.45); border-radius: 8px; font-weight: 700; padding: 8px 16px; font-size: 13px; display: inline-flex; align-items: center; gap: 8px; cursor: pointer;" title="لوحة تحكم الإدارة">
                   <i class="fas fa-shield-alt" style="color: #EF4444; font-size: 15px;"></i>
                   <span>${isAr ? 'فتح لوحة تحكم الإدارة (Admin Panel)' : 'Open Admin Control Center'}</span>
                 </button>
@@ -2788,38 +2811,38 @@ class ByteForceApp {
 
               if (st === 'NEW' || st === 'PENDING') {
                 statusLabel = isAr ? 'طلب جديد / بانتظار الموافقة' : 'New / Awaiting Review';
-                badgeColor = '#38BDF8'; badgeBg = 'rgba(56, 189, 248, 0.15)';
+                badgeColor = 'var(--color-accent)'; badgeBg = 'rgba(2, 132, 199, 0.12)';
               } else if (st === 'ACCEPTED') {
                 statusLabel = isAr ? 'تم القبول (بانتظار تحديد الموعد)' : 'Accepted (Awaiting Appointment)';
-                badgeColor = '#60A5FA'; badgeBg = 'rgba(96, 165, 250, 0.15)';
+                badgeColor = 'var(--color-secondary)'; badgeBg = 'rgba(37, 99, 235, 0.12)';
               } else if (st === 'APPOINTMENT_CONFIRMED') {
                 statusLabel = isAr ? 'موعد الصيانة مؤكد' : 'Appointment Confirmed';
-                badgeColor = '#10B981'; badgeBg = 'rgba(16, 185, 129, 0.15)';
+                badgeColor = 'var(--color-success)'; badgeBg = 'rgba(5, 150, 105, 0.12)';
               } else if (st === 'DEVICE_RECEIVED') {
                 statusLabel = isAr ? 'تم استلام الجهاز بالورشة' : 'Device Received';
-                badgeColor = '#818CF8'; badgeBg = 'rgba(129, 140, 248, 0.15)';
+                badgeColor = 'var(--color-purple)'; badgeBg = 'rgba(124, 58, 237, 0.12)';
               } else if (st === 'DIAGNOSIS_IN_PROGRESS') {
                 statusLabel = isAr ? 'جاري الفحص المخبري والتشخيص' : 'Diagnosis In Progress';
-                badgeColor = '#F59E0B'; badgeBg = 'rgba(245, 158, 11, 0.15)';
+                badgeColor = 'var(--color-warning)'; badgeBg = 'rgba(217, 119, 6, 0.12)';
               } else if (st === 'WAITING_FOR_CUSTOMER_APPROVAL') {
                 statusLabel = isAr ? 'بانتظار موافقة العميل على تكلفة إضافية' : 'Waiting Customer Approval';
-                badgeColor = '#EF4444'; badgeBg = 'rgba(239, 68, 68, 0.15)';
+                badgeColor = 'var(--color-danger)'; badgeBg = 'rgba(220, 38, 38, 0.12)';
               } else if (st === 'REPAIR_IN_PROGRESS') {
                 statusLabel = isAr ? 'جاري الإصلاح واللحام' : 'Repair In Progress';
-                badgeColor = '#3B82F6'; badgeBg = 'rgba(59, 130, 246, 0.15)';
+                badgeColor = 'var(--color-secondary)'; badgeBg = 'rgba(37, 99, 235, 0.12)';
               } else if (st === 'COMPLETED') {
                 statusLabel = isAr ? 'اكتمل الإصلاح بنجاح ✓' : 'Completed ✓';
-                badgeColor = '#10B981'; badgeBg = 'rgba(16, 185, 129, 0.2)';
+                badgeColor = 'var(--color-success)'; badgeBg = 'rgba(5, 150, 105, 0.15)';
               } else if (st === 'CANCELED' || st === 'CANCELLED') {
                 statusLabel = isAr ? 'ملغي' : 'Canceled';
-                badgeColor = '#94A3B8'; badgeBg = 'rgba(148, 163, 184, 0.1)';
+                badgeColor = 'var(--color-text-muted)'; badgeBg = 'rgba(100, 116, 139, 0.12)';
               }
 
               return `
-                <div class="card" style="padding: 18px; border: 1px solid rgba(255,255,255,0.08); background: #0F131C; border-radius: 10px;">
+                <div class="card" style="padding: 18px; border: 1px solid var(--color-border); background: var(--color-card); border-radius: 10px;">
                   <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
                     <div>
-                      <span style="font-weight: 700; color: #FFFFFF; font-size: 16px;">#${this._esc(r.id)} · ${this._esc(r.device_info || 'Device')}</span>
+                      <span style="font-weight: 700; color: var(--color-text-main); font-size: 16px;">#${this._esc(r.id)} · ${this._esc(r.device_info || 'Device')}</span>
                       <span style="color: #64748B; font-size: 13px; margin-inline-start: 8px;">(${this._esc(isTech ? (r.customer_name || 'Customer') : (r.technician_business || r.technician_name || 'Technician'))})</span>
                     </div>
                     <span class="tag" style="background: ${badgeBg}; color: ${badgeColor}; border: 1px solid ${badgeColor}40; font-weight: 600; font-size: 12px;">
@@ -2828,15 +2851,15 @@ class ByteForceApp {
                   </div>
 
                   <p style="color: #94A3B8; font-size: 13px; margin-bottom: 10px; line-height: 1.5;">
-                    <i class="fas fa-info-circle" style="color: #38BDF8; margin-inline-end: 6px;"></i>${this._esc(r.problem_summary || '')}
+                    <i class="fas fa-info-circle" style="color: var(--color-accent); margin-inline-end: 6px;"></i>${this._esc(r.problem_summary || '')}
                   </p>
 
-                  <div style="display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; color: #CBD5E1; margin-bottom: 12px; background: rgba(255,255,255,0.02); padding: 8px 12px; border-radius: 6px;">
+                  <div style="display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; color: var(--color-text-body); margin-bottom: 12px; background: var(--color-surface-alt); padding: 8px 12px; border-radius: 6px;">
                     ${r.estimate ? `<div><span style="color: #64748B;">${isAr ? 'التقدير المبدئي: ' : 'Estimate: '}</span><b>${this._esc(r.estimate)} ج.م</b></div>` : ''}
-                    ${r.extra_cost ? `<div><span style="color: #F87171;">${isAr ? 'تكلفة إضافية مطلوبة: ' : 'Extra Cost: '}</span><b>${this._esc(r.extra_cost)} ج.م</b></div>` : ''}
+                    ${r.extra_cost ? `<div><span style="color: var(--color-danger);">${isAr ? 'تكلفة إضافية مطلوبة: ' : 'Extra Cost: '}</span><b>${this._esc(r.extra_cost)} ج.م</b></div>` : ''}
                     ${r.final_cost ? `<div><span style="color: #10B981;">${isAr ? 'التكلفة النهائية: ' : 'Final Cost: '}</span><b>${this._esc(r.final_cost)} ج.م</b></div>` : ''}
                     ${r.actual_fault ? `<div><span style="color: #64748B;">${isAr ? 'العطل الفعلي: ' : 'Actual Fault: '}</span><b>${this._esc(r.actual_fault)}</b></div>` : ''}
-                    ${r.appointment ? `<div><span style="color: #38BDF8;"><i class="fas fa-calendar-alt"></i> ${isAr ? 'الموعد: ' : 'Appointment: '}</span><b dir="ltr">${this._esc(r.appointment)}</b></div>` : ''}
+                    ${r.appointment ? `<div><span style="color: var(--color-accent);"><i class="fas fa-calendar-alt"></i> ${isAr ? 'الموعد: ' : 'Appointment: '}</span><b dir="ltr">${this._esc(r.appointment)}</b></div>` : ''}
                   </div>
 
                   <!-- Dynamic Action Boxes based on role & status -->
@@ -2854,7 +2877,7 @@ class ByteForceApp {
 
                   ${!isTech && st === 'ACCEPTED' ? `
                     <div class="req-action-box" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                      <span style="font-size: 13px; color: #FFFFFF;">${isAr ? 'اختر موعد الصيانة:' : 'Select Appointment Slot:'}</span>
+                      <span style="font-size: 13px; color: var(--color-text-main);">${isAr ? 'اختر موعد الصيانة:' : 'Select Appointment Slot:'}</span>
                       <input type="datetime-local" id="apptInput_${r.id}" class="form-control" style="max-width: 240px;" dir="ltr">
                       <button class="btn btn-primary btn-sm" onclick="app.custBookAppointment('${r.id}')">
                         <i class="fas fa-calendar-check"></i> ${isAr ? 'تأكيد حجز الموعد' : 'Confirm Slot'}
@@ -2895,7 +2918,7 @@ class ByteForceApp {
 
                   ${!isTech && st === 'WAITING_FOR_CUSTOMER_APPROVAL' ? `
                     <div class="req-action-box" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                      <span style="font-size: 13px; color: #F87171;">${isAr ? 'طلب الفني تكلفة إضافية لمتابعة الإصلاح:' : 'Technician requested extra cost:'}</span>
+                      <span style="font-size: 13px; color: var(--color-danger);">${isAr ? 'طلب الفني تكلفة إضافية لمتابعة الإصلاح:' : 'Technician requested extra cost:'}</span>
                       <button class="btn btn-primary btn-sm" onclick="app.custApproveExtra('${r.id}')">
                         <i class="fas fa-check"></i> ${isAr ? 'الموافقة على التكلفة ومتابعة الصيانة' : 'Approve & Proceed'}
                       </button>
@@ -2923,11 +2946,11 @@ class ByteForceApp {
                             <i class="fas fa-star" style="color: #F59E0B;"></i>
                             <span>${isAr ? `تم تقييم هذه الخدمة (${this._esc(r.rating || 5)} من 5 نجوم). شكراً لمشاركتنا تجربتك!` : `You reviewed this repair (${this._esc(r.rating || 5)}/5 stars). Thank you!`}</span>
                           </div>
-                          ${r.review_comment ? `<div style="font-size: 12.5px; color: #CBD5E1; padding: 6px 10px; border-inline-start: 2px solid #F59E0B; background: rgba(255,255,255,0.03); border-radius: 4px;">&ldquo;${this._esc(r.review_comment)}&rdquo;</div>` : ''}
+                          ${r.review_comment ? `<div style="font-size: 12.5px; color: var(--color-text-body); padding: 6px 10px; border-inline-start: 2px solid #F59E0B; background: var(--color-surface-alt); border-radius: 4px;">&ldquo;${this._esc(r.review_comment)}&rdquo;</div>` : ''}
                         </div>
                       ` : `
                         <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                          <span style="font-size: 13px; color: #FFFFFF;">${isAr ? 'تقييم الفني والخدمة:' : 'Rate this repair:'}</span>
+                          <span style="font-size: 13px; color: var(--color-text-main);">${isAr ? 'تقييم الفني والخدمة:' : 'Rate this repair:'}</span>
                           <div id="starRow_${this._esc(r.id)}" class="star-rating-row" style="display: inline-flex; gap: 4px; align-items: center;">
                             ${[1, 2, 3, 4, 5].map(s => `
                               <button type="button" data-star="${s}" onclick="app.setReviewStar('${this._esc(r.id)}', ${s})" style="background: none; border: none; cursor: pointer; font-size: 18px; color: #F59E0B; padding: 2px; line-height: 1;" title="${s}/5">
@@ -2947,10 +2970,10 @@ class ByteForceApp {
 
                   <!-- Audit History Timeline -->
                   <details style="margin-top: 10px; font-size: 12px; color: #64748B;">
-                    <summary style="cursor: pointer; color: #38BDF8; outline: none;">
+                    <summary style="cursor: pointer; color: var(--color-accent); outline: none;">
                       <i class="fas fa-history"></i> ${isAr ? 'سجل العمليات والجدول الزمني للطلب' : 'Audit Log & History Timeline'}
                     </summary>
-                    <div style="padding: 8px 0; border-top: 1px solid rgba(255,255,255,0.05); margin-top: 6px; display: flex; flex-direction: column; gap: 4px;">
+                    <div style="padding: 8px 0; border-top: 1px solid var(--color-border); margin-top: 6px; display: flex; flex-direction: column; gap: 4px;">
                       ${(r.history || [{ at: r.created_at || 'Recently', new: st, actor: 'System', note: 'Created' }]).map(h => `
                         <div style="color: #94A3B8;">• <span dir="ltr">${h.at || ''}</span> — <b>${h.new || h.status}</b> ${h.note ? `(${h.note})` : ''} <span style="color: #64748B;">[${h.actor || 'System'}]</span></div>
                       `).join('')}
@@ -2979,9 +3002,9 @@ class ByteForceApp {
               const sev = rep.severity || rep.severity_level || "moderate";
               const desc = rep.description || rep.symptoms || rep.raw_description || rep.problem_category || "";
               return `
-              <div style="padding: 16px; border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-sm); background: #0F131C;">
+              <div style="padding: 16px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-card);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; gap: 8px;">
-                  <strong style="font-size: 15px; color: #FFFFFF;">${rep.brand || ''} ${rep.model || rep.device_category || ''}</strong>
+                  <strong style="font-size: 15px; color: var(--color-text-main);">${rep.brand || ''} ${rep.model || rep.device_category || ''}</strong>
                   <span class="severity-badge severity-${sev}">${sev}</span>
                 </div>
                 <p style="font-size: 13px; color: var(--color-text-muted); margin-bottom: 10px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
@@ -3015,9 +3038,9 @@ class ByteForceApp {
             ${devices.map(d => {
               const cat = d.device_category || d.category || "";
               return `
-              <div style="padding: 14px; border: 1px solid rgba(255,255,255,0.08); background: #0F131C; border-radius: var(--radius-sm); display: flex; justify-content: space-between; align-items: center;">
+              <div style="padding: 14px; border: 1px solid var(--color-border); background: var(--color-card); border-radius: var(--radius-sm); display: flex; justify-content: space-between; align-items: center;">
                 <div>
-                  <strong style="font-size: 14px; display: block; color: #FFFFFF;">${d.brand || ''} ${d.model || cat}</strong>
+                  <strong style="font-size: 14px; display: block; color: var(--color-text-main);">${d.brand || ''} ${d.model || cat}</strong>
                   <span style="font-size: 12px; color: var(--color-text-muted);">${cat}${d.os_version ? ' · ' + d.os_version : ''}</span>
                 </div>
                 <button style="background: none; border: none; color: var(--color-danger); cursor: pointer;" onclick="app.deleteDevice('${d.id}')" title="${isAr ? 'حذف الجهاز' : 'Remove Device'}">
@@ -3168,7 +3191,7 @@ class ByteForceApp {
 
     const activeTab = this.adminActiveTab || "centers";
     const noticeHtml = this.adminNotice ? `
-      <div id="adminFeedbackBanner" style="margin-bottom: 20px; padding: 12px 16px; border-radius: 10px; font-size: 14px; font-weight: 600; display: flex; justify-content: space-between; align-items: center; gap: 10px; background: ${this.adminNotice.type === 'error' ? 'rgba(239,68,68,0.14)' : 'rgba(16,185,129,0.14)'}; color: ${this.adminNotice.type === 'error' ? '#FCA5A5' : '#6EE7B7'}; border: 1px solid ${this.adminNotice.type === 'error' ? 'rgba(239,68,68,0.35)' : 'rgba(16,185,129,0.35)'};">
+      <div id="adminFeedbackBanner" style="margin-bottom: 20px; padding: 12px 16px; border-radius: 10px; font-size: 14px; font-weight: 600; display: flex; justify-content: space-between; align-items: center; gap: 10px; background: ${this.adminNotice.type === 'error' ? 'rgba(239,68,68,0.14)' : 'rgba(16,185,129,0.14)'}; color: ${this.adminNotice.type === 'error' ? 'var(--color-danger)' : 'var(--color-success)'}; border: 1px solid ${this.adminNotice.type === 'error' ? 'rgba(239,68,68,0.35)' : 'rgba(16,185,129,0.35)'};">
         <span><i class="fas ${this.adminNotice.type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle'}"></i> ${this._esc(this.adminNotice.text)}</span>
         <button type="button" onclick="app.adminNotice=null; this.parentElement.remove();" style="background:none;border:0;color:inherit;cursor:pointer;font-size:16px;">&times;</button>
       </div>
@@ -3180,7 +3203,7 @@ class ByteForceApp {
 
           <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 14px; margin-bottom: 24px;">
             <div>
-              <span class="tag" style="background: rgba(239, 68, 68, 0.16); color: #F87171; border-color: rgba(239, 68, 68, 0.35);">
+              <span class="tag" style="background: rgba(239, 68, 68, 0.16); color: var(--color-danger); border-color: rgba(239, 68, 68, 0.35);">
                 <i class="fas fa-shield-alt"></i>
                 ${isAr ? 'وصول إداري حصري: snsr19344@gmail.com' : 'EXCLUSIVE ADMIN: snsr19344@gmail.com'}
               </span>
@@ -3276,7 +3299,7 @@ class ByteForceApp {
       statsGrid.innerHTML = `
         <div class="card" style="padding: 18px; text-align: center;">
           <span style="font-size: 12.5px; color: var(--color-text-muted);" data-i18n="admin_stat_users">Total Users</span>
-          <div style="font-size: 28px; font-weight: 800; color: #38BDF8; margin-top: 6px;">${stats.total_users ?? this._adminCache.users.length ?? 0}</div>
+          <div style="font-size: 28px; font-weight: 800; color: var(--color-accent); margin-top: 6px;">${stats.total_users ?? this._adminCache.users.length ?? 0}</div>
         </div>
         <div class="card" style="padding: 18px; text-align: center;">
           <span style="font-size: 12.5px; color: var(--color-text-muted);" data-i18n="admin_stat_techs">Approved Centers</span>
@@ -3292,11 +3315,11 @@ class ByteForceApp {
         </div>
         <div class="card" style="padding: 18px; text-align: center;">
           <span style="font-size: 12.5px; color: var(--color-text-muted);" data-i18n="admin_stat_completed_req">Completed Repairs</span>
-          <div style="font-size: 28px; font-weight: 800; color: #34D399; margin-top: 6px;">${stats.completed_requests ?? 0}</div>
+          <div style="font-size: 28px; font-weight: 800; color: var(--color-success); margin-top: 6px;">${stats.completed_requests ?? 0}</div>
         </div>
         <div class="card" style="padding: 18px; text-align: center;">
           <span style="font-size: 12.5px; color: var(--color-text-muted);" data-i18n="admin_stat_diags">Total Diagnoses</span>
-          <div style="font-size: 28px; font-weight: 800; color: #A78BFA; margin-top: 6px;">${stats.total_diagnoses ?? 0}</div>
+          <div style="font-size: 28px; font-weight: 800; color: var(--color-purple); margin-top: 6px;">${stats.total_diagnoses ?? 0}</div>
         </div>
       `;
     }
@@ -3323,7 +3346,7 @@ class ByteForceApp {
 
     if (tab === "centers") {
       if (cache.errors.centers) {
-        panel.innerHTML = `<p style="color: #FCA5A5;">${this._esc(cache.errors.centers)}</p>`;
+        panel.innerHTML = `<p style="color: var(--color-danger);">${this._esc(cache.errors.centers)}</p>`;
         return;
       }
       const list = cache.centers || [];
@@ -3365,13 +3388,13 @@ class ByteForceApp {
             <tbody>
               ${list.map(t => {
                 const st = String(t.status || "pending").toLowerCase();
-                let stBadge = `<span class="tag" style="background: rgba(245, 158, 11, 0.16); color: #FBBF24; border-color: rgba(245, 158, 11, 0.35);">${isAr ? 'بانتظار الموافقة' : 'Pending'}</span>`;
+                let stBadge = `<span class="tag" style="background: rgba(245, 158, 11, 0.16); color: var(--color-warning); border-color: rgba(245, 158, 11, 0.35);">${isAr ? 'بانتظار الموافقة' : 'Pending'}</span>`;
                 if (st === "approved") {
-                  stBadge = `<span class="tag" style="background: rgba(16, 185, 129, 0.16); color: #34D399; border-color: rgba(16, 185, 129, 0.35);">${isAr ? 'معتمد ومفعل' : 'Approved'}</span>`;
+                  stBadge = `<span class="tag" style="background: rgba(16, 185, 129, 0.16); color: var(--color-success); border-color: rgba(16, 185, 129, 0.35);">${isAr ? 'معتمد ومفعل' : 'Approved'}</span>`;
                 } else if (st === "suspended") {
-                  stBadge = `<span class="tag" style="background: rgba(148, 163, 184, 0.16); color: #CBD5E1; border-color: rgba(148, 163, 184, 0.35);">${isAr ? 'موقوف مؤقتاً' : 'Suspended'}</span>`;
+                  stBadge = `<span class="tag" style="background: rgba(148, 163, 184, 0.16); color: var(--color-text-body); border-color: rgba(148, 163, 184, 0.35);">${isAr ? 'موقوف مؤقتاً' : 'Suspended'}</span>`;
                 } else if (st === "rejected") {
-                  stBadge = `<span class="tag" style="background: rgba(239, 68, 68, 0.16); color: #F87171; border-color: rgba(239, 68, 68, 0.35);">${isAr ? 'مرفوض' : 'Rejected'}</span>`;
+                  stBadge = `<span class="tag" style="background: rgba(239, 68, 68, 0.16); color: var(--color-danger); border-color: rgba(239, 68, 68, 0.35);">${isAr ? 'مرفوض' : 'Rejected'}</span>`;
                 }
                 const kindLbl = String(t.kind || "").toUpperCase() === "CENTER" ? (isAr ? "مركز صيانة" : "Center") : (isAr ? "فني مستقل" : "Tech");
                 const specs = Array.isArray(t.specializations) ? (t.specializations.join(", ") || "-") : (t.specializations || "-");
@@ -3381,7 +3404,7 @@ class ByteForceApp {
                 return `
                   <tr>
                     <td>
-                      <strong style="color: #FFFFFF;">${this._esc(t.business_name || t.name)}</strong>
+                      <strong style="color: var(--color-text-main);">${this._esc(t.business_name || t.name)}</strong>
                       <div style="margin-top: 4px; display: flex; gap: 6px; flex-wrap: wrap;">
                         <span class="tag" style="font-size: 11px;">${kindLbl}</span>
                         ${t.home_service || t.home_service_available ? `<span class="tech-home-badge">${isAr ? 'خدمة منزلية' : 'Home Service'}</span>` : ''}
@@ -3402,12 +3425,12 @@ class ByteForceApp {
                     <td>
                       <div style="display: flex; gap: 6px; flex-wrap: wrap;">
                         ${st !== "approved" ? `<button class="btn btn-sm btn-primary" onclick="app.approveTech('${this._esc(t.id)}')">${isAr ? (st === "pending" ? "موافقة واعتماد" : "إعادة تفعيل") : (st === "pending" ? "Approve" : "Reactivate")}</button>` : ''}
-                        ${st === "approved" ? `<button class="btn btn-sm btn-outline" style="color: #FBBF24; border-color: rgba(245, 158, 11, 0.4);" onclick="app.suspendTech('${this._esc(t.id)}')">${isAr ? 'إيقاف مؤقت' : 'Suspend'}</button>` : ''}
+                        ${st === "approved" ? `<button class="btn btn-sm btn-outline" style="color: var(--color-warning); border-color: rgba(245, 158, 11, 0.4);" onclick="app.suspendTech('${this._esc(t.id)}')">${isAr ? 'إيقاف مؤقت' : 'Suspend'}</button>` : ''}
                         ${st === "pending" ? `<button class="btn btn-sm btn-outline" style="color: var(--color-danger); border-color: rgba(239, 68, 68, 0.35);" onclick="app.rejectTech('${this._esc(t.id)}')">${isAr ? 'رفض' : 'Reject'}</button>` : ''}
                         <button type="button" class="btn btn-sm btn-outline" onclick="app.editAdminCenter('${this._esc(t.id)}')">
                           <i class="fas fa-edit"></i> <span data-i18n="admin_edit_btn">${isAr ? 'تعديل' : 'Edit'}</span>
                         </button>
-                        <button type="button" class="btn btn-sm btn-outline" style="color: #F87171; border-color: rgba(239, 68, 68, 0.35);" onclick="app.deleteAdminCenter('${this._esc(t.id)}')">
+                        <button type="button" class="btn btn-sm btn-outline" style="color: var(--color-danger); border-color: rgba(239, 68, 68, 0.35);" onclick="app.deleteAdminCenter('${this._esc(t.id)}')">
                           <i class="fas fa-trash"></i> <span data-i18n="admin_delete_btn">${isAr ? 'حذف' : 'Delete'}</span>
                         </button>
                       </div>
@@ -3424,7 +3447,7 @@ class ByteForceApp {
 
     if (tab === "users") {
       if (cache.errors.users) {
-        panel.innerHTML = `<p style="color: #FCA5A5;">${this._esc(cache.errors.users)}</p>`;
+        panel.innerHTML = `<p style="color: var(--color-danger);">${this._esc(cache.errors.users)}</p>`;
         return;
       }
       const users = cache.users || [];
@@ -3455,7 +3478,7 @@ class ByteForceApp {
                 return `
                   <tr>
                     <td style="font-family: monospace; font-size: 12px; color: #94A3B8;">${this._esc(String(u.id).slice(0, 8))}</td>
-                    <td style="font-weight: 600; color: #FFFFFF;">${this._esc(u.full_name || "-")}</td>
+                    <td style="font-weight: 600; color: var(--color-text-main);">${this._esc(u.full_name || "-")}</td>
                     <td dir="ltr">${this._esc(u.email || "-")}</td>
                     <td><span class="tag">${roleLabel}</span></td>
                     <td>
@@ -3465,8 +3488,8 @@ class ByteForceApp {
                     </td>
                     <td>
                       ${isSelfAdmin
-                        ? `<span style="font-size: 12px; color: #38BDF8; font-weight: 600;">${isAr ? 'المدير الرئيسي (محمي)' : 'Primary Admin (Protected)'}</span>`
-                        : `<button class="btn btn-sm btn-outline" style="color: ${isActive ? '#FCA5A5' : '#6EE7B7'}; border-color: ${isActive ? 'rgba(239,68,68,0.4)' : 'rgba(16,185,129,0.4)'};" onclick="app.toggleUser('${this._esc(u.id)}')">${isActive ? (isAr ? 'إيقاف الحساب' : 'Suspend') : (isAr ? 'تفعيل الحساب' : 'Reactivate')}</button>`
+                        ? `<span style="font-size: 12px; color: var(--color-accent); font-weight: 600;">${isAr ? 'المدير الرئيسي (محمي)' : 'Primary Admin (Protected)'}</span>`
+                        : `<button class="btn btn-sm btn-outline" style="color: ${isActive ? 'var(--color-danger)' : 'var(--color-success)'}; border-color: ${isActive ? 'rgba(239,68,68,0.4)' : 'rgba(16,185,129,0.4)'};" onclick="app.toggleUser('${this._esc(u.id)}')">${isActive ? (isAr ? 'إيقاف الحساب' : 'Suspend') : (isAr ? 'تفعيل الحساب' : 'Reactivate')}</button>`
                       }
                     </td>
                   </tr>
@@ -3481,7 +3504,7 @@ class ByteForceApp {
 
     if (tab === "requests") {
       if (cache.errors.requests) {
-        panel.innerHTML = `<p style="color: #FCA5A5;">${this._esc(cache.errors.requests)}</p>`;
+        panel.innerHTML = `<p style="color: var(--color-danger);">${this._esc(cache.errors.requests)}</p>`;
         return;
       }
       const reqs = cache.requests || [];
@@ -3496,9 +3519,9 @@ class ByteForceApp {
         <h3 style="font-size: 18px; margin-bottom: 16px;" data-i18n="admin_tab_requests">${isAr ? 'جميع طلبات الصيانة' : 'All Repair Requests'}</h3>
         <div style="display: flex; flex-direction: column; gap: 12px;">
           ${reqs.map(r => `
-            <div style="padding: 14px 16px; background: #0F131C; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px;">
+            <div style="padding: 14px 16px; background: var(--color-card); border: 1px solid var(--color-border); border-radius: 10px;">
               <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-                <strong style="color: #FFFFFF;">#${this._esc(String(r.id).slice(0, 8))} · ${this._esc(r.device_info || r.device_model || 'Device')}</strong>
+                <strong style="color: var(--color-text-main);">#${this._esc(String(r.id).slice(0, 8))} · ${this._esc(r.device_info || r.device_model || 'Device')}</strong>
                 <span class="tag">${this._esc(r.status || 'NEW')}</span>
               </div>
               <div style="font-size: 13px; color: #94A3B8; margin-top: 6px; display: flex; flex-wrap: wrap; gap: 14px;">
@@ -3507,15 +3530,15 @@ class ByteForceApp {
                 ${r.estimate != null ? `<span><b>${isAr ? 'التقدير:' : 'Estimate:'}</b> ${this._esc(r.estimate)}</span>` : ''}
                 ${r.final_cost != null ? `<span><b>${isAr ? 'النهائي:' : 'Final:'}</b> ${this._esc(r.final_cost)}</span>` : ''}
               </div>
-              <p style="font-size: 13px; color: #CBD5E1; margin-top: 6px;">${this._esc(r.problem_summary || r.issue_description || '')}</p>
+              <p style="font-size: 13px; color: var(--color-text-body); margin-top: 6px;">${this._esc(r.problem_summary || r.issue_description || '')}</p>
               ${r.reviewed ? `
                 <div style="margin-top: 8px; padding: 8px 10px; border-radius: 8px; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.22); display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;">
-                  <div style="font-size: 12.5px; color: #FDE68A;">
+                  <div style="font-size: 12.5px; color: var(--color-warning);">
                     <i class="fas fa-star" style="color: #F59E0B;"></i>
                     <b>${this._esc(r.rating || 5)}/5</b>
                     ${r.review_comment ? ` · &ldquo;${this._esc(r.review_comment)}&rdquo;` : ''}
                   </div>
-                  <button type="button" class="btn btn-sm btn-outline" style="color: #F87171; border-color: rgba(239, 68, 68, 0.35);" onclick="app.clearAdminReview('${this._esc(r.id)}')">
+                  <button type="button" class="btn btn-sm btn-outline" style="color: var(--color-danger); border-color: rgba(239, 68, 68, 0.35);" onclick="app.clearAdminReview('${this._esc(r.id)}')">
                     <i class="fas fa-eraser"></i> <span data-i18n="admin_clear_review_btn">${isAr ? 'إزالة التقييم' : 'Clear Review'}</span>
                   </button>
                 </div>
@@ -3533,7 +3556,7 @@ class ByteForceApp {
       panel.innerHTML = `
         <h3 style="font-size: 18px; margin-bottom: 12px;" data-i18n="admin_tab_ai">${isAr ? 'نموذج الذكاء الاصطناعي' : 'AI Model Integration'}</h3>
         <div style="padding: 16px; border-radius: 10px; margin-bottom: 16px; background: ${aiSt.configured ? 'rgba(16,185,129,0.12)' : 'rgba(245,158,11,0.12)'}; border: 1px solid ${aiSt.configured ? 'rgba(16,185,129,0.32)' : 'rgba(245,158,11,0.32)'}; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-          <div style="font-weight: 700; color: ${aiSt.configured ? '#34D399' : '#FBBF24'};">
+          <div style="font-weight: 700; color: ${aiSt.configured ? 'var(--color-success)' : 'var(--color-warning)'};">
             <i class="fas ${aiSt.configured ? 'fa-check-circle' : 'fa-exclamation-triangle'}"></i>
             ${aiSt.configured
               ? (isAr ? `الذكاء الاصطناعي مفعل ومتصل عبر ${String(aiSt.provider || '').toUpperCase()} (${this._esc(aiSt.masked_key || '')})` : `AI Engine Active via ${String(aiSt.provider || '').toUpperCase()} (${this._esc(aiSt.masked_key || '')})`)
@@ -3544,9 +3567,9 @@ class ByteForceApp {
           </button>
         </div>
 
-        <details style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 12px 16px;">
-          <summary style="cursor: pointer; font-weight: 600; font-size: 13.5px; color: #CBD5E1;">
-            <i class="fas fa-key" style="color: #38BDF8; margin-inline-end: 6px;"></i>
+        <details style="background: var(--color-surface-alt); border: 1px solid var(--color-border); border-radius: 10px; padding: 12px 16px;">
+          <summary style="cursor: pointer; font-weight: 600; font-size: 13.5px; color: var(--color-text-body);">
+            <i class="fas fa-key" style="color: var(--color-accent); margin-inline-end: 6px;"></i>
             ${isAr ? 'تحديث أو تغيير مفتاح الذكاء الاصطناعي (اختياري)' : 'Update / Rotate AI API Key (Optional)'}
           </summary>
           <div style="margin-top: 14px;">
@@ -3576,7 +3599,7 @@ class ByteForceApp {
 
     // Tab 4: Audit Log
     if (cache.errors.audit) {
-      panel.innerHTML = `<p style="color: #FCA5A5;">${this._esc(cache.errors.audit)}</p>`;
+      panel.innerHTML = `<p style="color: var(--color-danger);">${this._esc(cache.errors.audit)}</p>`;
       return;
     }
     const logs = cache.audit || [];
@@ -3585,9 +3608,9 @@ class ByteForceApp {
       ${logs.length === 0 ? `<p style="color: var(--color-text-muted); font-size: 14px;">${isAr ? 'لا توجد عمليات إدارية مسجلة في السجل بعد.' : 'No administrative actions recorded yet.'}</p>` : `
         <div style="display: flex; flex-direction: column; gap: 10px;">
           ${logs.map(l => `
-            <div style="padding: 12px 14px; background: #0F131C; border: 1px solid rgba(255,255,255,0.07); border-radius: 8px; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 8px;">
+            <div style="padding: 12px 14px; background: var(--color-card); border: 1px solid var(--color-border); border-radius: 8px; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 8px;">
               <div>
-                <strong style="color: #FFFFFF; font-size: 13.5px;">${this._esc(l.title)}</strong>
+                <strong style="color: var(--color-text-main); font-size: 13.5px;">${this._esc(l.title)}</strong>
                 <div style="color: #94A3B8; font-size: 12.5px; margin-top: 2px;">${this._esc(l.message)}</div>
               </div>
               <span style="color: #64748B; font-size: 12px;" dir="ltr">${l.created_at ? new Date(l.created_at).toLocaleString() : ''}</span>
@@ -3723,10 +3746,10 @@ class ByteForceApp {
     const html = `
       <div>
         <div style="text-align: center; margin-bottom: 22px;">
-          <div style="width: 52px; height: 52px; border-radius: 50%; background: rgba(56, 189, 248, 0.12); color: #38BDF8; display: flex; align-items: center; justify-content: center; font-size: 24px; margin: 0 auto 14px;">
+          <div style="width: 52px; height: 52px; border-radius: 50%; background: rgba(56, 189, 248, 0.12); color: var(--color-accent); display: flex; align-items: center; justify-content: center; font-size: 24px; margin: 0 auto 14px;">
             <i class="fas fa-database"></i>
           </div>
-          <h3 style="font-size: 22px; color: #FFFFFF; margin-bottom: 6px;">
+          <h3 style="font-size: 22px; color: var(--color-text-main); margin-bottom: 6px;">
             ${isAr ? 'قواعد البيانات المعتمدة في ByteForce' : 'ByteForce Certified Datasets'}
           </h3>
           <p style="font-size: 13px; color: #94A3B8;">
@@ -3735,9 +3758,9 @@ class ByteForceApp {
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 24px;">
-          <div style="background: #0A0D14; border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 16px;">
+          <div style="background: var(--color-surface-alt); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 16px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <strong style="color: #FFFFFF; font-size: 15px;">1. Open Repair Alliance (ORA)</strong>
+              <strong style="color: var(--color-text-main); font-size: 15px;">1. Open Repair Alliance (ORA)</strong>
               <span class="tag" style="background: rgba(16,185,129,0.15); color: #10B981; border: 1px solid rgba(16,185,129,0.3); font-size: 11px;">
                 <i class="fas fa-check-circle"></i> ${isAr ? 'بيانات معتمدة ومفهرسة' : 'Verified & Indexed'}
               </span>
@@ -3745,14 +3768,14 @@ class ByteForceApp {
             <p style="font-size: 12px; color: #94A3B8; margin-bottom: 6px;">
               ${isAr ? 'سجلات صيانة واقعية موثقة تغطي فئات الأجهزة المتنوعة، ونسب نجاح الإصلاح الفعلية وموانع الصيانة الشائعة.' : 'Empirical repair outcomes, success rates, and barrier statistics across standardized equipment categories.'}
             </p>
-            <div style="font-size: 11px; color: #38BDF8;">
+            <div style="font-size: 11px; color: var(--color-accent);">
               <i class="fas fa-certificate"></i> Open Data Commons Open Database License (ODbL)
             </div>
           </div>
 
-          <div style="background: #0A0D14; border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 16px;">
+          <div style="background: var(--color-surface-alt); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 16px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <strong style="color: #FFFFFF; font-size: 15px;">2. MyFixit Repair Manuals</strong>
+              <strong style="color: var(--color-text-main); font-size: 15px;">2. MyFixit Repair Manuals</strong>
               <span class="tag" style="background: rgba(16,185,129,0.15); color: #10B981; border: 1px solid rgba(16,185,129,0.3); font-size: 11px;">
                 <i class="fas fa-check-circle"></i> ${isAr ? 'أدلة إصلاح موثقة' : 'Verified Guides'}
               </span>
@@ -3760,14 +3783,14 @@ class ByteForceApp {
             <p style="font-size: 12px; color: #94A3B8; margin-bottom: 6px;">
               ${isAr ? 'أدلة التفكيك والإصلاح خطوة بخطوة، الأدوات المطلوبة، خطوات الفك والتركيب، وصور إرشادية عالية الدقة.' : 'Step-by-step disassembly manuals, required tools, difficulty ratings, and official guidance.'}
             </p>
-            <div style="font-size: 11px; color: #38BDF8;">
+            <div style="font-size: 11px; color: var(--color-accent);">
               <i class="fas fa-book-open"></i> Creative Commons Attribution-NonCommercial-ShareAlike (CC BY-NC-SA 3.0)
             </div>
           </div>
 
-          <div style="background: #0A0D14; border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 16px;">
+          <div style="background: var(--color-surface-alt); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 16px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <strong style="color: #FFFFFF; font-size: 15px;">3. Backblaze SMART Telemetry ML</strong>
+              <strong style="color: var(--color-text-main); font-size: 15px;">3. Backblaze SMART Telemetry ML</strong>
               <span class="tag" style="background: rgba(16,185,129,0.15); color: #10B981; border: 1px solid rgba(16,185,129,0.3); font-size: 11px;">
                 <i class="fas fa-check-circle"></i> ${isAr ? 'نموذج تعلم آلة معتمد' : 'Verified ML Model'}
               </span>
@@ -3775,7 +3798,7 @@ class ByteForceApp {
             <p style="font-size: 12px; color: #94A3B8; margin-bottom: 6px;">
               ${isAr ? 'نموذج تصنيف احصائي مدرب على مؤشرات SMART الحقيقية مع عزل السيريال الزمني للتنبؤ بأعطال وحدات التخزين فقط.' : 'Binary classification Random Forest model trained on SMART telemetry for storage devices only.'}
             </p>
-            <div style="font-size: 11px; color: #38BDF8;">
+            <div style="font-size: 11px; color: var(--color-accent);">
               <i class="fas fa-microchip"></i> SMART 5, 9, 187, 188, 194, 197, 198 — Strictly Storage Scoped
             </div>
           </div>
@@ -3800,7 +3823,7 @@ class ByteForceApp {
           <div style="width: 52px; height: 52px; border-radius: 50%; background: rgba(16, 185, 129, 0.12); color: #10B981; display: flex; align-items: center; justify-content: center; font-size: 24px; margin: 0 auto 12px;">
             <i class="fas fa-user-shield"></i>
           </div>
-          <h3 style="font-size: 22px; color: #FFFFFF; margin-bottom: 6px;">
+          <h3 style="font-size: 22px; color: var(--color-text-main); margin-bottom: 6px;">
             ${isAr ? 'سياسة الخصوصية وحماية البيانات' : 'Privacy & Data Protection Policy'}
           </h3>
           <p style="font-size: 13px; color: #94A3B8;">
@@ -3808,9 +3831,9 @@ class ByteForceApp {
           </p>
         </div>
 
-        <div style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 24px; font-size: 13px; color: #CBD5E1; line-height: 1.7;">
-          <div style="background: #0A0D14; border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 14px;">
-            <strong style="color: #38BDF8; font-size: 14px; display: block; margin-bottom: 4px;">
+        <div style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 24px; font-size: 13px; color: var(--color-text-body); line-height: 1.7;">
+          <div style="background: var(--color-surface-alt); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 14px;">
+            <strong style="color: var(--color-accent); font-size: 14px; display: block; margin-bottom: 4px;">
               <i class="fas fa-lock"></i> ${isAr ? '1. التشفير التام والاتصال الآمن' : '1. End-to-End Encryption'}
             </strong>
             <p>
@@ -3818,7 +3841,7 @@ class ByteForceApp {
             </p>
           </div>
 
-          <div style="background: #0A0D14; border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 14px;">
+          <div style="background: var(--color-surface-alt); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 14px;">
             <strong style="color: #10B981; font-size: 14px; display: block; margin-bottom: 4px;">
               <i class="fas fa-eye-slash"></i> ${isAr ? '2. عدم جمع البيانات الشخصية الحساسة' : '2. Zero Sensitive Personal Data Collection'}
             </strong>
@@ -3827,7 +3850,7 @@ class ByteForceApp {
             </p>
           </div>
 
-          <div style="background: #0A0D14; border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 14px;">
+          <div style="background: var(--color-surface-alt); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 14px;">
             <strong style="color: #F59E0B; font-size: 14px; display: block; margin-bottom: 4px;">
               <i class="fas fa-user-check"></i> ${isAr ? '3. سيطرة المستخدم الكاملة وحق الحذف' : '3. Complete User Control & Deletion Rights'}
             </strong>
@@ -3836,7 +3859,7 @@ class ByteForceApp {
             </p>
           </div>
 
-          <div style="background: #0A0D14; border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 14px;">
+          <div style="background: var(--color-surface-alt); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 14px;">
             <strong style="color: #A855F7; font-size: 14px; display: block; margin-bottom: 4px;">
               <i class="fas fa-shield-alt"></i> ${isAr ? '4. حظر مشاركة البيانات مع معلنين' : '4. No Third-Party Data Monetization'}
             </strong>
@@ -3861,10 +3884,10 @@ class ByteForceApp {
     const html = `
       <div style="max-height: 80vh; overflow-y: auto; padding-right: 6px;">
         <div style="text-align: center; margin-bottom: 20px;">
-          <div style="width: 52px; height: 52px; border-radius: 50%; background: rgba(56, 189, 248, 0.12); color: #38BDF8; display: flex; align-items: center; justify-content: center; font-size: 24px; margin: 0 auto 12px;">
+          <div style="width: 52px; height: 52px; border-radius: 50%; background: rgba(56, 189, 248, 0.12); color: var(--color-accent); display: flex; align-items: center; justify-content: center; font-size: 24px; margin: 0 auto 12px;">
             <i class="fas fa-file-contract"></i>
           </div>
-          <h3 style="font-size: 22px; color: #FFFFFF; margin-bottom: 6px;">
+          <h3 style="font-size: 22px; color: var(--color-text-main); margin-bottom: 6px;">
             ${isAr ? 'شروط الاستخدام وإخلاء المسؤولية الهندسية' : 'Terms of Service & Engineering Safety'}
           </h3>
           <p style="font-size: 13px; color: #94A3B8;">
@@ -3872,8 +3895,8 @@ class ByteForceApp {
           </p>
         </div>
 
-        <div style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 24px; font-size: 13px; color: #CBD5E1; line-height: 1.7;">
-          <div style="background: #0A0D14; border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 14px;">
+        <div style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 24px; font-size: 13px; color: var(--color-text-body); line-height: 1.7;">
+          <div style="background: var(--color-surface-alt); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 14px;">
             <strong style="color: #EF4444; font-size: 14px; display: block; margin-bottom: 4px;">
               <i class="fas fa-exclamation-triangle"></i> ${isAr ? '1. إخلاء المسؤولية وإجراءات السلامة الحيوية' : '1. Engineering Safety Disclaimer'}
             </strong>
@@ -3882,7 +3905,7 @@ class ByteForceApp {
             </p>
           </div>
 
-          <div style="background: #0A0D14; border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 14px;">
+          <div style="background: var(--color-surface-alt); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 14px;">
             <strong style="color: #F59E0B; font-size: 14px; display: block; margin-bottom: 4px;">
               <i class="fas fa-battery-quarter"></i> ${isAr ? '2. التعامل مع الحالات الخطرة (بطاريات الليثيوم والجهد العالي)' : '2. Critical Hazard Protocol (Lithium & High-Voltage)'}
             </strong>
@@ -3891,7 +3914,7 @@ class ByteForceApp {
             </p>
           </div>
 
-          <div style="background: #0A0D14; border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 14px;">
+          <div style="background: var(--color-surface-alt); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 14px;">
             <strong style="color: #10B981; font-size: 14px; display: block; margin-bottom: 4px;">
               <i class="fas fa-balance-scale"></i> ${isAr ? '3. تراخيص البيانات المفتوحة والنسب العلمي' : '3. Open Data Licensing & Attribution'}
             </strong>
@@ -3919,7 +3942,7 @@ class ByteForceApp {
           <div style="width: 52px; height: 52px; border-radius: 50%; background: rgba(245, 158, 11, 0.12); color: #F59E0B; display: flex; align-items: center; justify-content: center; font-size: 24px; margin: 0 auto 12px;">
             <i class="fas fa-shield-virus"></i>
           </div>
-          <h3 style="font-size: 22px; color: #FFFFFF; margin-bottom: 6px;" data-i18n="safety_modal_title">
+          <h3 style="font-size: 22px; color: var(--color-text-main); margin-bottom: 6px;" data-i18n="safety_modal_title">
             ${window.i18n.t('safety_modal_title')}
           </h3>
           <p style="font-size: 13px; color: #94A3B8;" data-i18n="safety_modal_subtitle">
@@ -3927,8 +3950,8 @@ class ByteForceApp {
           </p>
         </div>
 
-        <div style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 24px; font-size: 13px; color: #CBD5E1; line-height: 1.7;">
-          <div style="background: #0A0D14; border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 14px;">
+        <div style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 24px; font-size: 13px; color: var(--color-text-body); line-height: 1.7;">
+          <div style="background: var(--color-surface-alt); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 14px;">
             <strong style="color: #EF4444; font-size: 14px; display: block; margin-bottom: 4px;">
               <i class="fas fa-power-off"></i> ${isAr ? '1. فصل مصادر الطاقة وفصل موصل البطارية فوراً' : '1. Power Isolation & Immediate Battery Disconnect'}
             </strong>
@@ -3937,7 +3960,7 @@ class ByteForceApp {
             </p>
           </div>
 
-          <div style="background: #0A0D14; border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 14px;">
+          <div style="background: var(--color-surface-alt); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 14px;">
             <strong style="color: #F59E0B; font-size: 14px; display: block; margin-bottom: 4px;">
               <i class="fas fa-battery-three-quarters"></i> ${isAr ? '2. بروتوكول التعامل مع بطاريات الليثيوم والانتفاخ' : '2. Critical Lithium Battery Safety & Swelling Protocol'}
             </strong>
@@ -3946,8 +3969,8 @@ class ByteForceApp {
             </p>
           </div>
 
-          <div style="background: #0A0D14; border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 14px;">
-            <strong style="color: #38BDF8; font-size: 14px; display: block; margin-bottom: 4px;">
+          <div style="background: var(--color-surface-alt); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 14px;">
+            <strong style="color: var(--color-accent); font-size: 14px; display: block; margin-bottom: 4px;">
               <i class="fas fa-bolt"></i> ${isAr ? '3. الحماية من التفريغ الكهروستاتيكي (ESD Protection)' : '3. Electrostatic Discharge (ESD) Protection'}
             </strong>
             <p>
@@ -3955,7 +3978,7 @@ class ByteForceApp {
             </p>
           </div>
 
-          <div style="background: #0A0D14; border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 14px;">
+          <div style="background: var(--color-surface-alt); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 14px;">
             <strong style="color: #A855F7; font-size: 14px; display: block; margin-bottom: 4px;">
               <i class="fas fa-exclamation-triangle"></i> ${isAr ? '4. تحذير الجهد العالي (High-Voltage Capacitors)' : '4. High-Voltage Capacitors & Power Supplies'}
             </strong>
@@ -3997,13 +4020,13 @@ class ByteForceApp {
     const isAr = window.i18n.currentLang === "ar";
     const content = mode === "login" ? `
       <div>
-        <h3 style="font-size: 22px; margin-bottom: 6px; color: #FFFFFF;" data-i18n="auth_login_title">تسجيل الدخول إلى ByteForce</h3>
+        <h3 style="font-size: 22px; margin-bottom: 6px; color: var(--color-text-main);" data-i18n="auth_login_title">تسجيل الدخول إلى ByteForce</h3>
         <p style="font-size: 13px; color: var(--color-text-muted); margin-bottom: ${noticeMessage ? '14px' : '20px'};">
           ${isAr ? 'اختر طريقة تسجيل الدخول للمتابعة' : 'Choose how you want to sign in to ByteForce'}
         </p>
 
         ${noticeMessage ? `
-        <div style="background: rgba(37, 99, 235, 0.12); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 8px; padding: 12px 14px; margin-bottom: 18px; font-size: 13px; color: #38BDF8; display: flex; align-items: center; gap: 10px;">
+        <div style="background: rgba(37, 99, 235, 0.12); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 8px; padding: 12px 14px; margin-bottom: 18px; font-size: 13px; color: var(--color-accent); display: flex; align-items: center; gap: 10px;">
           <i class="fas fa-lock" style="font-size: 16px; flex-shrink: 0;"></i>
           <span style="line-height: 1.5;">${noticeMessage}</span>
         </div>
@@ -4046,13 +4069,13 @@ class ByteForceApp {
       </div>
     ` : `
       <div>
-        <h3 style="font-size: 22px; margin-bottom: 6px; color: #FFFFFF;" data-i18n="auth_register_title">إنشاء حسابك في ByteForce</h3>
+        <h3 style="font-size: 22px; margin-bottom: 6px; color: var(--color-text-main);" data-i18n="auth_register_title">إنشاء حسابك في ByteForce</h3>
         <p style="font-size: 13px; color: var(--color-text-muted); margin-bottom: ${noticeMessage ? '14px' : '20px'};">
           ${isAr ? 'اختر طريقة إنشاء الحساب للمتابعة' : 'Choose how you want to create your account'}
         </p>
 
         ${noticeMessage ? `
-        <div style="background: rgba(37, 99, 235, 0.12); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 8px; padding: 12px 14px; margin-bottom: 18px; font-size: 13px; color: #38BDF8; display: flex; align-items: center; gap: 10px;">
+        <div style="background: rgba(37, 99, 235, 0.12); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 8px; padding: 12px 14px; margin-bottom: 18px; font-size: 13px; color: var(--color-accent); display: flex; align-items: center; gap: 10px;">
           <i class="fas fa-lock" style="font-size: 16px; flex-shrink: 0;"></i>
           <span style="line-height: 1.5;">${noticeMessage}</span>
         </div>
@@ -4101,7 +4124,7 @@ class ByteForceApp {
           </div>
 
           <!-- Dynamic Technician / Center Profile Fields -->
-          <div id="techExtraFields" style="display: ${defaultRole === 'technician' ? 'block' : 'none'}; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 14px; margin-top: 14px;">
+          <div id="techExtraFields" style="display: ${defaultRole === 'technician' ? 'block' : 'none'}; border-top: 1px solid var(--color-border); padding-top: 14px; margin-top: 14px;">
             <div class="form-group">
               <label class="form-label">${isAr ? 'نوع الحساب المهني' : 'Provider Account Type'}</label>
               <select id="regTechKind" class="form-control">
@@ -4142,7 +4165,7 @@ class ByteForceApp {
               </div>
             </div>
             <div class="form-group" style="margin-top: 8px;">
-              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; color: #E2E8F0;">
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; color: var(--color-text-main);">
                 <input type="checkbox" id="regTechHome" style="width: auto; cursor: pointer;">
                 <span>${isAr ? 'أقدم خدمة الصيانة المنزلية (Home Service)' : 'Offer Home Visit Service'}</span>
               </label>
@@ -4507,7 +4530,7 @@ class ByteForceApp {
 
         <form id="adminBulkCentersForm" style="display: flex; flex-direction: column; gap: 12px;">
           <textarea id="bulkCentersInput" class="form-control" rows="8" dir="auto" placeholder="اسم المركز | القاهرة | 010xxxxxxxx | Smartphone, Laptop | مدينة نصر | CENTER"></textarea>
-          <div id="bulkPreviewInfo" style="font-size: 12.5px; color: #38BDF8;"></div>
+          <div id="bulkPreviewInfo" style="font-size: 12.5px; color: var(--color-accent);"></div>
           <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
             <button type="button" id="bulkPreviewBtn" class="btn btn-outline btn-sm">
               <i class="fas fa-search"></i> ${isAr ? 'معاينة العدد والتحقق' : 'Validate Count'}
@@ -4532,12 +4555,12 @@ class ByteForceApp {
       previewBtn.addEventListener("click", () => {
         try {
           const rows = this._parseBulkCentersText(inputEl.value);
-          previewEl.style.color = rows.length > 0 ? "#34D399" : "#FBBF24";
+          previewEl.style.color = rows.length > 0 ? "var(--color-success)" : "var(--color-warning)";
           previewEl.textContent = isAr
             ? `تم التعرف على ${rows.length} مركز/فني جاهز للرفع.`
             : `Detected ${rows.length} center(s) ready to import.`;
         } catch (err) {
-          previewEl.style.color = "#F87171";
+          previewEl.style.color = "var(--color-danger)";
           previewEl.textContent = (isAr ? "خطأ في التنسيق: " : "Parse error: ") + err.message;
         }
       });
