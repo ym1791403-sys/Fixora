@@ -38,10 +38,10 @@
   --input-border: #CBD5E1;
   --input-placeholder: #94A3B8;
 
-  --hero-overlay-bg: linear-gradient(180deg, rgba(248, 250, 252, 0.72) 0%, rgba(248, 250, 252, 0.86) 60%, #F8FAFC 100%);
-  --hero-card-bg: rgba(255, 255, 255, 0.92);
+  --hero-overlay-bg: linear-gradient(180deg, rgba(248, 250, 252, 0.14) 0%, rgba(248, 250, 252, 0.28) 65%, #F8FAFC 100%);
+  --hero-card-bg: rgba(255, 255, 255, 0.88);
   --hero-card-border: rgba(15, 23, 42, 0.08);
-  --hero-card-shadow: 0 20px 50px rgba(15, 23, 42, 0.10);
+  --hero-card-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
 
   --card-shadow: 0 1px 3px rgba(15, 23, 42, 0.05), 0 6px 20px rgba(15, 23, 42, 0.04);
   --card-hover-shadow: 0 12px 28px rgba(15, 23, 42, 0.09);
@@ -393,8 +393,8 @@ h1, h2, h3, h4, h5, h6 {
   background-color: var(--color-bg);
   background-image:
     var(--hero-overlay-bg),
-    url('../images/hero-bg.webp');
-  background-position: center top;
+    url('../images/hero-bg-light.webp?v=4.0.10');
+  background-position: center center;
   background-size: cover;
   background-repeat: no-repeat;
   border-bottom: none !important;
@@ -405,11 +405,19 @@ h1, h2, h3, h4, h5, h6 {
 [dir="rtl"] .hero-wrapper {
   background-image:
     var(--hero-overlay-bg),
-    url('../images/hero-bg.webp');
-  background-position: center top;
+    url('../images/hero-bg-light-rtl.webp?v=4.0.10');
+  background-position: center center;
   background-size: cover;
   background-repeat: no-repeat;
   border-bottom: none !important;
+}
+
+[data-theme="dark"] .hero-wrapper,
+[data-theme="dark"][dir="rtl"] .hero-wrapper {
+  background-image:
+    var(--hero-overlay-bg),
+    url('../images/hero-bg.webp');
+  background-position: center top;
 }
 
 .hero-content-col {
@@ -1132,8 +1140,8 @@ textPath {
     padding: 38px 0 48px;
     background-image:
       var(--hero-overlay-bg),
-      url('../images/hero-bg.webp');
-    background-position: center top;
+      url('../images/hero-bg-light.webp?v=4.0.10');
+    background-position: center bottom;
     background-size: cover;
     background-repeat: no-repeat;
     border-bottom: none !important;
@@ -1141,11 +1149,18 @@ textPath {
   [dir="rtl"] .hero-wrapper {
     background-image:
       var(--hero-overlay-bg),
-      url('../images/hero-bg.webp');
-    background-position: center top;
+      url('../images/hero-bg-light-rtl.webp?v=4.0.10');
+    background-position: center bottom;
     background-size: cover;
     background-repeat: no-repeat;
     border-bottom: none !important;
+  }
+  [data-theme="dark"] .hero-wrapper,
+  [data-theme="dark"][dir="rtl"] .hero-wrapper {
+    background-image:
+      var(--hero-overlay-bg),
+      url('../images/hero-bg.webp');
+    background-position: center top;
   }
   .hero-content-col {
     padding: 22px 18px;
