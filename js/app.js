@@ -1,11 +1,44 @@
 
 const CITY_COORDS = {
   "Cairo": { lat: 30.0444, lng: 31.2357 },
+  "القاهرة": { lat: 30.0444, lng: 31.2357 },
   "Giza": { lat: 30.0131, lng: 31.2089 },
+  "الجيزة": { lat: 30.0131, lng: 31.2089 },
   "Fayoum": { lat: 29.3084, lng: 30.8428 },
+  "الفيوم": { lat: 29.3084, lng: 30.8428 },
   "Alexandria": { lat: 31.2001, lng: 29.9187 },
+  "الإسكندرية": { lat: 31.2001, lng: 29.9187 },
   "6th of October": { lat: 29.9285, lng: 30.9188 },
-  "Beni Suef": { lat: 29.0661, lng: 31.0994 }
+  "6 أكتوبر": { lat: 29.9285, lng: 30.9188 },
+  "السادس من أكتوبر": { lat: 29.9285, lng: 30.9188 },
+  "Beni Suef": { lat: 29.0661, lng: 31.0994 },
+  "بني سويف": { lat: 29.0661, lng: 31.0994 },
+  "Mansoura": { lat: 31.0409, lng: 31.3785 },
+  "المنصورة": { lat: 31.0409, lng: 31.3785 },
+  "Tanta": { lat: 30.7865, lng: 31.0004 },
+  "طنطا": { lat: 30.7865, lng: 31.0004 },
+  "Zagazig": { lat: 30.5877, lng: 31.5020 },
+  "الزقازيق": { lat: 30.5877, lng: 31.5020 },
+  "Ismailia": { lat: 30.5965, lng: 32.2715 },
+  "الإسماعيلية": { lat: 30.5965, lng: 32.2715 },
+  "Suez": { lat: 29.9668, lng: 32.5498 },
+  "السويس": { lat: 29.9668, lng: 32.5498 },
+  "Port Said": { lat: 31.2653, lng: 32.3019 },
+  "بورسعيد": { lat: 31.2653, lng: 32.3019 },
+  "Luxor": { lat: 25.6872, lng: 32.6396 },
+  "الأقصر": { lat: 25.6872, lng: 32.6396 },
+  "Aswan": { lat: 24.0889, lng: 32.8998 },
+  "أسوان": { lat: 24.0889, lng: 32.8998 },
+  "Assiut": { lat: 27.1809, lng: 31.1837 },
+  "أسيوط": { lat: 27.1809, lng: 31.1837 },
+  "Nasr City": { lat: 30.0561, lng: 31.3301 },
+  "مدينة نصر": { lat: 30.0561, lng: 31.3301 },
+  "Maadi": { lat: 29.9602, lng: 31.2569 },
+  "المعادي": { lat: 29.9602, lng: 31.2569 },
+  "Heliopolis": { lat: 30.0866, lng: 31.3297 },
+  "مصر الجديدة": { lat: 30.0866, lng: 31.3297 },
+  "New Cairo": { lat: 30.0074, lng: 31.4913 },
+  "القاهرة الجديدة": { lat: 30.0074, lng: 31.4913 }
 };
 
 function calculateHaversine(lat1, lon1, lat2, lon2) {
@@ -366,6 +399,11 @@ class ByteForceApp {
 
     const mainContainer = document.getElementById("mainContent");
     if (!mainContainer) return;
+
+    if (this._techLeafMap) {
+      try { this._techLeafMap.remove(); } catch (e) {}
+      this._techLeafMap = null;
+    }
 
     window.scrollTo({ top: 0, behavior: "smooth" });
 
@@ -795,6 +833,7 @@ class ByteForceApp {
     `;
 
     this.applyHomeSectionOrder();
+    this.updateNavAuth();
     this.fetchAndApplyLiveDatasetStats();
     this.initNotifications();
   }
@@ -1805,9 +1844,26 @@ class ByteForceApp {
 
   // ==========================================
   // VIEW: TECHNICIAN MARKETPLACE
+  _lookupCityCoords(city) {
+    const raw = String(city || "").trim();
+    if (!raw) return null;
+    if (CITY_COORDS[raw]) return CITY_COORDS[raw];
+    const lower = raw.toLowerCase();
+    for (const [key, coords] of Object.entries(CITY_COORDS)) {
+      const kl = key.toLowerCase();
+      if (lower === kl || lower.includes(kl) || kl.includes(lower)) return coords;
+    }
+    return null;
+  }
+
   // ==========================================
   async renderTechnicians(container) {
     const isAr = window.i18n.currentLang === "ar";
+    const renderToken = (this._techRenderToken = (this._techRenderToken || 0) + 1);
+    if (this._techLeafMap) {
+      try { this._techLeafMap.remove(); } catch (e) {}
+      this._techLeafMap = null;
+    }
     container.innerHTML = `
       <section style="padding: 40px 0 80px;">
         <div class="container">
@@ -1828,10 +1884,19 @@ class ByteForceApp {
                   <option value="all">${isAr ? 'جميع المدن (الكل)' : 'All Cities'}</option>
                   <option value="Cairo">${isAr ? 'القاهرة' : 'Cairo'}</option>
                   <option value="Giza">${isAr ? 'الجيزة' : 'Giza'}</option>
-                  <option value="Fayoum">${isAr ? 'الفيوم' : 'Fayoum'}</option>
                   <option value="Alexandria">${isAr ? 'الإسكندرية' : 'Alexandria'}</option>
-                  <option value="6th of October">${isAr ? '6 أكتوبر' : '6th of October'}</option>
+                  <option value="6th of October">${isAr ? '6 أكتوبر / الشيخ زايد' : '6th of October / Zayed'}</option>
+                  <option value="Fayoum">${isAr ? 'الفيوم' : 'Fayoum'}</option>
                   <option value="Beni Suef">${isAr ? 'بني سويف' : 'Beni Suef'}</option>
+                  <option value="Mansoura">${isAr ? 'المنصورة' : 'Mansoura'}</option>
+                  <option value="Tanta">${isAr ? 'طنطا' : 'Tanta'}</option>
+                  <option value="Zagazig">${isAr ? 'الزقازيق' : 'Zagazig'}</option>
+                  <option value="Ismailia">${isAr ? 'الإسماعيلية' : 'Ismailia'}</option>
+                  <option value="Suez">${isAr ? 'السويس' : 'Suez'}</option>
+                  <option value="Port Said">${isAr ? 'بورسعيد' : 'Port Said'}</option>
+                  <option value="Luxor">${isAr ? 'الأقصر' : 'Luxor'}</option>
+                  <option value="Aswan">${isAr ? 'أسوان' : 'Aswan'}</option>
+                  <option value="Assiut">${isAr ? 'أسيوط' : 'Assiut'}</option>
                 </select>
               </div>
 
@@ -1915,18 +1980,26 @@ class ByteForceApp {
     let currentUserLoc = null;
 
     const updateMapMarkers = (techList, userLoc = null) => {
-      const mapEl = document.getElementById("techMap");
+      const mapEl = container.querySelector("#techMap");
       if (!mapEl || typeof L === "undefined") return;
 
       if (!leafMap) {
-        leafMap = L.map("techMap").setView([30.0444, 31.2357], 6);
+        if (this._techLeafMap && this._techLeafMap !== leafMap) {
+          try { this._techLeafMap.remove(); } catch (e) {}
+          this._techLeafMap = null;
+        }
+        if (mapEl._leaflet_id) {
+          try { mapEl._leaflet_id = null; mapEl.innerHTML = ""; } catch (e) {}
+        }
+        leafMap = L.map(mapEl).setView([30.0444, 31.2357], 6);
+        this._techLeafMap = leafMap;
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
           maxZoom: 18,
           attribution: "&copy; OpenStreetMap"
         }).addTo(leafMap);
       }
 
-      mapMarkers.forEach(m => leafMap.removeLayer(m));
+      mapMarkers.forEach(m => { try { leafMap.removeLayer(m); } catch (e) {} });
       mapMarkers = [];
 
       if (userLoc) {
@@ -1943,17 +2016,17 @@ class ByteForceApp {
       }
 
       techList.forEach(t => {
-        const coords = (t.lat && t.lng) ? { lat: t.lat, lng: t.lng } : CITY_COORDS[t.city];
+        const coords = (t.lat && t.lng) ? { lat: t.lat, lng: t.lng } : this._lookupCityCoords(t.city);
         if (!coords) return;
         const bName = t.business_name || t.name || "";
-        const safeName = bName.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
-        const ratingTxt = t.reviews_count > 0 ? `★ ${t.rating} (${t.reviews_count})` : (isAr ? "جديد" : "New");
+        const safeName = bName.replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;");
+        const ratingTxt = t.reviews_count > 0 ? `★ ${Number(t.rating || 0).toFixed(1)} (${t.reviews_count})` : (isAr ? "جديد" : "New");
         const marker = L.marker([coords.lat, coords.lng]).addTo(leafMap);
         marker.bindPopup(`
           <div style="font-family: inherit; font-size: 13px; min-width: 170px;">
-            <b style="color: #0F172A; font-size: 14px;">${bName}</b>
-            <div style="color: #64748B; font-size: 12px; margin: 3px 0;">${t.city || ''}${t.city ? ' · ' : ''}${ratingTxt}</div>
-            <button class="btn btn-primary btn-sm" style="width: 100%; margin-top: 6px; padding: 4px 8px; font-size: 12px;" onclick="app.showBookTechnicianModal('${t.id}', '${safeName}')">
+            <b style="color: #0F172A; font-size: 14px;">${this._esc(bName)}</b>
+            <div style="color: #64748B; font-size: 12px; margin: 3px 0;">${this._esc(t.city || '')}${t.city ? ' · ' : ''}${ratingTxt}</div>
+            <button class="btn btn-primary btn-sm" style="width: 100%; margin-top: 6px; padding: 4px 8px; font-size: 12px;" onclick="app.showBookTechnicianModal('${this._esc(t.id)}', '${safeName}')">
               ${isAr ? 'طلب صيانة' : 'Request Repair'}
             </button>
           </div>
@@ -1963,15 +2036,19 @@ class ByteForceApp {
     };
 
     const loadTechs = async () => {
-      const city = container.querySelector("#techCityFilter").value;
+      if (renderToken !== this._techRenderToken) return;
+      const cityEl = container.querySelector("#techCityFilter");
+      const grid = container.querySelector("#techGrid");
+      if (!cityEl || !grid) return;
+      const city = cityEl.value;
       const spec = container.querySelector("#techSpecFilter").value;
       const provType = container.querySelector("#techTypeFilter").value;
       const radiusVal = container.querySelector("#techRadiusFilter").value;
       const homeOnly = container.querySelector("#techHomeOnly").checked;
-      const grid = container.querySelector("#techGrid");
 
       try {
         let techs = await window.api.getTechnicians(city, spec);
+        if (renderToken !== this._techRenderToken || !document.body.contains(grid)) return;
         if (provType !== "all") {
           techs = techs.filter(t => (t.kind || "TECHNICIAN").toUpperCase() === provType);
         }
@@ -1980,7 +2057,7 @@ class ByteForceApp {
         }
         if (currentUserLoc) {
           techs.forEach(t => {
-            const coords = (t.lat && t.lng) ? { lat: t.lat, lng: t.lng } : CITY_COORDS[t.city];
+            const coords = (t.lat && t.lng) ? { lat: t.lat, lng: t.lng } : this._lookupCityCoords(t.city);
             if (coords) {
               t.distance_km = calculateHaversine(currentUserLoc.lat, currentUserLoc.lng, coords.lat, coords.lng);
             }
@@ -2011,9 +2088,9 @@ class ByteForceApp {
         }
 
         grid.innerHTML = techs.map(t => {
-          const bName = t.business_name || t.name;
-          const tName = t.technician_name || t.name;
-          const safeName = (bName || '').replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+          const bName = t.business_name || t.name || "";
+          const tName = t.technician_name || t.name || "";
+          const safeName = (bName || "").replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;");
           const rating = Number(t.rating) || 0;
           const reviews = Number(t.reviews_count || t.total_reviews || 0);
           const expYears = t.experience_years;
@@ -2025,12 +2102,12 @@ class ByteForceApp {
             <div>
               <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 12px;">
                 <div style="display: flex; gap: 12px; align-items: center;">
-                  <div class="tech-avatar">${(bName || 'T').charAt(0).toUpperCase()}</div>
+                  <div class="tech-avatar">${this._esc((bName || 'T').charAt(0).toUpperCase())}</div>
                   <div>
-                    <h4 style="font-size: 16px; margin-bottom: 3px; color: #FFFFFF;">${bName}</h4>
+                    <h4 style="font-size: 16px; margin-bottom: 3px; color: #FFFFFF;">${this._esc(bName)}</h4>
                     <span style="font-size: 12px; color: var(--color-text-muted); display: inline-flex; align-items: center; gap: 5px;">
                       <i class="fas fa-check-circle" style="color: var(--color-success);"></i>
-                      ${tName} · ${t.is_verified_center ? (isAr ? 'مركز صيانة معتمد' : 'Verified Center') : (isAr ? 'فني معتمد' : 'Certified Tech')}
+                      ${this._esc(tName)} · ${t.is_verified_center ? (isAr ? 'مركز صيانة معتمد' : 'Verified Center') : (isAr ? 'فني معتمد' : 'Certified Tech')}
                     </span>
                   </div>
                 </div>
@@ -2038,34 +2115,43 @@ class ByteForceApp {
               </div>
 
               <div style="display: flex; gap: 12px; font-size: 12px; color: var(--color-text-muted); margin-bottom: 12px; flex-wrap: wrap;">
-                ${t.city ? `<span><i class="fas fa-map-marker-alt" style="color: #38BDF8;"></i> ${t.city}${t.address ? ` - ${t.address}` : ''}</span>` : ''}
-                ${t.distance_km != null ? `<span><i class="fas fa-route" style="color: #34D399;"></i> ${t.distance_km.toFixed(1)} ${isAr ? 'كم' : 'km'}</span>` : ''}
-                ${reviews > 0
-                  ? `<span><i class="fas fa-star" style="color: #F59E0B;"></i> ${rating.toFixed(1)} (${reviews})</span>`
-                  : `<span><i class="fas fa-star" style="color: #64748B;"></i> ${isAr ? 'جديد' : 'New'}</span>`
-                }
-                ${expYears ? `<span><i class="fas fa-award" style="color: #60A5FA;"></i> ${expYears} ${isAr ? 'سنوات خبرة' : 'yrs exp'}</span>` : ''}
-                ${t.working_hours ? `<span><i class="fas fa-clock" style="color: #94A3B8;"></i> ${t.working_hours}</span>` : ''}
+                ${t.city ? `<span><i class="fas fa-map-marker-alt" style="color: #38BDF8;"></i> ${this._esc(t.city)}${t.address ? ` - ${this._esc(t.address)}` : ''}</span>` : ''}
+                ${t.distance_km != null ? `<span><i class="fas fa-route" style="color: #34D399;"></i> ${Number(t.distance_km).toFixed(1)} ${isAr ? 'كم' : 'km'}</span>` : ''}
+                <button type="button" onclick="app.showTechReviewsModal('${this._esc(t.id)}', '${safeName}')" style="background: none; border: none; padding: 0; color: inherit; cursor: pointer; font: inherit; display: inline-flex; align-items: center; gap: 4px; text-decoration: underline dotted;">
+                  ${reviews > 0
+                    ? `<i class="fas fa-star" style="color: #F59E0B;"></i> <b style="color:#FBBF24;">${rating.toFixed(1)}</b> (${reviews})`
+                    : `<i class="fas fa-star" style="color: #64748B;"></i> ${isAr ? 'جديد · التقييمات' : 'New · Reviews'}`
+                  }
+                </button>
+                ${expYears ? `<span><i class="fas fa-award" style="color: #60A5FA;"></i> ${this._esc(expYears)} ${isAr ? 'سنوات خبرة' : 'yrs exp'}</span>` : ''}
+                ${t.working_hours ? `<span><i class="fas fa-clock" style="color: #94A3B8;"></i> ${this._esc(t.working_hours)}</span>` : ''}
+                ${t.phone ? `<span dir="ltr"><i class="fas fa-phone-alt" style="color: #34D399;"></i> ${this._esc(t.phone)}</span>` : ''}
               </div>
 
-              ${t.bio ? `<p style="font-size: 13px; color: #94A3B8; margin-bottom: 14px; line-height: 1.5;">${t.bio}</p>` : ''}
+              ${t.bio ? `<p style="font-size: 13px; color: #94A3B8; margin-bottom: 14px; line-height: 1.5;">${this._esc(t.bio)}</p>` : ''}
 
               ${specs.length > 0 ? `
                 <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px;">
-                  ${specs.map(s => `<span class="tag">${s}</span>`).join('')}
+                  ${specs.map(s => `<span class="tag">${this._esc(s)}</span>`).join('')}
                 </div>
               ` : ''}
             </div>
 
-            <button class="btn btn-primary btn-sm" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;" onclick="app.showBookTechnicianModal('${t.id}', '${safeName}')">
-              <i class="fas fa-paper-plane"></i>
-              <span>${isAr ? 'طلب صيانة فوري' : 'Request Repair'}</span>
-            </button>
+            <div style="display: flex; gap: 8px; align-items: stretch;">
+              <button class="btn btn-primary btn-sm" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;" onclick="app.showBookTechnicianModal('${this._esc(t.id)}', '${safeName}')">
+                <i class="fas fa-paper-plane"></i>
+                <span>${isAr ? 'طلب صيانة فوري' : 'Request Repair'}</span>
+              </button>
+              <button type="button" class="btn btn-outline btn-sm" style="display: inline-flex; align-items: center; gap: 6px;" onclick="app.showTechReviewsModal('${this._esc(t.id)}', '${safeName}')">
+                <i class="fas fa-star" style="color: #F59E0B;"></i>
+                <span data-i18n="tech_view_reviews_btn">${isAr ? 'التقييمات' : 'Reviews'}</span>${reviews > 0 ? ` (${reviews})` : ''}
+              </button>
+            </div>
           </div>
         `;
         }).join('');
       } catch (err) {
-        grid.innerHTML = `<div style="color: var(--color-danger); text-align: center; grid-column: 1/-1;">Error loading technicians: ${err.message}</div>`;
+        grid.innerHTML = `<div style="color: var(--color-danger); text-align: center; grid-column: 1/-1;">Error loading technicians: ${this._esc(err.message)}</div>`;
       }
     };
 
@@ -2415,25 +2501,116 @@ class ByteForceApp {
     this.renderDashboard(document.getElementById("mainContent"));
   }
 
+  setReviewStar(reqId, stars) {
+    const val = Math.max(1, Math.min(5, parseInt(stars, 10) || 5));
+    const hidden = document.getElementById(`ratingSelect_${reqId}`);
+    if (hidden) hidden.value = String(val);
+    const row = document.getElementById(`starRow_${reqId}`);
+    if (row) {
+      row.querySelectorAll("[data-star]").forEach(btn => {
+        const s = parseInt(btn.getAttribute("data-star"), 10);
+        const active = s <= val;
+        btn.style.color = active ? "#F59E0B" : "#475569";
+        btn.classList.toggle("active", active);
+      });
+    }
+  }
+
   async custSubmitReview(reqId) {
     const isAr = window.i18n.currentLang === "ar";
     const starSelect = document.getElementById(`ratingSelect_${reqId}`);
     const commentInput = document.getElementById(`reviewComment_${reqId}`);
-    const rating = starSelect ? parseInt(starSelect.value) : 5;
+    const rating = starSelect ? Math.max(1, Math.min(5, parseInt(starSelect.value, 10) || 5)) : 5;
     const comment = commentInput ? commentInput.value.trim() : "";
-    await window.api.updateRequestStatus(reqId, "COMPLETED", {
-      reviewed: true,
-      rating: rating,
-      review_comment: comment,
-      actor: "Customer",
-      note: isAr ? `تم تقييم الفني (${rating} نجوم)` : `Customer reviewed (${rating} stars)`
-    });
-    this.addNotification(
-      isAr ? "شكراً لتقييمك" : "Thank you for reviewing",
-      isAr ? `تم تسجيل تقييمك (${rating} نجوم) للطلب #${reqId}` : `Review recorded for #${reqId}`,
-      "info"
-    );
-    this.renderDashboard(document.getElementById("mainContent"));
+    try {
+      await window.api.submitRepairReview(reqId, rating, comment);
+      this.addNotification(
+        isAr ? "شكراً لتقييمك" : "Thank you for reviewing",
+        isAr ? `تم تسجيل تقييمك (${rating} نجوم) للطلب #${reqId}` : `Review recorded for #${reqId}`,
+        "info"
+      );
+      this.renderDashboard(document.getElementById("mainContent"));
+    } catch (err) {
+      alert((isAr ? "تعذر حفظ التقييم: " : "Failed to save review: ") + (err?.message || err));
+    }
+  }
+
+  async showTechReviewsModal(techId, techName = "") {
+    const isAr = window.i18n.currentLang === "ar";
+    this.openModal(`
+      <div style="text-align: center; padding: 28px 10px;">
+        <div class="spinner" style="margin: 0 auto 12px;"></div>
+        <p style="color: #94A3B8; font-size: 14px;">${isAr ? 'جاري تحميل التقييمات المعتمدة...' : 'Loading verified reviews...'}</p>
+      </div>
+    `);
+
+    const data = await window.api.getTechnicianReviews(techId);
+    const avg = Number(data?.average_rating || 0);
+    const total = Number(data?.reviews_count || 0);
+    const breakdown = data?.rating_breakdown || { "5": 0, "4": 0, "3": 0, "2": 0, "1": 0 };
+    const reviews = Array.isArray(data?.reviews) ? data.reviews : [];
+
+    const barsHtml = [5, 4, 3, 2, 1].map(star => {
+      const cnt = Number(breakdown[String(star)] || 0);
+      const pct = total > 0 ? Math.round((cnt / total) * 100) : 0;
+      return `
+        <div style="display: flex; align-items: center; gap: 10px; font-size: 12px;">
+          <span style="width: 36px; color: #FBBF24; font-weight: 700;">${star} ★</span>
+          <div style="flex: 1; height: 8px; background: rgba(255,255,255,0.06); border-radius: 99px; overflow: hidden;">
+            <div style="width: ${pct}%; height: 100%; background: linear-gradient(90deg, #F59E0B, #FBBF24);"></div>
+          </div>
+          <span style="width: 28px; text-align: end; color: #94A3B8;">${cnt}</span>
+        </div>
+      `;
+    }).join("");
+
+    const listHtml = reviews.length === 0
+      ? `<div style="padding: 24px; text-align: center; color: #94A3B8; background: rgba(255,255,255,0.02); border-radius: 10px; border: 1px dashed rgba(255,255,255,0.1);">
+           <i class="fas fa-comment-slash" style="font-size: 24px; color: #64748B; margin-bottom: 8px; display: block;"></i>
+           ${isAr ? 'لا توجد تقييمات معتمدة لهذا المركز حتى الآن — كن أول من يقيّم بعد إتمام الصيانة.' : 'No verified customer reviews yet for this center.'}
+         </div>`
+      : reviews.map(rev => {
+          const stars = Math.max(0, Math.min(5, Math.round(Number(rev.rating || 0))));
+          const starsStr = "★".repeat(stars) + "☆".repeat(5 - stars);
+          const dateStr = rev.created_at ? String(rev.created_at).slice(0, 10) : "";
+          return `
+            <div style="padding: 14px; background: #0F131C; border: 1px solid rgba(255,255,255,0.07); border-radius: 10px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 6px;">
+                <strong style="color: #FFFFFF; font-size: 14px;">${this._esc(rev.reviewer_name || (isAr ? 'عميل موثق' : 'Verified Customer'))}</strong>
+                <span style="color: #F59E0B; font-size: 14px; letter-spacing: 1px;">${starsStr} <small style="color:#94A3B8;">(${Number(rev.rating || 0).toFixed(1)})</small></span>
+              </div>
+              ${rev.device_info ? `<div style="font-size: 12px; color: #38BDF8; margin-bottom: 6px;"><i class="fas fa-microchip"></i> ${this._esc(rev.device_info)}</div>` : ''}
+              ${rev.review_comment ? `<p style="font-size: 13px; color: #CBD5E1; margin: 0 0 6px; line-height: 1.5;">${this._esc(rev.review_comment)}</p>` : ''}
+              ${dateStr ? `<div style="font-size: 11px; color: #64748B;">${this._esc(dateStr)}</div>` : ''}
+            </div>
+          `;
+        }).join("");
+
+    this.openModal(`
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <div>
+            <h3 style="margin: 0 0 4px; font-size: 18px;" data-i18n="reviews_modal_title">${isAr ? 'تقييمات العملاء الموثقة' : 'Verified Customer Reviews'}</h3>
+            <div style="font-size: 13px; color: #38BDF8; font-weight: 600;">${this._esc(techName || `#${techId}`)}</div>
+          </div>
+          <button type="button" class="btn btn-outline btn-sm" onclick="app.closeModal()">&times;</button>
+        </div>
+
+        <div style="display: grid; grid-template-columns: auto 1fr; gap: 18px; align-items: center; padding: 16px; background: rgba(245, 158, 11, 0.06); border: 1px solid rgba(245, 158, 11, 0.22); border-radius: 12px; margin-bottom: 16px;">
+          <div style="text-align: center; min-width: 90px;">
+            <div style="font-size: 32px; font-weight: 800; color: #FBBF24; line-height: 1;">${avg.toFixed(1)}</div>
+            <div style="font-size: 12px; color: #94A3B8; margin-top: 6px;">${total} ${isAr ? 'تقييم موثق' : 'verified reviews'}</div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 5px;">
+            ${barsHtml}
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 10px; max-height: 360px; overflow-y: auto;">
+          ${listHtml}
+        </div>
+      </div>
+    `);
   }
 
   showBookTechnicianModal(techId, techName) {
@@ -2600,10 +2777,10 @@ class ByteForceApp {
       if (requests.length === 0) {
         reqContainer.innerHTML = `<p style="color: var(--color-text-muted); font-size: 14px;">${window.i18n.t('dash_no_requests')}</p>`;
       } else {
-        const isTech = user.role === 'technician';
         reqContainer.innerHTML = `
           <div style="display: flex; flex-direction: column; gap: 16px;">
             ${requests.map(r => {
+              const isTech = (r.technician_id && r.technician_id === user.id) || (user.role === 'technician' && r.user_id !== user.id);
               const st = (r.status || 'NEW').toUpperCase();
               let badgeColor = '#64748B';
               let badgeBg = 'rgba(100, 116, 139, 0.15)';
@@ -2642,24 +2819,24 @@ class ByteForceApp {
                 <div class="card" style="padding: 18px; border: 1px solid rgba(255,255,255,0.08); background: #0F131C; border-radius: 10px;">
                   <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
                     <div>
-                      <span style="font-weight: 700; color: #FFFFFF; font-size: 16px;">#${r.id} · ${r.device_info || 'Device'}</span>
-                      <span style="color: #64748B; font-size: 13px; margin-inline-start: 8px;">(${isTech ? (r.customer_name || 'Customer') : (r.technician_business || 'Technician')})</span>
+                      <span style="font-weight: 700; color: #FFFFFF; font-size: 16px;">#${this._esc(r.id)} · ${this._esc(r.device_info || 'Device')}</span>
+                      <span style="color: #64748B; font-size: 13px; margin-inline-start: 8px;">(${this._esc(isTech ? (r.customer_name || 'Customer') : (r.technician_business || r.technician_name || 'Technician'))})</span>
                     </div>
                     <span class="tag" style="background: ${badgeBg}; color: ${badgeColor}; border: 1px solid ${badgeColor}40; font-weight: 600; font-size: 12px;">
-                      ${statusLabel}
+                      ${this._esc(statusLabel)}
                     </span>
                   </div>
 
                   <p style="color: #94A3B8; font-size: 13px; margin-bottom: 10px; line-height: 1.5;">
-                    <i class="fas fa-info-circle" style="color: #38BDF8; margin-inline-end: 6px;"></i>${r.problem_summary || ''}
+                    <i class="fas fa-info-circle" style="color: #38BDF8; margin-inline-end: 6px;"></i>${this._esc(r.problem_summary || '')}
                   </p>
 
                   <div style="display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; color: #CBD5E1; margin-bottom: 12px; background: rgba(255,255,255,0.02); padding: 8px 12px; border-radius: 6px;">
-                    ${r.estimate ? `<div><span style="color: #64748B;">${isAr ? 'التقدير المبدئي: ' : 'Estimate: '}</span><b>${r.estimate} ج.م</b></div>` : ''}
-                    ${r.extra_cost ? `<div><span style="color: #F87171;">${isAr ? 'تكلفة إضافية مطلوبة: ' : 'Extra Cost: '}</span><b>${r.extra_cost} ج.م</b></div>` : ''}
-                    ${r.final_cost ? `<div><span style="color: #10B981;">${isAr ? 'التكلفة النهائية: ' : 'Final Cost: '}</span><b>${r.final_cost} ج.م</b></div>` : ''}
-                    ${r.actual_fault ? `<div><span style="color: #64748B;">${isAr ? 'العطل الفعلي: ' : 'Actual Fault: '}</span><b>${r.actual_fault}</b></div>` : ''}
-                    ${r.appointment ? `<div><span style="color: #38BDF8;"><i class="fas fa-calendar-alt"></i> ${isAr ? 'الموعد: ' : 'Appointment: '}</span><b dir="ltr">${r.appointment}</b></div>` : ''}
+                    ${r.estimate ? `<div><span style="color: #64748B;">${isAr ? 'التقدير المبدئي: ' : 'Estimate: '}</span><b>${this._esc(r.estimate)} ج.م</b></div>` : ''}
+                    ${r.extra_cost ? `<div><span style="color: #F87171;">${isAr ? 'تكلفة إضافية مطلوبة: ' : 'Extra Cost: '}</span><b>${this._esc(r.extra_cost)} ج.م</b></div>` : ''}
+                    ${r.final_cost ? `<div><span style="color: #10B981;">${isAr ? 'التكلفة النهائية: ' : 'Final Cost: '}</span><b>${this._esc(r.final_cost)} ج.م</b></div>` : ''}
+                    ${r.actual_fault ? `<div><span style="color: #64748B;">${isAr ? 'العطل الفعلي: ' : 'Actual Fault: '}</span><b>${this._esc(r.actual_fault)}</b></div>` : ''}
+                    ${r.appointment ? `<div><span style="color: #38BDF8;"><i class="fas fa-calendar-alt"></i> ${isAr ? 'الموعد: ' : 'Appointment: '}</span><b dir="ltr">${this._esc(r.appointment)}</b></div>` : ''}
                   </div>
 
                   <!-- Dynamic Action Boxes based on role & status -->
@@ -2741,22 +2918,26 @@ class ByteForceApp {
                   ${!isTech && st === 'COMPLETED' ? `
                     <div class="req-action-box">
                       ${r.reviewed ? `
-                        <div style="color: #10B981; font-size: 13px; display: flex; align-items: center; gap: 8px;">
-                          <i class="fas fa-star" style="color: #F59E0B;"></i>
-                          <span>${isAr ? `تم تقييم هذه الخدمة (${r.rating || 5} نجوم). شكراً لمشاركتنا تجربتك!` : `You reviewed this repair (${r.rating || 5} stars). Thank you!`}</span>
+                        <div style="color: #10B981; font-size: 13px; display: flex; flex-direction: column; gap: 6px;">
+                          <div style="display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-star" style="color: #F59E0B;"></i>
+                            <span>${isAr ? `تم تقييم هذه الخدمة (${this._esc(r.rating || 5)} من 5 نجوم). شكراً لمشاركتنا تجربتك!` : `You reviewed this repair (${this._esc(r.rating || 5)}/5 stars). Thank you!`}</span>
+                          </div>
+                          ${r.review_comment ? `<div style="font-size: 12.5px; color: #CBD5E1; padding: 6px 10px; border-inline-start: 2px solid #F59E0B; background: rgba(255,255,255,0.03); border-radius: 4px;">&ldquo;${this._esc(r.review_comment)}&rdquo;</div>` : ''}
                         </div>
                       ` : `
                         <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                           <span style="font-size: 13px; color: #FFFFFF;">${isAr ? 'تقييم الفني والخدمة:' : 'Rate this repair:'}</span>
-                          <select id="ratingSelect_${r.id}" class="form-control" style="width: auto; padding: 4px 10px;">
-                            <option value="5">★★★★★ (5/5)</option>
-                            <option value="4">★★★★☆ (4/5)</option>
-                            <option value="3">★★★☆☆ (3/5)</option>
-                            <option value="2">★★☆☆☆ (2/5)</option>
-                            <option value="1">★☆☆☆☆ (1/5)</option>
-                          </select>
-                          <input type="text" id="reviewComment_${r.id}" placeholder="${isAr ? 'اكتب رأيك أو تعليقك على جودة الصيانة...' : 'Review comment...'}" class="form-control" style="flex: 1; min-width: 180px;">
-                          <button class="btn btn-primary btn-sm" onclick="app.custSubmitReview('${r.id}')">
+                          <div id="starRow_${this._esc(r.id)}" class="star-rating-row" style="display: inline-flex; gap: 4px; align-items: center;">
+                            ${[1, 2, 3, 4, 5].map(s => `
+                              <button type="button" data-star="${s}" onclick="app.setReviewStar('${this._esc(r.id)}', ${s})" style="background: none; border: none; cursor: pointer; font-size: 18px; color: #F59E0B; padding: 2px; line-height: 1;" title="${s}/5">
+                                <i class="fas fa-star"></i>
+                              </button>
+                            `).join('')}
+                          </div>
+                          <input type="hidden" id="ratingSelect_${this._esc(r.id)}" value="5" />
+                          <input type="text" id="reviewComment_${this._esc(r.id)}" placeholder="${isAr ? 'اكتب رأيك أو تعليقك على جودة الصيانة...' : 'Review comment...'}" class="form-control" style="flex: 1; min-width: 180px;">
+                          <button type="button" class="btn btn-primary btn-sm" onclick="app.custSubmitReview('${this._esc(r.id)}')">
                             <i class="fas fa-star"></i> ${isAr ? 'إرسال التقييم' : 'Submit Review'}
                           </button>
                         </div>
@@ -3146,15 +3327,28 @@ class ByteForceApp {
         return;
       }
       const list = cache.centers || [];
+      const toolbarHtml = `
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 16px;">
+          <h3 style="font-size: 18px; margin: 0;" data-i18n="admin_tab_approvals">${isAr ? 'إدارة المراكز والفنيين والاعتمادات' : 'Maintenance Centers & Technicians'}</h3>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button type="button" class="btn btn-primary btn-sm" onclick="app.showCenterFormModal()">
+              <i class="fas fa-plus"></i> <span data-i18n="admin_add_center_btn">${isAr ? 'إضافة مركز / فني جديد' : 'Add Center / Tech'}</span>
+            </button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="app.showBulkCentersModal()">
+              <i class="fas fa-file-import"></i> <span data-i18n="admin_bulk_centers_btn">${isAr ? 'رفع مجموعة مراكز' : 'Bulk Import Centers'}</span>
+            </button>
+          </div>
+        </div>
+      `;
       if (list.length === 0) {
         panel.innerHTML = `
-          <h3 style="font-size: 18px; margin-bottom: 12px;" data-i18n="admin_tab_approvals">${isAr ? 'إدارة المراكز والفنيين والاعتمادات' : 'Maintenance Centers & Technicians'}</h3>
-          <p style="color: var(--color-text-muted); font-size: 14px;">${isAr ? 'لا توجد طلبات أو مراكز صيانة مسجلة بعد.' : 'No maintenance centers or technician applications yet.'}</p>
+          ${toolbarHtml}
+          <p style="color: var(--color-text-muted); font-size: 14px;">${isAr ? 'لا توجد طلبات أو مراكز صيانة مسجلة بعد. يمكنك إضافة مركز جديد أو رفع قائمة مراكز من الأزرار أعلاه.' : 'No maintenance centers or technician applications yet. Use Add Center or Bulk Import above.'}</p>
         `;
         return;
       }
       panel.innerHTML = `
-        <h3 style="font-size: 18px; margin-bottom: 16px;" data-i18n="admin_tab_approvals">${isAr ? 'إدارة المراكز والفنيين والاعتمادات' : 'Maintenance Centers & Technicians'}</h3>
+        ${toolbarHtml}
         <div style="overflow-x: auto;">
           <table class="admin-table">
             <thead>
@@ -3163,6 +3357,7 @@ class ByteForceApp {
                 <th>${isAr ? 'مقدم الطلب والاتصال' : 'Applicant & Contact'}</th>
                 <th>${isAr ? 'المدينة والعنوان' : 'City & Address'}</th>
                 <th>${isAr ? 'التخصصات' : 'Specialties'}</th>
+                <th>${isAr ? 'التقييم' : 'Rating'}</th>
                 <th>${isAr ? 'الحالة' : 'Status'}</th>
                 <th>${isAr ? 'الإجراء' : 'Action'}</th>
               </tr>
@@ -3180,6 +3375,9 @@ class ByteForceApp {
                 }
                 const kindLbl = String(t.kind || "").toUpperCase() === "CENTER" ? (isAr ? "مركز صيانة" : "Center") : (isAr ? "فني مستقل" : "Tech");
                 const specs = Array.isArray(t.specializations) ? (t.specializations.join(", ") || "-") : (t.specializations || "-");
+                const safeName = String(t.business_name || t.name || "").replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;");
+                const avgRating = Number(t.rating || 0).toFixed(1);
+                const revCount = Number(t.reviews_count || t.total_reviews || 0);
                 return `
                   <tr>
                     <td>
@@ -3194,13 +3392,24 @@ class ByteForceApp {
                       <div style="font-size: 12px; color: #94A3B8;" dir="ltr">${this._esc(t.email || "")} ${t.phone ? "· " + this._esc(t.phone) : ""}</div>
                     </td>
                     <td>${this._esc(t.city || "-")}${t.address ? " · " + this._esc(t.address) : ""}</td>
-                    <td style="max-width: 200px;">${this._esc(specs)}</td>
+                    <td style="max-width: 190px;">${this._esc(specs)}</td>
+                    <td>
+                      <button type="button" class="tag" style="cursor: pointer; border-color: rgba(245, 158, 11, 0.35); background: rgba(245, 158, 11, 0.1);" onclick="app.showTechReviewsModal('${this._esc(t.id)}', '${safeName}')">
+                        <i class="fas fa-star" style="color: #F59E0B;"></i> ${avgRating} (${revCount})
+                      </button>
+                    </td>
                     <td>${stBadge}</td>
                     <td>
                       <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                        ${st !== "approved" ? `<button class="btn btn-sm btn-primary" onclick="app.approveTech('${t.id}')">${isAr ? (st === "pending" ? "موافقة واعتماد" : "إعادة تفعيل") : (st === "pending" ? "Approve" : "Reactivate")}</button>` : ''}
-                        ${st === "approved" ? `<button class="btn btn-sm btn-outline" style="color: #FBBF24; border-color: rgba(245, 158, 11, 0.4);" onclick="app.suspendTech('${t.id}')">${isAr ? 'إيقاف مؤقت' : 'Suspend'}</button>` : ''}
-                        ${st === "pending" ? `<button class="btn btn-sm btn-outline" style="color: var(--color-danger); border-color: rgba(239, 68, 68, 0.35);" onclick="app.rejectTech('${t.id}')">${isAr ? 'رفض' : 'Reject'}</button>` : ''}
+                        ${st !== "approved" ? `<button class="btn btn-sm btn-primary" onclick="app.approveTech('${this._esc(t.id)}')">${isAr ? (st === "pending" ? "موافقة واعتماد" : "إعادة تفعيل") : (st === "pending" ? "Approve" : "Reactivate")}</button>` : ''}
+                        ${st === "approved" ? `<button class="btn btn-sm btn-outline" style="color: #FBBF24; border-color: rgba(245, 158, 11, 0.4);" onclick="app.suspendTech('${this._esc(t.id)}')">${isAr ? 'إيقاف مؤقت' : 'Suspend'}</button>` : ''}
+                        ${st === "pending" ? `<button class="btn btn-sm btn-outline" style="color: var(--color-danger); border-color: rgba(239, 68, 68, 0.35);" onclick="app.rejectTech('${this._esc(t.id)}')">${isAr ? 'رفض' : 'Reject'}</button>` : ''}
+                        <button type="button" class="btn btn-sm btn-outline" onclick="app.editAdminCenter('${this._esc(t.id)}')">
+                          <i class="fas fa-edit"></i> <span data-i18n="admin_edit_btn">${isAr ? 'تعديل' : 'Edit'}</span>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline" style="color: #F87171; border-color: rgba(239, 68, 68, 0.35);" onclick="app.deleteAdminCenter('${this._esc(t.id)}')">
+                          <i class="fas fa-trash"></i> <span data-i18n="admin_delete_btn">${isAr ? 'حذف' : 'Delete'}</span>
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -3299,6 +3508,18 @@ class ByteForceApp {
                 ${r.final_cost != null ? `<span><b>${isAr ? 'النهائي:' : 'Final:'}</b> ${this._esc(r.final_cost)}</span>` : ''}
               </div>
               <p style="font-size: 13px; color: #CBD5E1; margin-top: 6px;">${this._esc(r.problem_summary || r.issue_description || '')}</p>
+              ${r.reviewed ? `
+                <div style="margin-top: 8px; padding: 8px 10px; border-radius: 8px; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.22); display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;">
+                  <div style="font-size: 12.5px; color: #FDE68A;">
+                    <i class="fas fa-star" style="color: #F59E0B;"></i>
+                    <b>${this._esc(r.rating || 5)}/5</b>
+                    ${r.review_comment ? ` · &ldquo;${this._esc(r.review_comment)}&rdquo;` : ''}
+                  </div>
+                  <button type="button" class="btn btn-sm btn-outline" style="color: #F87171; border-color: rgba(239, 68, 68, 0.35);" onclick="app.clearAdminReview('${this._esc(r.id)}')">
+                    <i class="fas fa-eraser"></i> <span data-i18n="admin_clear_review_btn">${isAr ? 'إزالة التقييم' : 'Clear Review'}</span>
+                  </button>
+                </div>
+              ` : ''}
             </div>
           `).join("")}
         </div>
@@ -4062,6 +4283,279 @@ class ByteForceApp {
           alert((isAr ? "فشل إنشاء الحساب: " : "Registration failed: ") + msg);
           submitBtn.disabled = false;
           submitBtn.innerHTML = originalText;
+        }
+      });
+    }
+  }
+
+  editAdminCenter(techId) {
+    const centers = this._adminCache?.centers || [];
+    const target = centers.find(c => String(c.id) === String(techId));
+    if (!target) return;
+    this.showCenterFormModal(target);
+  }
+
+  async deleteAdminCenter(techId) {
+    const isAr = window.i18n.currentLang === "ar";
+    if (!confirm(isAr ? "هل تريد حذف هذا المركز نهائياً من قاعدة البيانات؟" : "Permanently delete this center from the database?")) return;
+    try {
+      await window.api.deleteAdminCenter(techId);
+      this.adminActiveTab = "centers";
+      this.renderAdmin(document.getElementById("mainContent"));
+    } catch (err) {
+      alert((isAr ? "تعذر حذف المركز: " : "Failed to delete center: ") + (err?.message || err));
+    }
+  }
+
+  async clearAdminReview(reqId) {
+    const isAr = window.i18n.currentLang === "ar";
+    if (!confirm(isAr ? "هل تريد إزالة تقييم العميل عن هذا الطلب وإعادة حساب تقييم المركز؟" : "Clear this customer review and recalculate center rating?")) return;
+    try {
+      await window.api.clearAdminRequestReview(reqId);
+      this.adminActiveTab = "requests";
+      this.renderAdmin(document.getElementById("mainContent"));
+    } catch (err) {
+      alert((isAr ? "تعذر إزالة التقييم: " : "Failed to clear review: ") + (err?.message || err));
+    }
+  }
+
+  showCenterFormModal(existing = null) {
+    const isAr = window.i18n.currentLang === "ar";
+    const isEdit = !!(existing && existing.id);
+    const specsVal = existing
+      ? (Array.isArray(existing.specializations) ? existing.specializations.join(", ") : (existing.specializations || ""))
+      : "";
+
+    this.openModal(`
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <h3 style="margin: 0;">${isEdit ? (isAr ? 'تعديل بيانات مركز الصيانة' : 'Edit Maintenance Center') : (isAr ? 'إضافة مركز صيانة / فني جديد' : 'Add Maintenance Center / Tech')}</h3>
+          <button type="button" class="btn btn-outline btn-sm" onclick="app.closeModal()">&times;</button>
+        </div>
+
+        <form id="adminCenterForm" style="display: flex; flex-direction: column; gap: 12px;">
+          <div class="form-row-2">
+            <div class="form-group">
+              <label class="form-label">${isAr ? 'اسم المركز / الورشة *' : 'Center / Business Name *'}</label>
+              <input type="text" id="cfBusinessName" class="form-control" required value="${this._esc(existing?.business_name || existing?.name || '')}" placeholder="${isAr ? 'مثال: مركز تك فيكس للصيانة' : 'e.g. TechFix Repair Center'}" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">${isAr ? 'اسم المسؤول / الفني' : 'Manager / Technician Name'}</label>
+              <input type="text" id="cfName" class="form-control" value="${this._esc(existing?.technician_name || existing?.name || '')}" />
+            </div>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label class="form-label">${isAr ? 'النوع' : 'Kind'}</label>
+              <select id="cfKind" class="form-control">
+                <option value="CENTER" ${(String(existing?.kind || 'CENTER').toUpperCase() === 'CENTER') ? 'selected' : ''}>${isAr ? 'مركز صيانة معتمد (CENTER)' : 'Verified Center (CENTER)'}</option>
+                <option value="TECHNICIAN" ${(String(existing?.kind || '').toUpperCase() === 'TECHNICIAN') ? 'selected' : ''}>${isAr ? 'فني مستقل (TECHNICIAN)' : 'Independent Tech (TECHNICIAN)'}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">${isAr ? 'الحالة' : 'Status'}</label>
+              <select id="cfStatus" class="form-control">
+                <option value="approved" ${(existing?.status || 'approved') === 'approved' ? 'selected' : ''}>${isAr ? 'معتمد وظاهر للعملاء (Approved)' : 'Approved'}</option>
+                <option value="pending" ${existing?.status === 'pending' ? 'selected' : ''}>${isAr ? 'بانتظار الموافقة (Pending)' : 'Pending'}</option>
+                <option value="suspended" ${existing?.status === 'suspended' ? 'selected' : ''}>${isAr ? 'موقوف مؤقتاً (Suspended)' : 'Suspended'}</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label class="form-label">${isAr ? 'المدينة / المحافظة *' : 'City / Governorate *'}</label>
+              <input type="text" id="cfCity" class="form-control" required value="${this._esc(existing?.city || '')}" placeholder="${isAr ? 'القاهرة / الجيزة / الإسكندرية...' : 'Cairo / Giza / Alexandria...'}" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">${isAr ? 'رقم الهاتف / واتساب' : 'Phone Number'}</label>
+              <input type="text" id="cfPhone" class="form-control" dir="ltr" value="${this._esc(existing?.phone || '')}" placeholder="010..." />
+            </div>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label class="form-label">${isAr ? 'العنوان بالتفصيل' : 'Street Address'}</label>
+              <input type="text" id="cfAddress" class="form-control" value="${this._esc(existing?.address || '')}" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">${isAr ? 'البريد الإلكتروني' : 'Email'}</label>
+              <input type="email" id="cfEmail" class="form-control" dir="ltr" value="${this._esc(existing?.email || '')}" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">${isAr ? 'التخصصات (افصل بفاصلة)' : 'Specializations (comma-separated)'}</label>
+            <input type="text" id="cfSpecs" class="form-control" value="${this._esc(specsVal)}" placeholder="${isAr ? 'مثال: Smartphone, Laptop, iPhone, Samsung' : 'Smartphone, Laptop, Motherboard...'}" />
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label class="form-label">${isAr ? 'مواعيد العمل' : 'Working Hours'}</label>
+              <input type="text" id="cfHours" class="form-control" value="${this._esc(existing?.working_hours || '')}" placeholder="${isAr ? 'يومياً 10 ص - 10 م' : 'Daily 10 AM - 10 PM'}" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">${isAr ? 'سنوات الخبرة' : 'Experience (Years)'}</label>
+              <input type="number" id="cfExp" class="form-control" min="0" value="${existing?.experience_years ?? ''}" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13.5px;">
+              <input type="checkbox" id="cfHomeService" ${(existing?.home_service || existing?.home_service_available) ? 'checked' : ''} />
+              <span>${isAr ? 'يوفر المركز خدمة صيانة منزلية' : 'Home Repair Service Available'}</span>
+            </label>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">${isAr ? 'نبذة عن المركز والخدمات' : 'Center Bio & Services'}</label>
+            <textarea id="cfBio" class="form-control" rows="2">${this._esc(existing?.bio || '')}</textarea>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 6px;">
+            <button type="button" class="btn btn-outline btn-sm" onclick="app.closeModal()">${isAr ? 'إلغاء' : 'Cancel'}</button>
+            <button type="submit" id="cfSubmitBtn" class="btn btn-primary btn-sm">
+              <i class="fas fa-save"></i> ${isEdit ? (isAr ? 'حفظ التعديلات' : 'Save Changes') : (isAr ? 'إضافة واعتماد المركز' : 'Add & Publish Center')}
+            </button>
+          </div>
+        </form>
+      </div>
+    `);
+
+    const form = document.getElementById("adminCenterForm");
+    if (form) {
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById("cfSubmitBtn");
+        btn.disabled = true;
+        try {
+          const payload = {
+            business_name: document.getElementById("cfBusinessName").value.trim(),
+            name: document.getElementById("cfName").value.trim() || document.getElementById("cfBusinessName").value.trim(),
+            kind: document.getElementById("cfKind").value,
+            status: document.getElementById("cfStatus").value,
+            city: document.getElementById("cfCity").value.trim(),
+            phone: document.getElementById("cfPhone").value.trim(),
+            address: document.getElementById("cfAddress").value.trim(),
+            email: document.getElementById("cfEmail").value.trim(),
+            specializations: document.getElementById("cfSpecs").value.trim(),
+            working_hours: document.getElementById("cfHours").value.trim(),
+            experience_years: document.getElementById("cfExp").value,
+            home_service: document.getElementById("cfHomeService").checked,
+            bio: document.getElementById("cfBio").value.trim()
+          };
+          if (isEdit) {
+            await window.api.updateAdminCenter(existing.id, payload);
+          } else {
+            await window.api.createAdminCenter(payload);
+          }
+          this.closeModal();
+          this.adminActiveTab = "centers";
+          this.renderAdmin(document.getElementById("mainContent"));
+        } catch (err) {
+          alert((isAr ? "تعذر حفظ بيانات المركز: " : "Error saving center: ") + (err?.message || err));
+          btn.disabled = false;
+        }
+      });
+    }
+  }
+
+  _parseBulkCentersText(rawText) {
+    const txt = String(rawText || "").trim();
+    if (!txt) return [];
+    if (txt.startsWith("[") || txt.startsWith("{")) {
+      const parsed = JSON.parse(txt);
+      const arr = Array.isArray(parsed) ? parsed : (Array.isArray(parsed?.centers) ? parsed.centers : []);
+      return arr;
+    }
+    const lines = txt.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    return lines.map(line => {
+      const parts = line.includes("|") ? line.split("|").map(p => p.trim()) : line.split("\t").map(p => p.trim());
+      return {
+        business_name: parts[0] || "",
+        name: parts[0] || "",
+        city: parts[1] || "Cairo",
+        phone: parts[2] || "",
+        specializations: parts[3] || "Smartphone, Laptop",
+        address: parts[4] || "",
+        kind: (parts[5] || "CENTER").toUpperCase(),
+        working_hours: parts[6] || "",
+        status: "approved"
+      };
+    }).filter(row => row.business_name);
+  }
+
+  showBulkCentersModal() {
+    const isAr = window.i18n.currentLang === "ar";
+    this.openModal(`
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+          <h3 style="margin: 0;" data-i18n="admin_bulk_centers_btn">${isAr ? 'رفع مجموعة مراكز صيانة' : 'Bulk Import Centers'}</h3>
+          <button type="button" class="btn btn-outline btn-sm" onclick="app.closeModal()">&times;</button>
+        </div>
+
+        <p style="font-size: 13px; color: #94A3B8; margin-bottom: 12px; line-height: 1.6;">
+          ${isAr
+            ? 'الصق قائمة المراكز بصيغة JSON Array أو سطر لكل مركز مفصول بعلامة <code dir="ltr">|</code> كالتالي:<br><code dir="ltr">اسم المركز | المدينة | الهاتف | التخصصات | العنوان | CENTER</code>'
+            : 'Paste centers as a JSON array or one line per center separated by <code dir="ltr">|</code>:<br><code dir="ltr">Center Name | City | Phone | Specialties | Address | CENTER</code>'}
+        </p>
+
+        <form id="adminBulkCentersForm" style="display: flex; flex-direction: column; gap: 12px;">
+          <textarea id="bulkCentersInput" class="form-control" rows="8" dir="auto" placeholder="اسم المركز | القاهرة | 010xxxxxxxx | Smartphone, Laptop | مدينة نصر | CENTER"></textarea>
+          <div id="bulkPreviewInfo" style="font-size: 12.5px; color: #38BDF8;"></div>
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <button type="button" id="bulkPreviewBtn" class="btn btn-outline btn-sm">
+              <i class="fas fa-search"></i> ${isAr ? 'معاينة العدد والتحقق' : 'Validate Count'}
+            </button>
+            <div style="display: flex; gap: 8px;">
+              <button type="button" class="btn btn-outline btn-sm" onclick="app.closeModal()">${isAr ? 'إلغاء' : 'Cancel'}</button>
+              <button type="submit" id="bulkSubmitBtn" class="btn btn-primary btn-sm">
+                <i class="fas fa-upload"></i> ${isAr ? 'رفع وحفظ الكل' : 'Import All'}
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    `);
+
+    const previewEl = document.getElementById("bulkPreviewInfo");
+    const previewBtn = document.getElementById("bulkPreviewBtn");
+    const inputEl = document.getElementById("bulkCentersInput");
+    const form = document.getElementById("adminBulkCentersForm");
+
+    if (previewBtn && inputEl && previewEl) {
+      previewBtn.addEventListener("click", () => {
+        try {
+          const rows = this._parseBulkCentersText(inputEl.value);
+          previewEl.style.color = rows.length > 0 ? "#34D399" : "#FBBF24";
+          previewEl.textContent = isAr
+            ? `تم التعرف على ${rows.length} مركز/فني جاهز للرفع.`
+            : `Detected ${rows.length} center(s) ready to import.`;
+        } catch (err) {
+          previewEl.style.color = "#F87171";
+          previewEl.textContent = (isAr ? "خطأ في التنسيق: " : "Parse error: ") + err.message;
+        }
+      });
+    }
+
+    if (form && inputEl) {
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById("bulkSubmitBtn");
+        btn.disabled = true;
+        try {
+          const rows = this._parseBulkCentersText(inputEl.value);
+          if (!rows.length) throw new Error(isAr ? "لا توجد بيانات صالحة للرفع." : "No valid rows found.");
+          const res = await window.api.bulkCreateAdminCenters(rows);
+          const count = res?.created_count ?? rows.length;
+          alert(isAr ? `تم رفع وإضافة ${count} مركز صيانة بنجاح!` : `Imported ${count} maintenance centers successfully!`);
+          this.closeModal();
+          this.adminActiveTab = "centers";
+          this.renderAdmin(document.getElementById("mainContent"));
+        } catch (err) {
+          alert((isAr ? "تعذر الرفع الجماعي: " : "Bulk import error: ") + (err?.message || err));
+          btn.disabled = false;
         }
       });
     }

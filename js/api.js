@@ -384,14 +384,14 @@ class ApiClient {
       }
       let errData = {};
       try { errData = await response.json(); } catch (e) {}
-      if (response.status === 400 || response.status === 404 || response.status === 422) {
+      if (response.status === 400 || response.status === 404 || response.status === 409 || response.status === 422) {
         const err = new Error(errData.detail || errData.message || `HTTP ${response.status}`);
         err.status = response.status;
         throw err;
       }
       throw new Error(errData.detail || `HTTP ${response.status}`);
     } catch (err) {
-      if (err.status === 401 || err.status === 403 || err.status === 400 || err.status === 404 || err.status === 422) {
+      if (err.status === 401 || err.status === 403 || err.status === 400 || err.status === 404 || err.status === 409 || err.status === 422) {
         throw err;
       }
       if (fallbackFn && window.SupabaseBridge && window.SupabaseBridge.isReady()) {
@@ -464,6 +464,129 @@ class ApiClient {
 
   async testAdminAi() {
     return await this._adminRequest("/admin/ai-test", "POST", null, {});
+  }
+
+  async createAdminCenter(centerData) {
+    const row = await this._adminRequest(
+      "/admin/centers",
+      "POST",
+      () => window.SupabaseBridge.createTechnicianAdmin(centerData),
+      centerData
+    );
+    if (row && window.SupabaseBridge && typeof window.SupabaseBridge._normalizeTechnician === "function") {
+      return window.SupabaseBridge._normalizeTechnician(row);
+    }
+    return row;
+  }
+
+  async bulkCreateAdminCenters(centersArray) {
+    return await this._adminRequest(
+      "/admin/centers/bulk",
+      "POST",
+      () => window.SupabaseBridge.bulkCreateTechniciansAdmin(centersArray),
+      { centers: centersArray }
+    );
+  }
+
+  async updateAdminCenter(techId, updates) {
+    const row = await this._adminRequest(
+      `/admin/centers/${encodeURIComponent(techId)}`,
+      "PUT",
+      () => window.SupabaseBridge.updateTechnicianAdmin(techId, updates),
+      updates
+    );
+    if (row && window.SupabaseBridge && typeof window.SupabaseBridge._normalizeTechnician === "function") {
+      return window.SupabaseBridge._normalizeTechnician(row);
+    }
+    return row;
+  }
+
+  async deleteAdminCenter(techId) {
+    return await this._adminRequest(
+      `/admin/centers/${encodeURIComponent(techId)}`,
+      "DELETE",
+      () => window.SupabaseBridge.deleteTechnicianAdmin(techId)
+    );
+  }
+
+  async clearAdminRequestReview(reqId) {
+    return await this._adminRequest(
+      `/admin/requests/${encodeURIComponent(reqId)}/clear-review`,
+      "POST",
+      () => window.SupabaseBridge.clearReviewAdmin(reqId),
+      {}
+    );
+  }
+
+  async getTechnicianReviews(techId) {
+    try {
+      const response = await fetch(`${this.baseUrl}/technicians/${encodeURIComponent(techId)}/reviews`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" }
+      });
+      if (response.ok) {
+        return await response.json();
+      }
+    } catch (e) {}
+    if (window.SupabaseBridge && typeof window.SupabaseBridge.fetchTechnicianReviewsFallback === "function") {
+      return await window.SupabaseBridge.fetchTechnicianReviewsFallback(techId);
+    }
+    return {
+      tech_id: techId,
+      average_rating: 0,
+      reviews_count: 0,
+      rating_breakdown: { "5": 0, "4": 0, "3": 0, "2": 0, "1": 0 },
+      reviews: []
+    };
+  }
+
+  async submitRepairReview(reqId, rating, reviewComment) {
+    const headers = { "Content-Type": "application/json" };
+    let hasToken = false;
+    try {
+      if (typeof supabaseClient !== "undefined" && supabaseClient) {
+        const { data } = await supabaseClient.auth.getSession();
+        const token = data?.session?.access_token;
+        if (token) {
+          headers["Authorization"] = `Bearer ${token}`;
+          hasToken = true;
+        }
+      }
+    } catch (e) {}
+
+    if (hasToken) {
+      try {
+        const response = await fetch(`${this.baseUrl}/requests/${encodeURIComponent(reqId)}/review`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ rating, review_comment: reviewComment })
+        });
+        if (response.ok) {
+          return await response.json();
+        }
+        let errData = {};
+        try { errData = await response.json(); } catch (e) {}
+        if ([400, 401, 403, 404, 409, 422].includes(response.status)) {
+          const err = new Error(errData.detail || errData.message || `HTTP ${response.status}`);
+          err.status = response.status;
+          throw err;
+        }
+      } catch (err) {
+        if ([400, 401, 403, 404, 409, 422].includes(err.status)) {
+          throw err;
+        }
+      }
+    }
+
+    if (window.SupabaseBridge && window.SupabaseBridge.isReady()) {
+      return await window.SupabaseBridge.updateRequestStatus(reqId, "COMPLETED", {
+        rating,
+        review_comment: reviewComment,
+        reviewed: true,
+        note: `تم إضافة تقييم العميل (${rating}★)`
+      });
+    }
+    throw new Error("Unable to submit review.");
   }
 }
 

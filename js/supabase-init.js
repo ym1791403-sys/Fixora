@@ -727,19 +727,76 @@ window.SupabaseBridge = {
     return this._normalizeTechnician(data);
   },
 
+  _matchesBilingualCity(centerCity, filterCity) {
+    if (!filterCity || filterCity === "all" || filterCity === "الكل") return true;
+    const raw = String(centerCity || "").trim().toLowerCase();
+    const target = String(filterCity || "").trim().toLowerCase();
+    if (!raw) return false;
+    if (raw.includes(target) || target.includes(raw)) return true;
+    const cityGroups = [
+      ["cairo", "القاهرة", "القاهره", "nasr city", "مدينة نصر", "maadi", "المعادي", "heliopolis", "مصر الجديدة", "new cairo", "القاهرة الجديدة", "shubra", "شبرا"],
+      ["giza", "الجيزة", "الجيزه", "dokki", "الدقي", "mohandessin", "المهندسين", "haram", "الهرم", "faisal", "فيصل"],
+      ["alexandria", "الإسكندرية", "الاسكندرية", "الإسكندريه", "الاسكندريه", "alex", "اسكندرية"],
+      ["6th of october", "6 october", "السادس من أكتوبر", "6 أكتوبر", "اكتوبر", "sheikh zayed", "الشيخ زايد"],
+      ["fayoum", "الفيوم"],
+      ["beni suef", "بني سويف"],
+      ["mansoura", "المنصورة"],
+      ["tanta", "طنطا"],
+      ["zagazig", "الزقازيق"],
+      ["ismailia", "الإسماعيلية", "الاسماعيلية"],
+      ["suez", "السويس"],
+      ["port said", "بورسعيد"],
+      ["luxor", "الأقصر", "الاقصر"],
+      ["aswan", "أسوان", "اسوان"],
+      ["assiut", "أسيوط", "اسيوط"]
+    ];
+    for (const grp of cityGroups) {
+      if (grp.some(k => target.includes(k) || k.includes(target))) {
+        if (grp.some(k => raw.includes(k))) return true;
+      }
+    }
+    return false;
+  },
+
+  _matchesBilingualSpec(centerSpecs, filterSpec) {
+    if (!filterSpec || filterSpec === "all" || filterSpec === "الكل") return true;
+    const specText = Array.isArray(centerSpecs)
+      ? centerSpecs.join(" ").toLowerCase()
+      : String(centerSpecs || "").toLowerCase();
+    const target = String(filterSpec || "").trim().toLowerCase();
+    if (!specText) return false;
+    if (specText.includes(target)) return true;
+    const specGroups = [
+      ["phone", "smartphone", "mobile", "هواتف", "موبايل", "جوال", "آيفون", "ايفون", "iphone", "samsung", "سامسونج", "اندرويد", "أندرويد"],
+      ["laptop", "mac", "pc", "computer", "لابتوب", "ماك", "كمبيوتر", "حاسوب"],
+      ["tablet", "ipad", "تابلت", "ايباد", "آيباد"],
+      ["gaming", "console", "playstation", "xbox", "nintendo", "بلايستيشن", "ألعاب", "العاب", "اكس بوكس"],
+      ["camera", "dslr", "كاميرا", "تصوير", "عدسات"],
+      ["appliance", "home", "ثلاجة", "غسالة", "تكييف", "أجهزة منزلية", "اجهزة منزلية", "منزلية"],
+      ["watch", "smartwatch", "ساعة", "ساعات"],
+      ["audio", "headphone", "speaker", "صوتيات", "سماعة", "سماعات"]
+    ];
+    for (const grp of specGroups) {
+      if (grp.some(k => target.includes(k) || k.includes(target))) {
+        if (grp.some(k => specText.includes(k))) return true;
+      }
+    }
+    return false;
+  },
+
   async fetchTechnicians(city = null, specialization = null) {
     if (!this.isReady()) return [];
     try {
-      let q = supabaseClient.from("technicians").select("*").eq("status", "approved");
-      if (city && city !== "all" && city !== "الكل") {
-        q = q.ilike("city", `%${city}%`);
-      }
-      if (specialization && specialization !== "all" && specialization !== "الكل") {
-        q = q.ilike("specializations", `%${specialization}%`);
-      }
-      const { data, error } = await q.order("rating", { ascending: false }).order("reviews_count", { ascending: false });
+      const { data, error } = await supabaseClient
+        .from("technicians")
+        .select("*")
+        .eq("status", "approved")
+        .order("rating", { ascending: false })
+        .order("reviews_count", { ascending: false });
       if (error) throw error;
-      return (data || []).map(t => this._normalizeTechnician(t));
+      return (data || [])
+        .map(t => this._normalizeTechnician(t))
+        .filter(t => this._matchesBilingualCity(t.city, city) && this._matchesBilingualSpec(t.specializations, specialization));
     } catch (err) {
       console.warn("Supabase fetchTechnicians error:", err);
       return [];
@@ -949,6 +1006,10 @@ window.SupabaseBridge = {
       .single();
     if (error) throw error;
 
+    if (updates.reviewed && (data?.tech_profile_id || existing.tech_profile_id)) {
+      await this._syncTechnicianRatingFromRequests(data.tech_profile_id || existing.tech_profile_id);
+    }
+
     // Real DB notification for the counterparty
     const notifyTarget = user.id === existing.user_id ? existing.technician_id : existing.user_id;
     if (notifyTarget) {
@@ -1116,7 +1177,10 @@ window.SupabaseBridge = {
       .single();
     if (error) throw error;
     if (data?.user_id) {
-      await supabaseClient.from("profiles").update({ role: targetStatus === "approved" ? "technician" : "user" }).eq("id", data.user_id);
+      const { data: prof } = await supabaseClient.from("profiles").select("email").eq("id", data.user_id).maybeSingle();
+      if (!this.isExclusiveAdminEmail(prof?.email)) {
+        await supabaseClient.from("profiles").update({ role: targetStatus === "approved" ? "technician" : "user" }).eq("id", data.user_id);
+      }
       await this.createNotification({
         user_id: data.user_id,
         title: notifTitle,
@@ -1223,6 +1287,218 @@ window.SupabaseBridge = {
       .limit(100);
     if (error) throw error;
     return data || [];
+  },
+
+  async _syncTechnicianRatingFromRequests(techProfileId) {
+    if (!this.isReady() || !techProfileId) return { rating: 0, reviews_count: 0 };
+    try {
+      const { data, error } = await supabaseClient
+        .from("repair_requests")
+        .select("rating")
+        .eq("tech_profile_id", techProfileId)
+        .eq("reviewed", true);
+      if (error) return { rating: 0, reviews_count: 0 };
+      const ratings = (data || []).map(r => Number(r.rating)).filter(n => !isNaN(n) && n >= 1 && n <= 5);
+      const count = ratings.length;
+      const avg = count > 0 ? Math.round((ratings.reduce((a, b) => a + b, 0) / count) * 100) / 100 : 0;
+      await supabaseClient
+        .from("technicians")
+        .update({ rating: avg, reviews_count: count })
+        .eq("id", techProfileId);
+      return { rating: avg, reviews_count: count };
+    } catch (e) {
+      return { rating: 0, reviews_count: 0 };
+    }
+  },
+
+  _normalizeAdminCenterInput(centerData, isCreate = true) {
+    const biz = String(centerData.business_name || "").trim();
+    const person = String(centerData.name || centerData.full_name || "").trim();
+    const businessName = biz || person;
+    const name = person || biz;
+    const city = String(centerData.city || "").trim();
+    if (isCreate && (!businessName || !city)) {
+      throw new Error("يرجى إدخال اسم المركز/الفني والمدينة.");
+    }
+    const specsStr = Array.isArray(centerData.specializations)
+      ? centerData.specializations.map(s => String(s).trim()).filter(Boolean).join(", ")
+      : String(centerData.specializations || "").trim();
+
+    const payload = {};
+    if (businessName) payload.business_name = businessName;
+    if (name) payload.name = name;
+    if (city) payload.city = city;
+    if (centerData.phone !== undefined || isCreate) payload.phone = String(centerData.phone || "").trim();
+    if (centerData.email !== undefined || isCreate) payload.email = String(centerData.email || "").trim() || null;
+    if (centerData.address !== undefined || isCreate) payload.address = String(centerData.address || "").trim();
+    if (centerData.bio !== undefined || isCreate) payload.bio = String(centerData.bio || "").trim();
+    if (centerData.working_hours !== undefined || isCreate) payload.working_hours = String(centerData.working_hours || "").trim() || null;
+    if (centerData.kind !== undefined || isCreate) {
+      const k = String(centerData.kind || "CENTER").trim().toUpperCase();
+      payload.kind = k === "TECHNICIAN" ? "TECHNICIAN" : "CENTER";
+    }
+    if (centerData.specializations !== undefined || isCreate) payload.specializations = specsStr;
+    if (centerData.home_service !== undefined || isCreate) payload.home_service = !!centerData.home_service;
+    if (centerData.experience_years !== undefined || isCreate) {
+      payload.experience_years = centerData.experience_years ? parseInt(centerData.experience_years, 10) : null;
+    }
+    if (centerData.lat != null && centerData.lat !== "") payload.lat = parseFloat(centerData.lat);
+    if (centerData.lng != null && centerData.lng !== "") payload.lng = parseFloat(centerData.lng);
+    if (centerData.status !== undefined || isCreate) {
+      const st = String(centerData.status || "approved").trim().toLowerCase();
+      if (["pending", "approved", "suspended", "rejected"].includes(st)) {
+        payload.status = st;
+      } else if (isCreate) {
+        payload.status = "approved";
+      }
+    }
+    if (isCreate) {
+      payload.rating = 0;
+      payload.reviews_count = 0;
+    }
+    return payload;
+  },
+
+  async createTechnicianAdmin(centerData) {
+    if (!this.isReady()) throw new Error("Supabase SDK unavailable");
+    this._requireClientAdmin();
+    const payload = this._normalizeAdminCenterInput(centerData, true);
+    const targetStatus = payload.status || "approved";
+    // Insert as pending first if RLS requires pending status on INSERT, then transition to approved
+    const insertPayload = { ...payload, status: "pending" };
+    const { data, error } = await supabaseClient
+      .from("technicians")
+      .insert([insertPayload])
+      .select()
+      .single();
+    if (error) throw error;
+
+    let finalRow = data;
+    if (targetStatus !== "pending") {
+      const { data: upd, error: updErr } = await supabaseClient
+        .from("technicians")
+        .update({ status: targetStatus })
+        .eq("id", data.id)
+        .select()
+        .single();
+      if (!updErr && upd) finalRow = upd;
+    }
+
+    await this._logAdminAudit(
+      `center:${finalRow.id}:create`,
+      "إضافة مركز صيانة جديد",
+      `${finalRow.business_name || finalRow.name} (${finalRow.city || "-"})`
+    );
+    return this._normalizeTechnician(finalRow);
+  },
+
+  async bulkCreateTechniciansAdmin(centersList) {
+    if (!this.isReady()) throw new Error("Supabase SDK unavailable");
+    this._requireClientAdmin();
+    const created = [];
+    const errors = [];
+    for (let i = 0; i < (centersList || []).length; i++) {
+      try {
+        const row = await this.createTechnicianAdmin(centersList[i]);
+        created.push(row);
+      } catch (e) {
+        errors.push({ index: i, error: e?.message || String(e) });
+      }
+    }
+    return { created_count: created.length, failed_count: errors.length, centers: created, errors };
+  },
+
+  async updateTechnicianAdmin(techId, updates) {
+    if (!this.isReady()) throw new Error("Supabase SDK unavailable");
+    this._requireClientAdmin();
+    const patch = this._normalizeAdminCenterInput(updates, false);
+    const { data, error } = await supabaseClient
+      .from("technicians")
+      .update(patch)
+      .eq("id", techId)
+      .select()
+      .single();
+    if (error) throw error;
+    await this._logAdminAudit(
+      `center:${techId}:update`,
+      "تعديل بيانات مركز صيانة",
+      `${data?.business_name || data?.name || "#" + techId} (${data?.city || "-"})`
+    );
+    return this._normalizeTechnician(data);
+  },
+
+  async deleteTechnicianAdmin(techId) {
+    if (!this.isReady()) throw new Error("Supabase SDK unavailable");
+    this._requireClientAdmin();
+    await supabaseClient.from("repair_requests").update({ tech_profile_id: null }).eq("tech_profile_id", techId);
+    const { error } = await supabaseClient.from("technicians").delete().eq("id", techId);
+    if (error) throw error;
+    await this._logAdminAudit(`center:${techId}:delete`, "حذف مركز صيانة", `تم حذف المركز #${techId}`);
+    return { deleted: true, id: techId };
+  },
+
+  async clearReviewAdmin(reqId) {
+    if (!this.isReady()) throw new Error("Supabase SDK unavailable");
+    this._requireClientAdmin();
+    const { data: existing } = await supabaseClient
+      .from("repair_requests")
+      .select("id, tech_profile_id, device_info")
+      .eq("id", reqId)
+      .maybeSingle();
+    const { error } = await supabaseClient
+      .from("repair_requests")
+      .update({ rating: null, review_comment: null, reviewed: false })
+      .eq("id", reqId);
+    if (error) throw error;
+    const stats = await this._syncTechnicianRatingFromRequests(existing?.tech_profile_id);
+    await this._logAdminAudit(`request:${reqId}:clear-review`, "إزالة تقييم عميل", `طلب #${reqId}`);
+    return { cleared: true, id: reqId, center_rating: stats };
+  },
+
+  async fetchTechnicianReviewsFallback(techId) {
+    const breakdown = { "5": 0, "4": 0, "3": 0, "2": 0, "1": 0 };
+    if (!this.isReady() || !techId) {
+      return { tech_id: techId, average_rating: 0, reviews_count: 0, rating_breakdown: breakdown, reviews: [] };
+    }
+    try {
+      const { data, error } = await supabaseClient
+        .from("repair_requests")
+        .select("id, user_name, device_info, device_category, rating, review_comment, created_at")
+        .eq("tech_profile_id", techId)
+        .eq("reviewed", true)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (error || !data) {
+        return { tech_id: techId, average_rating: 0, reviews_count: 0, rating_breakdown: breakdown, reviews: [] };
+      }
+      let sum = 0;
+      let cnt = 0;
+      const reviews = data.map(r => {
+        const star = Math.round(Number(r.rating || 0));
+        if (star >= 1 && star <= 5) {
+          breakdown[String(star)] += 1;
+          sum += Number(r.rating);
+          cnt += 1;
+        }
+        return {
+          id: r.id,
+          reviewer_name: (r.user_name || "عميل موثق").split("@")[0],
+          rating: Number(r.rating || 0),
+          review_comment: r.review_comment || "",
+          device_info: r.device_info || r.device_category || "",
+          created_at: r.created_at
+        };
+      });
+      return {
+        tech_id: techId,
+        average_rating: cnt > 0 ? Math.round((sum / cnt) * 100) / 100 : 0,
+        reviews_count: reviews.length,
+        rating_breakdown: breakdown,
+        reviews
+      };
+    } catch (e) {
+      return { tech_id: techId, average_rating: 0, reviews_count: 0, rating_breakdown: breakdown, reviews: [] };
+    }
   }
 };
 

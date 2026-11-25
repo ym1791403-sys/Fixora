@@ -273,5 +273,53 @@ class TestProductionIntegrity(unittest.TestCase):
         self.assertEqual(img_resp.status_code, 200)
         self.assertTrue((img_resp.json().get("image_url") or "").startswith("http"))
 
+    def test_10_admin_center_crud_and_reviews_api(self):
+        """Verifies admin-only Center CRUD, bulk upload validation, review moderation locks, and public reviews API."""
+        from unittest.mock import patch
+
+        # 1. Unauthenticated requests must fail with 401
+        self.assertEqual(self.client.post("/api/admin/centers", json={"business_name": "X", "city": "Cairo"}).status_code, 401)
+        self.assertEqual(self.client.post("/api/admin/centers/bulk", json={"centers": [{"business_name": "X", "city": "Cairo"}]}).status_code, 401)
+        self.assertEqual(self.client.put("/api/admin/centers/1", json={"city": "Giza"}).status_code, 401)
+        self.assertEqual(self.client.delete("/api/admin/centers/1").status_code, 401)
+        self.assertEqual(self.client.post("/api/admin/requests/req-1/clear-review").status_code, 401)
+        self.assertEqual(self.client.post("/api/requests/test-id/review", json={"rating": 5, "review_comment": "Great"}).status_code, 401)
+
+        # 2. Non-admin account must fail with 403 on all center/moderation endpoints
+        with patch("api.routers.admin._verify_supabase_bearer_user", return_value={"id": "70cac9af-2369-4a11-8060-2ee06214b2a0", "email": "ym1791403@gmail.com"}):
+            hdr = {"Authorization": "Bearer mock-nonadmin"}
+            self.assertEqual(self.client.post("/api/admin/centers", json={"business_name": "X", "city": "Cairo"}, headers=hdr).status_code, 403)
+            self.assertEqual(self.client.post("/api/admin/centers/bulk", json={"centers": []}, headers=hdr).status_code, 403)
+            self.assertEqual(self.client.put("/api/admin/centers/1", json={"city": "Giza"}, headers=hdr).status_code, 403)
+            self.assertEqual(self.client.delete("/api/admin/centers/1", headers=hdr).status_code, 403)
+            self.assertEqual(self.client.post("/api/admin/requests/req-1/clear-review", headers=hdr).status_code, 403)
+
+            # Authenticated non-owner user with out-of-range rating returns 422
+            self.assertEqual(self.client.post("/api/requests/test-id/review", json={"rating": 6}, headers=hdr).status_code, 422)
+
+        # 3. Exclusive admin validation rules (422 on missing required fields, 404 on missing IDs)
+        with patch("api.routers.admin._verify_supabase_bearer_user", return_value={"id": "3a1610f8-c0a2-4b3e-8c6a-ce07e7349cff", "email": "snsr19344@gmail.com"}):
+            adm_hdr = {"Authorization": "Bearer mock-admin"}
+            self.assertEqual(self.client.post("/api/admin/centers", json={"business_name": "", "city": "Cairo"}, headers=adm_hdr).status_code, 422)
+            self.assertEqual(self.client.post("/api/admin/centers", json={"business_name": "Center A", "city": ""}, headers=adm_hdr).status_code, 422)
+            self.assertEqual(self.client.post("/api/admin/centers/bulk", json={"centers": []}, headers=adm_hdr).status_code, 422)
+            self.assertEqual(self.client.put("/api/admin/centers/999999", json={"city": "Giza"}, headers=adm_hdr).status_code, 404)
+            self.assertEqual(self.client.delete("/api/admin/centers/999999", headers=adm_hdr).status_code, 404)
+            self.assertEqual(self.client.post("/api/admin/requests/nonexistent-id-000/clear-review", headers=adm_hdr).status_code, 404)
+            self.assertEqual(self.client.post("/api/admin/requests/00000000-0000-0000-0000-000000000000/clear-review", headers=adm_hdr).status_code, 404)
+
+        # 4. Public anonymized reviews endpoint returns 200 with clean schema & no PII
+        rev_resp = self.client.get("/api/technicians/1/reviews")
+        self.assertEqual(rev_resp.status_code, 200)
+        rev_data = rev_resp.json()
+        self.assertEqual(rev_data.get("tech_id"), 1)
+        self.assertIn("average_rating", rev_data)
+        self.assertIn("reviews_count", rev_data)
+        self.assertIn("rating_breakdown", rev_data)
+        self.assertIsInstance(rev_data.get("reviews"), list)
+        for item in rev_data.get("reviews", []):
+            self.assertNotIn("user_email", item)
+            self.assertNotIn("user_phone", item)
+
 if __name__ == "__main__":
     unittest.main()

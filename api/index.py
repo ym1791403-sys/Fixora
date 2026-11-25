@@ -64,8 +64,11 @@ app.include_router(datasets_router)
 app.include_router(analysis_router)
 app.include_router(guides_router)
 app.include_router(prediction_router)
+from api.routers.marketplace import router as marketplace_router
+
 app.include_router(diagnosis_router)
 app.include_router(admin_router)
+app.include_router(marketplace_router)
 app.include_router(media_router)
 
 def get_content_type(path: str) -> str:

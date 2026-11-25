@@ -494,3 +494,466 @@ def admin_test_ai_connection(request: Request) -> Dict[str, Any]:
         timeout=8.0,
     )
     return res
+
+
+# =========================================================================
+# Admin Maintenance Center CRUD, Bulk Upload & Review Moderation
+# =========================================================================
+
+_CITY_COORDS_MAP: Dict[str, tuple[float, float]] = {
+    "cairo": (30.0444, 31.2357),
+    "القاهرة": (30.0444, 31.2357),
+    "giza": (30.0131, 31.2089),
+    "الجيزة": (30.0131, 31.2089),
+    "alexandria": (31.2001, 29.9187),
+    "الإسكندرية": (31.2001, 29.9187),
+    "الاسكندرية": (31.2001, 29.9187),
+    "6th of october": (29.9285, 30.9188),
+    "السادس من أكتوبر": (29.9285, 30.9188),
+    "6 أكتوبر": (29.9285, 30.9188),
+    "fayoum": (29.3084, 30.8428),
+    "الفيوم": (29.3084, 30.8428),
+    "beni suef": (29.0661, 31.0994),
+    "بني سويف": (29.0661, 31.0994),
+    "mansoura": (31.0409, 31.3785),
+    "المنصورة": (31.0409, 31.3785),
+    "tanta": (30.7865, 31.0004),
+    "طنطا": (30.7865, 31.0004),
+    "zagazig": (30.5877, 31.5020),
+    "الزقازيق": (30.5877, 31.5020),
+    "ismailia": (30.5965, 32.2715),
+    "الإسماعيلية": (30.5965, 32.2715),
+    "suez": (29.9668, 32.5498),
+    "السويس": (29.9668, 32.5498),
+    "port said": (31.2653, 32.3019),
+    "بورسعيد": (31.2653, 32.3019),
+    "luxor": (25.6872, 32.6396),
+    "الأقصر": (25.6872, 32.6396),
+    "aswan": (24.0889, 32.8998),
+    "أسوان": (24.0889, 32.8998),
+    "assiut": (27.1809, 31.1837),
+    "أسيوط": (27.1809, 31.1837),
+    "nasr city": (30.0561, 31.3301),
+    "مدينة نصر": (30.0561, 31.3301),
+    "maadi": (29.9602, 31.2569),
+    "المعادي": (29.9602, 31.2569),
+    "heliopolis": (30.0866, 31.3297),
+    "مصر الجديدة": (30.0866, 31.3297),
+    "new cairo": (30.0074, 31.4913),
+    "القاهرة الجديدة": (30.0074, 31.4913),
+}
+
+
+def _lookup_city_coords(city: str) -> tuple[Optional[float], Optional[float]]:
+    c = str(city or "").strip().lower()
+    if not c:
+        return None, None
+    if c in _CITY_COORDS_MAP:
+        return _CITY_COORDS_MAP[c]
+    for key, coords in _CITY_COORDS_MAP.items():
+        if key in c or c in key:
+            return coords
+    return None, None
+
+
+def _normalize_center_payload(data: Dict[str, Any], is_create: bool = True) -> Dict[str, Any]:
+    """Validates and normalizes maintenance center / technician fields for Supabase."""
+    if not isinstance(data, dict):
+        raise HTTPException(status_code=422, detail="Invalid JSON object payload.")
+
+    raw_biz = str(data.get("business_name") or "").strip()
+    raw_name = str(data.get("name") or data.get("full_name") or "").strip()
+    business_name = raw_biz or raw_name
+    name = raw_name or raw_biz
+    city = str(data.get("city") or "").strip()
+
+    if is_create and (not business_name or not city):
+        raise HTTPException(
+            status_code=422,
+            detail="Both business_name (or name) and city are required.",
+        )
+
+    payload: Dict[str, Any] = {}
+    if business_name:
+        payload["business_name"] = business_name
+    if name:
+        payload["name"] = name
+    if city:
+        payload["city"] = city
+
+    if "phone" in data or is_create:
+        payload["phone"] = str(data.get("phone") or "").strip()
+    if "email" in data or is_create:
+        email_val = str(data.get("email") or "").strip()
+        payload["email"] = email_val or None
+    if "address" in data or is_create:
+        payload["address"] = str(data.get("address") or "").strip()
+    if "bio" in data or is_create:
+        payload["bio"] = str(data.get("bio") or "").strip()
+    if "working_hours" in data or is_create:
+        wh = str(data.get("working_hours") or "").strip()
+        payload["working_hours"] = wh or None
+
+    if "kind" in data or is_create:
+        kind_raw = str(data.get("kind") or "CENTER").strip().upper()
+        payload["kind"] = kind_raw if kind_raw in ("CENTER", "TECHNICIAN") else "CENTER"
+
+    if "specializations" in data or is_create:
+        specs = data.get("specializations")
+        if isinstance(specs, list):
+            payload["specializations"] = ", ".join(str(s).strip() for s in specs if str(s).strip())
+        else:
+            payload["specializations"] = str(specs or "").strip()
+
+    if "home_service" in data or is_create:
+        hs = data.get("home_service")
+        if isinstance(hs, str):
+            payload["home_service"] = hs.strip().lower() in ("true", "1", "yes", "نعم")
+        else:
+            payload["home_service"] = bool(hs)
+
+    if "experience_years" in data or is_create:
+        exp = data.get("experience_years")
+        try:
+            payload["experience_years"] = int(exp) if exp not in (None, "") else None
+        except (TypeError, ValueError):
+            payload["experience_years"] = None
+
+    lat_val = data.get("lat")
+    lng_val = data.get("lng")
+    try:
+        parsed_lat = float(lat_val) if lat_val not in (None, "") else None
+        parsed_lng = float(lng_val) if lng_val not in (None, "") else None
+    except (TypeError, ValueError):
+        parsed_lat, parsed_lng = None, None
+
+    if (parsed_lat is None or parsed_lng is None) and city:
+        c_lat, c_lng = _lookup_city_coords(city)
+        if parsed_lat is None:
+            parsed_lat = c_lat
+        if parsed_lng is None:
+            parsed_lng = c_lng
+
+    if parsed_lat is not None:
+        payload["lat"] = parsed_lat
+    if parsed_lng is not None:
+        payload["lng"] = parsed_lng
+
+    if "user_id" in data and data.get("user_id"):
+        payload["user_id"] = str(data.get("user_id")).strip()
+
+    if "status" in data or is_create:
+        st = str(data.get("status") or "approved").strip().lower()
+        if st in STATUS_ORDER:
+            payload["status"] = st
+        elif is_create:
+            payload["status"] = "approved"
+
+    if is_create:
+        payload["rating"] = 0
+        payload["reviews_count"] = 0
+
+    return payload
+
+
+def _recalc_technician_rating(tech_profile_id: Optional[int]) -> Dict[str, Any]:
+    """Recomputes real rating and reviews_count on public.technicians from reviewed repair_requests."""
+    if not tech_profile_id:
+        return {"rating": 0.0, "reviews_count": 0}
+    try:
+        tid = int(tech_profile_id)
+    except (TypeError, ValueError):
+        return {"rating": 0.0, "reviews_count": 0}
+
+    rows = postgrest_request(
+        "repair_requests",
+        {
+            "select": "id,rating",
+            "tech_profile_id": f"eq.{tid}",
+            "reviewed": "eq.true",
+        },
+        use_service_role=True,
+    ) or []
+    ratings = [float(r["rating"]) for r in rows if r.get("rating") is not None]
+    count = len(ratings)
+    avg = round(sum(ratings) / count, 2) if count > 0 else 0.0
+
+    postgrest_request(
+        "technicians",
+        params={"id": f"eq.{tid}"},
+        method="PATCH",
+        body={"rating": avg, "reviews_count": count},
+        headers_extra={"Prefer": "return=minimal"},
+        use_service_role=True,
+    )
+    return {"rating": avg, "reviews_count": count}
+
+
+@router.post("/api/admin/centers")
+@router.post("/api/v1/admin/centers")
+async def create_admin_center(request: Request) -> Dict[str, Any]:
+    """Creates a maintenance center or technician directly from the Admin Control Center."""
+    admin_user = _require_exclusive_admin(request)
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=422, detail="Invalid JSON body.")
+
+    payload = _normalize_center_payload(body, is_create=True)
+    try:
+        created = postgrest_request(
+            "technicians",
+            method="POST",
+            body=payload,
+            headers_extra={"Prefer": "return=representation"},
+            use_service_role=True,
+        )
+        row = created[0] if isinstance(created, list) and created else (created if isinstance(created, dict) else payload)
+
+        uid = row.get("user_id")
+        if uid and str(row.get("status") or "").lower() == "approved":
+            prof_rows = postgrest_request(
+                "profiles",
+                {"select": "id,email,role", "id": f"eq.{uid}"},
+                use_service_role=True,
+            ) or []
+            if prof_rows and str(prof_rows[0].get("email") or "").strip().lower() != EXCLUSIVE_ADMIN_EMAIL:
+                postgrest_request(
+                    "profiles",
+                    params={"id": f"eq.{uid}"},
+                    method="PATCH",
+                    body={"role": "technician"},
+                    headers_extra={"Prefer": "return=minimal"},
+                    use_service_role=True,
+                )
+
+        biz = row.get("business_name") or row.get("name") or "-"
+        cid = row.get("id") or "new"
+        _record_admin_audit(
+            admin_user,
+            f"center:{cid}:create",
+            "إضافة مركز صيانة جديد",
+            f"{biz} ({row.get('city') or '-'})",
+        )
+        return row
+    except DatabaseUnavailableError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+
+
+@router.post("/api/admin/centers/bulk")
+@router.post("/api/v1/admin/centers/bulk")
+async def bulk_create_admin_centers(request: Request) -> Dict[str, Any]:
+    """Bulk uploads verified maintenance centers from a JSON array or {centers: [...]} payload."""
+    admin_user = _require_exclusive_admin(request)
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=422, detail="Invalid JSON body.")
+
+    raw_items = body.get("centers") if isinstance(body, dict) else body
+    if not isinstance(raw_items, list) or not raw_items:
+        raise HTTPException(status_code=422, detail="Expected a non-empty list of centers.")
+
+    valid_payloads: List[Dict[str, Any]] = []
+    errors: List[Dict[str, Any]] = []
+    for idx, item in enumerate(raw_items):
+        try:
+            valid_payloads.append(_normalize_center_payload(item, is_create=True))
+        except HTTPException as he:
+            errors.append({"index": idx, "error": he.detail})
+
+    if not valid_payloads:
+        raise HTTPException(status_code=422, detail=f"No valid center rows provided: {errors[:3]}")
+
+    try:
+        created = postgrest_request(
+            "technicians",
+            method="POST",
+            body=valid_payloads,
+            headers_extra={"Prefer": "return=representation"},
+            use_service_role=True,
+        )
+        created_rows = created if isinstance(created, list) else ([created] if created else [])
+        _record_admin_audit(
+            admin_user,
+            "centers:bulk:create",
+            "رفع مجموعة مراكز صيانة",
+            f"تم إضافة {len(created_rows)} مركز صيانة (أخطاء: {len(errors)})",
+        )
+        return {
+            "created_count": len(created_rows),
+            "failed_count": len(errors),
+            "centers": created_rows,
+            "errors": errors,
+        }
+    except DatabaseUnavailableError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+
+
+@router.put("/api/admin/centers/{tech_id}")
+@router.put("/api/v1/admin/centers/{tech_id}")
+async def update_admin_center(request: Request, tech_id: int) -> Dict[str, Any]:
+    """Updates fields on an existing maintenance center or technician."""
+    admin_user = _require_exclusive_admin(request)
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=422, detail="Invalid JSON body.")
+
+    patch = _normalize_center_payload(body, is_create=False)
+    if not patch:
+        raise HTTPException(status_code=422, detail="No updatable fields provided.")
+
+    try:
+        existing_rows = postgrest_request(
+            "technicians",
+            {"select": "*", "id": f"eq.{tech_id}"},
+            use_service_role=True,
+        ) or []
+        if not existing_rows:
+            raise HTTPException(status_code=404, detail="Technician or center not found.")
+
+        updated = postgrest_request(
+            "technicians",
+            params={"id": f"eq.{tech_id}"},
+            method="PATCH",
+            body=patch,
+            headers_extra={"Prefer": "return=representation"},
+            use_service_role=True,
+        )
+        row = updated[0] if isinstance(updated, list) and updated else {**existing_rows[0], **patch}
+        biz = row.get("business_name") or row.get("name") or f"#{tech_id}"
+        _record_admin_audit(
+            admin_user,
+            f"center:{tech_id}:update",
+            "تعديل بيانات مركز صيانة",
+            f"{biz} ({row.get('city') or '-'})",
+        )
+        return row
+    except HTTPException:
+        raise
+    except DatabaseUnavailableError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+
+
+@router.delete("/api/admin/centers/{tech_id}")
+@router.delete("/api/v1/admin/centers/{tech_id}")
+def delete_admin_center(request: Request, tech_id: int) -> Dict[str, Any]:
+    """Deletes a maintenance center or technician and unlinks dependent repair requests."""
+    admin_user = _require_exclusive_admin(request)
+    try:
+        existing_rows = postgrest_request(
+            "technicians",
+            {"select": "id,business_name,name,city,user_id", "id": f"eq.{tech_id}"},
+            use_service_role=True,
+        ) or []
+        if not existing_rows:
+            raise HTTPException(status_code=404, detail="Technician or center not found.")
+        center = existing_rows[0]
+
+        # Detach existing requests cleanly before deletion
+        postgrest_request(
+            "repair_requests",
+            params={"tech_profile_id": f"eq.{tech_id}"},
+            method="PATCH",
+            body={"tech_profile_id": None},
+            headers_extra={"Prefer": "return=minimal"},
+            use_service_role=True,
+        )
+
+        postgrest_request(
+            "technicians",
+            params={"id": f"eq.{tech_id}"},
+            method="DELETE",
+            headers_extra={"Prefer": "return=minimal"},
+            use_service_role=True,
+        )
+
+        uid = center.get("user_id")
+        if uid:
+            other_rows = postgrest_request(
+                "technicians",
+                {"select": "id", "user_id": f"eq.{uid}", "status": "eq.approved"},
+                use_service_role=True,
+            ) or []
+            if not other_rows:
+                prof_rows = postgrest_request(
+                    "profiles",
+                    {"select": "id,email,role", "id": f"eq.{uid}"},
+                    use_service_role=True,
+                ) or []
+                if prof_rows and str(prof_rows[0].get("email") or "").strip().lower() != EXCLUSIVE_ADMIN_EMAIL:
+                    postgrest_request(
+                        "profiles",
+                        params={"id": f"eq.{uid}"},
+                        method="PATCH",
+                        body={"role": "user"},
+                        headers_extra={"Prefer": "return=minimal"},
+                        use_service_role=True,
+                    )
+
+        biz = center.get("business_name") or center.get("name") or f"#{tech_id}"
+        _record_admin_audit(
+            admin_user,
+            f"center:{tech_id}:delete",
+            "حذف مركز صيانة",
+            f"{biz} ({center.get('city') or '-'})",
+        )
+        return {"deleted": True, "id": tech_id}
+    except HTTPException:
+        raise
+    except DatabaseUnavailableError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+
+
+def _is_valid_request_id(req_id: str) -> bool:
+    import uuid
+    s = str(req_id or "").strip()
+    if not s:
+        return False
+    if s.isdigit():
+        return True
+    try:
+        uuid.UUID(s)
+        return True
+    except ValueError:
+        return False
+
+
+@router.post("/api/admin/requests/{req_id}/clear-review")
+@router.post("/api/v1/admin/requests/{req_id}/clear-review")
+def clear_admin_request_review(request: Request, req_id: str) -> Dict[str, Any]:
+    """Clears a customer rating/review from a repair request and recalculates center rating."""
+    admin_user = _require_exclusive_admin(request)
+    if not _is_valid_request_id(req_id):
+        raise HTTPException(status_code=404, detail="Repair request not found.")
+    try:
+        rows = postgrest_request(
+            "repair_requests",
+            {"select": "id,tech_profile_id,device_info,rating,review_comment", "id": f"eq.{req_id}"},
+            use_service_role=True,
+        ) or []
+        if not rows:
+            raise HTTPException(status_code=404, detail="Repair request not found.")
+        req_row = rows[0]
+
+        postgrest_request(
+            "repair_requests",
+            params={"id": f"eq.{req_id}"},
+            method="PATCH",
+            body={"rating": None, "review_comment": None, "reviewed": False},
+            headers_extra={"Prefer": "return=minimal"},
+            use_service_role=True,
+        )
+        stats = _recalc_technician_rating(req_row.get("tech_profile_id"))
+        _record_admin_audit(
+            admin_user,
+            f"request:{req_id}:clear-review",
+            "إزالة تقييم عميل",
+            f"طلب #{req_id} ({req_row.get('device_info') or '-'})",
+        )
+        return {"cleared": True, "id": req_id, "center_rating": stats}
+    except HTTPException:
+        raise
+    except DatabaseUnavailableError as e:
+        raise HTTPException(status_code=503, detail=str(e))
