@@ -269,11 +269,15 @@ class MyFixitGuideRetrievalService:
 
         seen_ids = set()
         candidates: List[Dict[str, Any]] = []
+        dedup_queries: List[str] = []
         for q in search_queries:
-            if not q or len(q.strip()) < 2:
-                continue
+            q_s = (q or "").strip()
+            if len(q_s) >= 2 and q_s.lower() not in [x.lower() for x in dedup_queries]:
+                dedup_queries.append(q_s)
+
+        for q_s in dedup_queries[:4]:
             try:
-                res = self.search_guides(query=q.strip(), category=category, limit=10)
+                res = self.search_guides(query=q_s, category=category, limit=8)
                 for g in res.get("guides") or []:
                     gid = g.get("guide_id")
                     if gid and gid not in seen_ids:
@@ -281,7 +285,7 @@ class MyFixitGuideRetrievalService:
                         candidates.append(g)
             except Exception:
                 continue
-            if len(candidates) >= 12:
+            if len(candidates) >= 8:
                 break
 
         best_candidate = None
@@ -293,6 +297,7 @@ class MyFixitGuideRetrievalService:
         model_tokens = [tok for tok in re.findall(r"[a-z0-9]+", model_norm) if len(tok) >= 2 or tok.isdigit()]
         digit_tokens = [tok for tok in model_tokens if any(ch.isdigit() for ch in tok)]
         brand_low = (brand or "").lower()
+        apple_mentioned = any(k in f"{brand_low} {model_norm}" for k in ("apple", "mac", "powerbook", "ibook", "imac"))
 
         for g in candidates:
             title_low = (g.get("title") or "").lower()
@@ -320,6 +325,11 @@ class MyFixitGuideRetrievalService:
                 if comp.lower() in hay:
                     score += (35 - idx * 6)
                     break
+            if category == "Storage" and not apple_mentioned:
+                if any(v in hay for v in ("powerbook", "wallstreet", "ibook", "performa")):
+                    score -= 22
+                elif any(s_kw in hay for s_kw in ("external", "enclosure", "sata", "ssd", "hard drive")):
+                    score += 14
             if g.get("thumbnail_url"):
                 score += 8
 
@@ -329,10 +339,10 @@ class MyFixitGuideRetrievalService:
                 exact_model_match = m_match
 
         # If user specified an exact modern model not matched in local MyFixit snapshot (or score < 35),
-        # query live iFixit 2.0 public manuals for known electronics categories!
+        # query live iFixit 2.0 public manuals across all 13 categories!
         known_cats = {
             "Smartphone", "Laptop", "Desktop Computer", "Gaming Console", "Smart TV",
-            "Storage", "Tablet", "Smartwatch", "Audio", "Camera", "Printer", "Home Appliance"
+            "Storage", "Tablet", "Smartwatch", "Audio", "Camera", "Printer", "Home Appliance", "Other"
         }
         live_query = f"{brand} {model} {primary_comp}".strip() or f"{category} {primary_comp}".strip()
         if (category in known_cats or component_terms) and ((model and not exact_model_match) or best_score < 35):

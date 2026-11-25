@@ -3527,45 +3527,49 @@ class ByteForceApp {
       return;
     }
 
-    // Tab 5: AI Model Integration Setup
+    // Tab 5: AI Model Status & Diagnostics Test
     if (tab === "ai") {
       const aiSt = cache.aiStatus || { configured: false };
       panel.innerHTML = `
-        <h3 style="font-size: 18px; margin-bottom: 12px;" data-i18n="admin_tab_ai">${isAr ? 'نموذج الذكاء الاصطناعي ومفاتيح API' : 'AI Model Integration & API Key'}</h3>
-        <div style="padding: 14px 16px; border-radius: 10px; margin-bottom: 18px; background: ${aiSt.configured ? 'rgba(16,185,129,0.12)' : 'rgba(56,189,248,0.1)'}; border: 1px solid ${aiSt.configured ? 'rgba(16,185,129,0.3)' : 'rgba(56,189,248,0.28)'};">
-          <div style="font-weight: 700; color: ${aiSt.configured ? '#34D399' : '#38BDF8'}; margin-bottom: 4px;">
-            <i class="fas ${aiSt.configured ? 'fa-check-circle' : 'fa-key'}"></i>
+        <h3 style="font-size: 18px; margin-bottom: 12px;" data-i18n="admin_tab_ai">${isAr ? 'نموذج الذكاء الاصطناعي' : 'AI Model Integration'}</h3>
+        <div style="padding: 16px; border-radius: 10px; margin-bottom: 16px; background: ${aiSt.configured ? 'rgba(16,185,129,0.12)' : 'rgba(245,158,11,0.12)'}; border: 1px solid ${aiSt.configured ? 'rgba(16,185,129,0.32)' : 'rgba(245,158,11,0.32)'}; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+          <div style="font-weight: 700; color: ${aiSt.configured ? '#34D399' : '#FBBF24'};">
+            <i class="fas ${aiSt.configured ? 'fa-check-circle' : 'fa-exclamation-triangle'}"></i>
             ${aiSt.configured
-              ? (isAr ? `متصل ونشط عبر ${String(aiSt.provider || '').toUpperCase()} (${this._esc(aiSt.masked_key || '')})` : `Connected via ${String(aiSt.provider || '').toUpperCase()} (${this._esc(aiSt.masked_key || '')})`)
-              : (isAr ? 'بانتظار إدخال مفتاح AI API (يعمل التشخيص حالياً عبر قواعد البيانات الحية ORA + MyFixit + iFixit)' : 'Awaiting AI API Key (Real dataset diagnosis is active via ORA + MyFixit + iFixit)')}
+              ? (isAr ? `الذكاء الاصطناعي مفعل ومتصل عبر ${String(aiSt.provider || '').toUpperCase()} (${this._esc(aiSt.masked_key || '')})` : `AI Engine Active via ${String(aiSt.provider || '').toUpperCase()} (${this._esc(aiSt.masked_key || '')})`)
+              : (isAr ? 'نموذج الذكاء الاصطناعي غير مفعل حالياً — اضغط لإدخال مفتاح أو اختبر الاتصال' : 'AI Engine currently inactive')}
           </div>
-          <p style="font-size: 12.5px; color: #94A3B8; margin: 0;">
-            ${isAr ? 'يدعم النظام الربط المباشر مع Google Gemini أو OpenAI أو Groq أو OpenRouter. للعمل الدائم على Vercel أضف المتغير في إعدادات البيئة بـ Vercel.' : 'Supports Google Gemini, OpenAI, Groq, and OpenRouter. For permanent Vercel deployment, also set the variable in Vercel Environment Variables.'}
-          </p>
-        </div>
-        <div class="form-row-2" style="margin-bottom: 14px;">
-          <div class="form-group">
-            <label class="form-label">${isAr ? 'مزود الذكاء الاصطناعي' : 'AI Provider'}</label>
-            <select id="adminAiProvider" class="form-control">
-              <option value="gemini">Google Gemini (GEMINI_API_KEY)</option>
-              <option value="openai">OpenAI GPT (OPENAI_API_KEY)</option>
-              <option value="groq">Groq Llama (GROQ_API_KEY)</option>
-              <option value="openrouter">OpenRouter (OPENROUTER_API_KEY)</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label">${isAr ? 'مفتاح الـ API' : 'Secret API Key'}</label>
-            <input type="password" id="adminAiKeyInput" class="form-control" dir="ltr" placeholder="AIza... / AQ.... / sk-... / gsk_..." />
-          </div>
-        </div>
-        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-          <button type="button" class="btn btn-primary btn-sm" onclick="app.saveAdminAiKey()">
-            <i class="fas fa-save"></i> ${isAr ? 'حفظ وتفعيل المفتاح' : 'Save & Activate Key'}
-          </button>
-          <button type="button" class="btn btn-outline btn-sm" onclick="app.testAdminAiConnection()">
+          <button type="button" class="btn btn-primary btn-sm" onclick="app.testAdminAiConnection()">
             <i class="fas fa-vial"></i> ${isAr ? 'اختبار اتصال الذكاء الاصطناعي' : 'Test AI Connection'}
           </button>
         </div>
+
+        <details style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 12px 16px;">
+          <summary style="cursor: pointer; font-weight: 600; font-size: 13.5px; color: #CBD5E1;">
+            <i class="fas fa-key" style="color: #38BDF8; margin-inline-end: 6px;"></i>
+            ${isAr ? 'تحديث أو تغيير مفتاح الذكاء الاصطناعي (اختياري)' : 'Update / Rotate AI API Key (Optional)'}
+          </summary>
+          <div style="margin-top: 14px;">
+            <div class="form-row-2" style="margin-bottom: 12px;">
+              <div class="form-group">
+                <label class="form-label">${isAr ? 'مزود الذكاء الاصطناعي' : 'AI Provider'}</label>
+                <select id="adminAiProvider" class="form-control">
+                  <option value="gemini">Google Gemini</option>
+                  <option value="openai">OpenAI GPT</option>
+                  <option value="groq">Groq Llama</option>
+                  <option value="openrouter">OpenRouter</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">${isAr ? 'مفتاح الـ API' : 'Secret API Key'}</label>
+                <input type="password" id="adminAiKeyInput" class="form-control" dir="ltr" placeholder="AIza... / AQ.... / sk-... / gsk_..." />
+              </div>
+            </div>
+            <button type="button" class="btn btn-outline btn-sm" onclick="app.saveAdminAiKey()">
+              <i class="fas fa-save"></i> ${isAr ? 'حفظ وتفعيل المفتاح' : 'Save & Activate Key'}
+            </button>
+          </div>
+        </details>
       `;
       return;
     }

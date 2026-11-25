@@ -102,22 +102,42 @@ class UnifiedDiagnosisEngine:
         self.ai_assistant = AIAssistantService()
 
     def _normalize_category(self, raw_category: str, description: str = "") -> str:
-        text = f"{raw_category} {description}".lower()
-        if any(w in text for w in ["smartwatch", "apple watch", "fitbit", "garmin", "pebble", "watch", "ساعة"]):
+        raw_clean = (raw_category or "").strip()
+        raw_low = raw_clean.lower()
+
+        canonical_map = {
+            "smartphone": "Smartphone",
+            "laptop": "Laptop",
+            "desktop computer": "Desktop Computer",
+            "gaming console": "Gaming Console",
+            "smart tv": "Smart TV",
+            "storage": "Storage",
+            "tablet": "Tablet",
+            "smartwatch": "Smartwatch",
+            "audio": "Audio",
+            "camera": "Camera",
+            "printer": "Printer",
+            "home appliance": "Home Appliance",
+        }
+        if raw_low in canonical_map:
+            return canonical_map[raw_low]
+
+        text = f"{raw_clean} {description}".lower()
+        if any(w in text for w in ["smartwatch", "apple watch", "fitbit", "garmin", "pebble", "ساعة ذكية"]):
             return "Smartwatch"
         if any(w in text for w in ["phone", "iphone", "galaxy", "pixel", "smartphone", "هاتف", "جوال", "موبايل"]):
             return "Smartphone"
+        if any(w in text for w in ["tablet", "ipad", "تابلت", "آيباد"]):
+            return "Tablet"
         if any(w in text for w in ["laptop", "macbook", "thinkpad", "notebook", "لابتوب", "حاسوب محمول"]):
             return "Laptop"
         if any(w in text for w in ["desktop", "pc", "imac", "workstation", "كمبيوتر مكتبي"]):
             return "Desktop Computer"
         if any(w in text for w in ["playstation", "ps4", "ps5", "xbox", "nintendo", "console", "منصة ألعاب", "بلايستيشن"]):
             return "Gaming Console"
-        if any(w in text for w in ["tv", "television", "display", "monitor", "شاشة", "تلفزيون"]):
+        if any(w in text for w in ["smart tv", "television", "oled tv", "qled", "bravia", "تلفزيون", "تلفاز", "شاشة ذكية", "شاشة تلفزيون"]):
             return "Smart TV"
-        if any(w in text for w in ["tablet", "ipad", "تابلت", "آيباد"]):
-            return "Tablet"
-        if any(w in text for w in ["hard drive", "hdd", "ssd", "nvme", "storage", "قرص", "هارد", "تخزين"]):
+        if any(w in text for w in ["hard drive", "hdd", "ssd", "nvme", "storage", "قرص صلب", "هارد ديسك"]):
             return "Storage"
         if any(w in text for w in ["audio", "speaker", "headphone", "airpods", "سماعة", "صوت"]):
             return "Audio"
@@ -125,9 +145,9 @@ class UnifiedDiagnosisEngine:
             return "Printer"
         if any(w in text for w in ["camera", "كاميرا"]):
             return "Camera"
-        if any(w in text for w in ["appliance", "vacuum", "coffee", "kettle", "toaster", "غسالة", "مكنسة", "قهوة", "أجهزة منزلية"]):
+        if any(w in text for w in ["appliance", "vacuum", "coffee", "kettle", "toaster", "microwave", "غسالة", "مكنسة", "قهوة", "أجهزة منزلية"]):
             return "Home Appliance"
-        return raw_category or "Other"
+        return raw_clean or "Other"
 
     def _calculate_dynamic_confidence(
         self,
@@ -271,13 +291,14 @@ class UnifiedDiagnosisEngine:
             },
             ora_summary=ora_analysis,
             guide_summary=matched_guide,
+            timeout=14.0,
         )
 
-        # If AI returned a refined English visual query, only replace matched_guide if no guide exists OR the AI-guided lookup brings MORE illustrated step photos
+        # If AI returned a refined English visual query, only fetch live iFixit if no guide exists OR zero photos exist
         ai_query = (ai_analysis.get("visual_image_query") or "").strip() if ai_analysis.get("status") == "completed" else ""
         ai_device_query = (ai_analysis.get("device_photo_query") or "").strip() if ai_analysis.get("status") == "completed" else ""
         orig_img_count = sum(1 for st in ((matched_guide or {}).get("steps") or []) if isinstance(st, dict) and (st.get("images") or st.get("Images")))
-        if ai_query and (not matched_guide or orig_img_count == 0 or not exact_model_match):
+        if ai_query and (not matched_guide or orig_img_count == 0):
             ai_live_guide = fetch_ifixit_live_guide(
                 query=ai_query,
                 model=ai_device_query or model,
@@ -287,7 +308,7 @@ class UnifiedDiagnosisEngine:
             )
             if ai_live_guide:
                 ai_img_count = sum(1 for st in (ai_live_guide.get("steps") or []) if isinstance(st, dict) and (st.get("images") or st.get("Images")))
-                if not matched_guide or ai_img_count > orig_img_count or (ai_img_count >= 2 and not exact_model_match):
+                if not matched_guide or ai_img_count > orig_img_count:
                     matched_guide = ai_live_guide
 
         # 7. Extract Step Instructions + Visual Solution Photos + Real Device Photo

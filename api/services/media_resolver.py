@@ -29,6 +29,7 @@ _CATEGORY_FALLBACK_QUERY = {
     "Camera": "DSLR Camera",
     "Printer": "Inkjet Printer",
     "Home Appliance": "Coffee Maker",
+    "Other": "Router Electronics",
 }
 
 

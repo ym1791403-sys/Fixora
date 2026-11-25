@@ -1037,6 +1037,7 @@ window.SupabaseBridge = {
         .select("*")
         .eq("user_id", user.id)
         .neq("type", "admin_audit")
+        .neq("type", "system_ai_config")
         .order("created_at", { ascending: false })
         .limit(40);
       if (error) throw error;

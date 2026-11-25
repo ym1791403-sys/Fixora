@@ -491,7 +491,7 @@ def admin_test_ai_connection(request: Request) -> Dict[str, Any]:
         },
         ora_summary={"category_sample_size": 6290, "empirical_repair_status": {"fixed_rate": 50.0}, "matched_failure_cluster": "BATTERY_CHARGING"},
         guide_summary={"title": "iPhone 13 Battery Replacement"},
-        timeout=8.0,
+        timeout=16.0,
     )
     return res
 

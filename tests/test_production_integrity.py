@@ -185,6 +185,16 @@ class TestProductionIntegrity(unittest.TestCase):
         for cat in expected_13:
             self.assertGreater(cat_counts.get(cat, 0), 0, f"Missing verified guides for category: {cat}")
 
+        # Arabic screen symptoms on Tablet / Smartphone / Laptop must never hijack category to Smart TV
+        self.assertEqual(self.diagnosis_engine._normalize_category("Tablet", "شاشة التاتش لا تستجيب وفيها كسر"), "Tablet")
+        self.assertEqual(self.diagnosis_engine._normalize_category("Laptop", "شاشة اللابتوب لا تعمل"), "Laptop")
+        self.assertEqual(self.diagnosis_engine._normalize_category("Smartphone", "الشاشة مكسورة"), "Smartphone")
+        self.assertEqual(self.diagnosis_engine._normalize_category("Other", "راوتر TP-Link فاصل باور"), "Other")
+
+        for cat in expected_13:
+            ora = self.openrepair_service.analyze_symptoms(category=cat, description="power battery screen")
+            self.assertGreater(ora.get("category_sample_size", 0), 0, f"Missing ORA sample size for {cat}")
+
         diag_watch = self.diagnosis_engine.diagnose({
             "device_category": "Smartwatch",
             "brand": "Apple",
@@ -193,6 +203,16 @@ class TestProductionIntegrity(unittest.TestCase):
         })
         self.assertEqual(diag_watch["status"], "completed")
         self.assertIsNotNone(diag_watch.get("verified_guide"))
+
+        diag_tablet = self.diagnosis_engine.diagnose({
+            "device_category": "Tablet",
+            "brand": "Apple",
+            "model": "iPad Air",
+            "description": "شاشة التاتش لا تستجيب وفيها كسر"
+        })
+        self.assertEqual(diag_tablet["status"], "completed")
+        self.assertEqual(diag_tablet["device_category"], "Tablet")
+        self.assertEqual(diag_tablet["empirical_statistics"]["category"], "Tablet")
 
     def test_08_exclusive_admin_security_and_endpoints(self):
         """Verifies /api/admin/* endpoints reject unauthenticated/non-admin callers and serve snsr19344@gmail.com."""

@@ -16,7 +16,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
   <!-- ByteForce Stylesheet -->
-  <link rel="stylesheet" href="css/style.css?v=4.0.7">
+  <link rel="stylesheet" href="css/style.css?v=4.0.8">
   <!-- Leaflet Interactive Maps (ByteForce Centers & Technicians Network) -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
@@ -515,16 +515,6 @@
             <li><a href="#" onclick="app.navigate('diagnose'); return false;" style="color: #94A3B8; text-decoration: none;">تشخيص الأعطال</a></li>
           </ul>
         </div>
-
-        <div>
-          <h4 style="color: #FFFFFF; font-size: 14px; font-weight: 700; margin-bottom: 14px;">المصادر والدعم</h4>
-          <ul style="list-style: none; display: flex; flex-direction: column; gap: 10px; font-size: 13px;">
-            <li><a href="#" onclick="app.showDatasetsModal(); return false;" style="color: #94A3B8; text-decoration: none;"><i class="fas fa-database" style="color: #38BDF8; font-size: 11px;"></i> قواعد البيانات المعتمدة</a></li>
-            <li><a href="#" onclick="app.showSafetyModal(); return false;" style="color: #94A3B8; text-decoration: none;"><i class="fas fa-shield-alt" style="color: #10B981; font-size: 11px;"></i> بروتوكول الأمان والسلامة</a></li>
-            <li><a href="#" onclick="app.showPrivacyModal(); return false;" style="color: #94A3B8; text-decoration: none;"><i class="fas fa-user-shield" style="color: #38BDF8; font-size: 11px;"></i> سياسة الخصوصية</a></li>
-            <li><a href="#" onclick="app.showTermsModal(); return false;" style="color: #94A3B8; text-decoration: none;"><i class="fas fa-file-contract" style="color: #F59E0B; font-size: 11px;"></i> الشروط وإخلاء المسؤولية</a></li>
-          </ul>
-        </div>
       </div>
 
       <div class="footer-bottom">
@@ -535,7 +525,7 @@
           <a href="#" onclick="app.showSafetyModal(); return false;" style="color: #94A3B8; text-decoration: none;">إرشادات الأمان</a>
           <a href="#" onclick="app.showDatasetsModal(); return false;" style="color: #94A3B8; text-decoration: none;">تراخيص البيانات المفتوحة</a>
           <span style="color: rgba(255,255,255,0.2);">|</span>
-          <span style="color: #64748B;">v4.0.7 Enterprise Edition</span>
+          <span style="color: #64748B;">v4.0.8 Enterprise Edition</span>
         </div>
       </div>
     </div>
@@ -543,12 +533,12 @@
 
   <!-- Supabase Official JS SDK & Auth Bridge -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/supabase-init.js?v=4.0.7"></script>
+  <script src="js/supabase-init.js?v=4.0.8"></script>
 
   <!-- ByteForce Core Scripts & Real Datasets -->
-  <script src="js/i18n.js?v=4.0.7"></script>
-  <script src="js/api.js?v=4.0.7"></script>
-  <script src="js/app.js?v=4.0.7"></script>
+  <script src="js/i18n.js?v=4.0.8"></script>
+  <script src="js/api.js?v=4.0.8"></script>
+  <script src="js/app.js?v=4.0.8"></script>
   <script>
     if (!window.app && (typeof ByteForceApp !== 'undefined' || typeof FixoraApp !== 'undefined')) {
       const AppClass = typeof ByteForceApp !== 'undefined' ? ByteForceApp : FixoraApp;

@@ -13,6 +13,7 @@ Never fabricates AI output when unconfigured.
 
 import os
 import json
+import time
 import urllib.request
 import urllib.error
 from typing import Dict, Any, List, Optional, Tuple
@@ -28,6 +29,92 @@ PROVIDER_ENV_MAP = [
 ]
 
 _FAILED_AUTH_KEYS: set = set()
+_SUPABASE_AI_CACHE: Dict[str, Any] = {"ts": 0.0, "val": None}
+
+
+def _load_supabase_ai_config() -> Optional[Tuple[str, str, str]]:
+    """Loads persisted server-side AI configuration from Supabase PostgreSQL (works seamlessly on Vercel)."""
+    now = time.time()
+    cached = _SUPABASE_AI_CACHE.get("val")
+    if cached and (now - float(_SUPABASE_AI_CACHE.get("ts") or 0.0)) < 180.0:
+        return cached
+    try:
+        from api.services.db import postgrest_request
+
+        rows = postgrest_request(
+            "notifications",
+            {
+                "select": "title,message,created_at",
+                "type": "eq.system_ai_config",
+                "order": "created_at.desc",
+                "limit": "3",
+            },
+            use_service_role=True,
+        ) or []
+        for row in rows:
+            raw_msg = (row.get("message") or "").strip()
+            if not raw_msg:
+                continue
+            data = json.loads(raw_msg)
+            prov = str(data.get("provider") or row.get("title") or "").strip().lower()
+            env_var = str(data.get("env_var") or "GEMINI_API_KEY").strip()
+            key = str(data.get("api_key") or "").strip()
+            if prov and key and (prov, key) not in _FAILED_AUTH_KEYS:
+                res = (prov, env_var, key)
+                _SUPABASE_AI_CACHE["ts"] = now
+                _SUPABASE_AI_CACHE["val"] = res
+                return res
+    except Exception:
+        pass
+    return None
+
+
+def _save_supabase_ai_config(provider: str, var_name: str, api_key: str) -> bool:
+    """Persists active AI provider config inside Supabase PostgreSQL for zero-config Vercel serverless cold starts."""
+    try:
+        from api.services.db import postgrest_request
+
+        prof_rows = postgrest_request(
+            "profiles",
+            {"select": "id,email", "limit": "50"},
+            use_service_role=True,
+        ) or []
+        admin_uid = None
+        for r in prof_rows:
+            if str(r.get("email") or "").strip().lower() == "snsr19344@gmail.com":
+                admin_uid = r.get("id")
+                break
+        if not admin_uid and prof_rows:
+            admin_uid = prof_rows[0].get("id")
+        if not admin_uid:
+            return False
+
+        # Remove older system_ai_config entries cleanly so latest stays authoritative
+        postgrest_request(
+            "notifications",
+            params={"type": "eq.system_ai_config"},
+            method="DELETE",
+            headers_extra={"Prefer": "return=minimal"},
+            use_service_role=True,
+        )
+        postgrest_request(
+            "notifications",
+            method="POST",
+            body={
+                "user_id": admin_uid,
+                "title": provider,
+                "message": json.dumps({"provider": provider, "env_var": var_name, "api_key": api_key}),
+                "type": "system_ai_config",
+                "is_read": True,
+            },
+            headers_extra={"Prefer": "return=minimal"},
+            use_service_role=True,
+        )
+        _SUPABASE_AI_CACHE["ts"] = time.time()
+        _SUPABASE_AI_CACHE["val"] = (provider, var_name, api_key)
+        return True
+    except Exception:
+        return False
 
 
 def _load_dotenv_file() -> Dict[str, str]:
@@ -51,7 +138,7 @@ def _load_dotenv_file() -> Dict[str, str]:
 
 
 def get_active_ai_provider() -> Tuple[Optional[str], Optional[str], Optional[str]]:
-    """Returns (provider_name, env_var_name, api_key) preferring .env / BYTEFORCE_* over ambient OS vars."""
+    """Returns (provider_name, env_var_name, api_key) preferring .env, OS env, then Supabase persistent config."""
     dotenv_vals = _load_dotenv_file()
     for provider, env_names in PROVIDER_ENV_MAP:
         for var_name in env_names:
@@ -61,6 +148,9 @@ def get_active_ai_provider() -> Tuple[Optional[str], Optional[str], Optional[str
             if (provider, val) in _FAILED_AUTH_KEYS:
                 continue
             return provider, var_name, val
+    sb_cfg = _load_supabase_ai_config()
+    if sb_cfg:
+        return sb_cfg
     return None, None, None
 
 
@@ -126,10 +216,12 @@ def save_ai_api_key(provider: str, api_key: str) -> Dict[str, Any]:
     except Exception:
         persisted_to_env = False
 
+    persisted_to_supabase = _save_supabase_ai_config(clean_provider, var_name, clean_key)
+
     return {
         **get_ai_status(),
         "persisted_to_env": persisted_to_env,
-        "vercel_note": f"For permanent Vercel serverless deployment, add {var_name} in Vercel Environment Variables.",
+        "persisted_to_cloud": persisted_to_supabase,
     }
 
 
@@ -165,23 +257,25 @@ def _call_gemini(api_key: str, prompt: str, timeout: float = 12.0) -> Tuple[Dict
     for m in [
         custom_model,
         "gemini-3.1-flash-lite-preview",
-        "gemini-3-flash-preview",
         "gemini-2.5-flash",
+        "gemini-3-flash-preview",
         "gemini-flash-latest",
     ]:
         if m and m not in candidate_models:
             candidate_models.append(m)
 
-    payload = json.dumps({
-        "contents": [{"role": "user", "parts": [{"text": prompt}]}],
-        "generationConfig": {
-            "temperature": 0.25,
-            "responseMimeType": "application/json",
-        },
-    }).encode("utf-8")
-
     last_err: Optional[Exception] = None
+    timeouts_seen = 0
     for mdl in candidate_models:
+        gen_cfg: Dict[str, Any] = {
+            "temperature": 0.2,
+            "maxOutputTokens": 950,
+            "responseMimeType": "application/json",
+        }
+        payload = json.dumps({
+            "contents": [{"role": "user", "parts": [{"text": prompt}]}],
+            "generationConfig": gen_cfg,
+        }).encode("utf-8")
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{mdl}:generateContent"
         req = urllib.request.Request(
             url,
@@ -206,18 +300,25 @@ def _call_gemini(api_key: str, prompt: str, timeout: float = 12.0) -> Tuple[Dict
                 text = str(parts[-1].get("text") or "").strip()
             parsed = _extract_json_object(text)
             if not parsed:
-                last_err = RuntimeError(f"Gemini {mdl} returned non-JSON text")
+                last_err = RuntimeError(f"{mdl}: non-JSON response")
                 continue
             return parsed, mdl
         except urllib.error.HTTPError as e:
             if e.code in (401, 403):
                 raise
-            last_err = e
+            last_err = RuntimeError(f"{mdl}: HTTP {e.code}")
             if e.code in (404, 429, 500, 503):
                 continue
             raise
+        except urllib.error.URLError as e:
+            last_err = RuntimeError(f"{mdl}: Network/DNS error: {e.reason}")
+            break
         except Exception as e:
-            last_err = e
+            last_err = RuntimeError(f"{mdl}: {type(e).__name__}: {e}")
+            if "timed out" in str(e).lower():
+                timeouts_seen += 1
+                if timeouts_seen >= 2:
+                    break
             continue
 
     if last_err:

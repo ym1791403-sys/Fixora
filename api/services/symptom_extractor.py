@@ -135,8 +135,8 @@ FAULT_DOMAINS: List[Dict[str, Any]] = [
         "label_ar": "عطل وحدة الكاميرا أو العدسة أو المثبت البصري",
         "component_terms": ["Camera", "Rear Camera", "Front Camera", "Lens", "Flash"],
         "keywords": [
-            "camera", "lens", "blur", "blurry", "focus", "ois", "flash", "black camera",
-            "كاميرا", "الكاميرا", "عدسة", "ضبابية", "فوكس", "فلاش", "لا تصور", "تهز"
+            "camera", "lens", "blur", "blurry", "focus", "ois", "flash", "black camera", "shutter", "sensor",
+            "كاميرا", "الكاميرا", "عدسة", "ضبابية", "فوكس", "فلاش", "لا تصور", "تهز", "مغوشة"
         ],
         "cause_en": "Loose camera FPC mezzanine connector, damaged optical image stabilization (OIS) actuator, or scratched/humidified outer sapphire glass.",
         "cause_ar": "ارتخاء موصل الكاميرا الدقيق على اللوحة، أو عطل محرك التركيز التلقائي/المثبت البصري (OIS)، أو وجود رطوبة/كسر في زجاج العدسة.",
@@ -197,7 +197,7 @@ FAULT_DOMAINS: List[Dict[str, Any]] = [
         "component_terms": ["Wi-Fi", "Antenna", "Wireless", "Airport", "Bluetooth", "Network"],
         "keywords": [
             "wifi", "wi-fi", "wireless", "bluetooth", "signal", "no service", "antenna", "network",
-            "disconnecting", "sim", "واي فاي", "نت", "بلوتوث", "شبكة", "إشارة", "انتنا", "شريحة"
+            "disconnecting", "sim", "router", "modem", "واي فاي", "نت", "بلوتوث", "شبكة", "إشارة", "انتنا", "شريحة", "راوتر", "مودم"
         ],
         "cause_en": "Detached coaxial U.FL antenna pigtail connector after shock/drop, damaged RF shield traces, or failing WLAN/Bluetooth M.2 or BGA IC.",
         "cause_ar": "انفصال كابل الانتنا المحوري الدقيق داخل الجهاز بعد صدمة، أو عطل كارت الشبكة اللاسلكية / قارئ الشريحة على اللوحة.",
