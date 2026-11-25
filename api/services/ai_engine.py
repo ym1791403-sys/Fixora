@@ -3,8 +3,11 @@
 Multi-Provider AI Diagnostic Assistant Engine (Pure Python stdlib)
 Connects ByteForce's real datasets (Open Repair Alliance, MyFixit / iFixit, Backblaze ML)
 to external LLM APIs when configured via environment variables (.env / Vercel) or Admin Panel.
-Supported providers: Gemini (GEMINI_API_KEY / GOOGLE_API_KEY), OpenAI (OPENAI_API_KEY),
-Groq (GROQ_API_KEY), and OpenRouter (OPENROUTER_API_KEY).
+Supported providers:
+  - Google Gemini (GEMINI_API_KEY / GOOGLE_API_KEY — supports both AIza... and AQ.... keys)
+  - OpenAI (OPENAI_API_KEY)
+  - Groq (GROQ_API_KEY)
+  - OpenRouter (OPENROUTER_API_KEY)
 Never fabricates AI output when unconfigured.
 """
 
@@ -48,15 +51,12 @@ def _load_dotenv_file() -> Dict[str, str]:
 
 
 def get_active_ai_provider() -> Tuple[Optional[str], Optional[str], Optional[str]]:
-    """Returns (provider_name, env_var_name, api_key) preferring .env / BYTEFORCE_* over ambient IDE vars."""
+    """Returns (provider_name, env_var_name, api_key) preferring .env / BYTEFORCE_* over ambient OS vars."""
     dotenv_vals = _load_dotenv_file()
     for provider, env_names in PROVIDER_ENV_MAP:
         for var_name in env_names:
             val = (dotenv_vals.get(var_name) or os.environ.get(var_name) or "").strip()
             if not val or val.startswith("your_"):
-                continue
-            # Standard Google Generative AI REST keys start with AIza; reject non-REST session tokens
-            if provider == "gemini" and var_name in ("GEMINI_API_KEY", "GOOGLE_API_KEY") and not val.startswith("AIza"):
                 continue
             if (provider, val) in _FAILED_AUTH_KEYS:
                 continue
@@ -99,7 +99,8 @@ def save_ai_api_key(provider: str, api_key: str) -> Dict[str, Any]:
     if len(clean_key) < 10:
         raise ValueError("API key looks too short.")
 
-    var_name = env_lookup[clean_provider][0]
+    # Use canonical env var name (GEMINI_API_KEY / OPENAI_API_KEY / etc.)
+    var_name = env_lookup[clean_provider][1] if len(env_lookup[clean_provider]) > 1 else env_lookup[clean_provider][0]
     os.environ[var_name] = clean_key
     _FAILED_AUTH_KEYS.discard((clean_provider, clean_key))
 
@@ -154,35 +155,78 @@ def _extract_json_object(text: str) -> Optional[Dict[str, Any]]:
     return None
 
 
-def _call_gemini(api_key: str, prompt: str, timeout: float = 10.0) -> Dict[str, Any]:
-    model = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
-    payload = {
-        "contents": [{"parts": [{"text": prompt}]}],
+def _call_gemini(api_key: str, prompt: str, timeout: float = 12.0) -> Tuple[Dict[str, Any], str]:
+    """
+    Calls Google Gemini Generative Language API using x-goog-api-key header (supports both
+    AIza... and AQ.... keys) with resilient fallback across active Gemini Flash models.
+    """
+    custom_model = (os.environ.get("GEMINI_MODEL") or "").strip()
+    candidate_models = []
+    for m in [
+        custom_model,
+        "gemini-3.1-flash-lite-preview",
+        "gemini-3-flash-preview",
+        "gemini-2.5-flash",
+        "gemini-flash-latest",
+    ]:
+        if m and m not in candidate_models:
+            candidate_models.append(m)
+
+    payload = json.dumps({
+        "contents": [{"role": "user", "parts": [{"text": prompt}]}],
         "generationConfig": {
             "temperature": 0.25,
             "responseMimeType": "application/json",
         },
-    }
-    req = urllib.request.Request(
-        url,
-        data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        body = json.loads(resp.read().decode("utf-8"))
-    candidates = body.get("candidates") or []
-    parts = ((candidates[0].get("content") or {}).get("parts") or []) if candidates else []
-    text = parts[0].get("text", "") if parts else ""
-    parsed = _extract_json_object(text)
-    if not parsed:
-        raise RuntimeError("Gemini returned non-JSON response")
-    return parsed
+    }).encode("utf-8")
+
+    last_err: Optional[Exception] = None
+    for mdl in candidate_models:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{mdl}:generateContent"
+        req = urllib.request.Request(
+            url,
+            data=payload,
+            headers={
+                "Content-Type": "application/json",
+                "x-goog-api-key": api_key,
+            },
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                body = json.loads(resp.read().decode("utf-8"))
+            candidates = body.get("candidates") or []
+            parts = ((candidates[0].get("content") or {}).get("parts") or []) if candidates else []
+            non_thought_texts = [
+                p.get("text", "") for p in parts
+                if isinstance(p, dict) and not p.get("thought") and p.get("text")
+            ]
+            text = "\n".join(non_thought_texts).strip()
+            if not text and parts:
+                text = str(parts[-1].get("text") or "").strip()
+            parsed = _extract_json_object(text)
+            if not parsed:
+                last_err = RuntimeError(f"Gemini {mdl} returned non-JSON text")
+                continue
+            return parsed, mdl
+        except urllib.error.HTTPError as e:
+            if e.code in (401, 403):
+                raise
+            last_err = e
+            if e.code in (404, 429, 500, 503):
+                continue
+            raise
+        except Exception as e:
+            last_err = e
+            continue
+
+    if last_err:
+        raise last_err
+    raise RuntimeError("No Gemini model responded successfully.")
 
 
-def _call_openai_compatible(url: str, api_key: str, model: str, prompt: str, timeout: float = 10.0) -> Dict[str, Any]:
-    payload = {
+def _call_openai_compatible(url: str, api_key: str, model: str, prompt: str, timeout: float = 12.0) -> Tuple[Dict[str, Any], str]:
+    payload: Dict[str, Any] = {
         "model": model,
         "temperature": 0.25,
         "messages": [
@@ -208,7 +252,7 @@ def _call_openai_compatible(url: str, api_key: str, model: str, prompt: str, tim
     parsed = _extract_json_object(content)
     if not parsed:
         raise RuntimeError("LLM provider returned non-JSON response")
-    return parsed
+    return parsed, model
 
 
 class AIAssistantService:
@@ -219,7 +263,7 @@ class AIAssistantService:
         device_info: Dict[str, Any],
         ora_summary: Dict[str, Any],
         guide_summary: Optional[Dict[str, Any]],
-        timeout: float = 9.0,
+        timeout: float = 10.0,
     ) -> Dict[str, Any]:
         provider, _, api_key = get_active_ai_provider()
         if not provider or not api_key:
@@ -231,8 +275,10 @@ class AIAssistantService:
             }
 
         prompt = (
-            "Analyze this real hardware fault using the empirical dataset facts below. "
-            "Never invent fake repair percentages; cite only genuine technical reasoning.\n"
+            "You are ByteForce's senior hardware diagnostic engineer. "
+            "Analyze the device & symptom report below grounded on the empirical dataset context. "
+            "Provide device-specific technical root causes (NEVER generic filler), step-by-step fix guidance, "
+            "and precise English search terms to look up real photos of this exact device and repair manual.\n\n"
             f"Device Category: {device_info.get('device_category')}\n"
             f"Brand: {device_info.get('brand')}\n"
             f"Model: {device_info.get('model')}\n"
@@ -241,12 +287,13 @@ class AIAssistantService:
             f"Open Repair Alliance Stats: sample={ora_summary.get('category_sample_size')}, "
             f"fix_rate={ora_summary.get('empirical_repair_status', {}).get('fixed_rate')}%, "
             f"matched_cluster={ora_summary.get('matched_failure_cluster')}\n"
-            f"Matched Repair Manual: {guide_summary.get('title') if guide_summary else 'None'}\n\n"
+            f"Initial Matched Repair Manual: {guide_summary.get('title') if guide_summary else 'None'}\n\n"
             "Return valid JSON ONLY with keys:\n"
             "{\n"
-            '  "diagnosis_summary_ar": "ملخص دقيق ومباشر للعطل بالعربية",\n'
-            '  "diagnosis_summary_en": "Concise technical summary in English",\n'
-            '  "visual_image_query": "short English query for exact device + component repair images (e.g. iPhone 13 battery replacement)",\n'
+            '  "diagnosis_summary_ar": "تشخيص فني دقيق ومفصل بالعربية لهذا الجهاز والعطل",\n'
+            '  "diagnosis_summary_en": "Detailed technical diagnosis summary in English",\n'
+            '  "device_photo_query": "Clean English device name for photo lookup (e.g. iPhone 13 or Asus TUF Gaming laptop)",\n'
+            '  "visual_image_query": "Clean English repair guide query for iFixit/MyFixit (e.g. iPhone 13 battery replacement)",\n'
             '  "root_causes": [\n'
             '    {"title_ar": "...", "title_en": "...", "explanation_ar": "...", "explanation_en": "...", "repair_method_ar": "...", "repair_method_en": "..."}\n'
             '  ],\n'
@@ -257,13 +304,13 @@ class AIAssistantService:
 
         try:
             if provider == "gemini":
-                out = _call_gemini(api_key, prompt, timeout=timeout)
+                out, model_used = _call_gemini(api_key, prompt, timeout=timeout)
             elif provider == "openai":
-                out = _call_openai_compatible("https://api.openai.com/v1/chat/completions", api_key, os.environ.get("OPENAI_MODEL", "gpt-4o-mini"), prompt, timeout=timeout)
+                out, model_used = _call_openai_compatible("https://api.openai.com/v1/chat/completions", api_key, os.environ.get("OPENAI_MODEL", "gpt-4o-mini"), prompt, timeout=timeout)
             elif provider == "groq":
-                out = _call_openai_compatible("https://api.groq.com/openai/v1/chat/completions", api_key, os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile"), prompt, timeout=timeout)
+                out, model_used = _call_openai_compatible("https://api.groq.com/openai/v1/chat/completions", api_key, os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile"), prompt, timeout=timeout)
             elif provider == "openrouter":
-                out = _call_openai_compatible("https://openrouter.ai/api/v1/chat/completions", api_key, os.environ.get("OPENROUTER_MODEL", "openai/gpt-4o-mini"), prompt, timeout=timeout)
+                out, model_used = _call_openai_compatible("https://openrouter.ai/api/v1/chat/completions", api_key, os.environ.get("OPENROUTER_MODEL", "openai/gpt-4o-mini"), prompt, timeout=timeout)
             else:
                 return {"configured": False, "status": "unsupported_provider", "provider": provider}
 
@@ -271,6 +318,7 @@ class AIAssistantService:
                 "configured": True,
                 "status": "completed",
                 "provider": provider,
+                "model_used": model_used,
                 **out,
             }
         except urllib.error.HTTPError as e:

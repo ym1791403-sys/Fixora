@@ -1218,13 +1218,24 @@ class ByteForceApp {
 
           ${report.ai_analysis && report.ai_analysis.status === 'completed' ? `
             <div class="card" style="margin-bottom: 24px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(15, 23, 42, 0.9) 100%); border: 1px solid rgba(16, 185, 129, 0.3);">
-              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; color: #34D399; font-weight: 700;">
-                <i class="fas fa-robot"></i>
-                <span>${isAr ? `تحليل نموذج الذكاء الاصطناعي (${String(report.ai_analysis.provider || 'AI').toUpperCase()})` : `AI Deep Analysis (${String(report.ai_analysis.provider || 'AI').toUpperCase()})`}</span>
+              <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
+                <div style="display: flex; align-items: center; gap: 8px; color: #34D399; font-weight: 700;">
+                  <i class="fas fa-robot"></i>
+                  <span>${isAr ? `تحليل الذكاء الاصطناعي (${String(report.ai_analysis.provider || 'AI').toUpperCase()})` : `AI Deep Analysis (${String(report.ai_analysis.provider || 'AI').toUpperCase()})`}</span>
+                </div>
+                ${report.ai_analysis.model_used ? `<span class="tag" style="background: rgba(16,185,129,0.16); color: #6EE7B7; border-color: rgba(16,185,129,0.3); font-size: 11px;">${this._esc(report.ai_analysis.model_used)}</span>` : ''}
               </div>
-              <p style="color: #F1F5F9; font-size: 14px; line-height: 1.7; margin: 0;">
+              <p style="color: #F1F5F9; font-size: 14px; line-height: 1.7; margin: 0 0 12px 0;">
                 ${this._esc(isAr ? (report.ai_analysis.diagnosis_summary_ar || report.ai_analysis.diagnosis_summary_en) : (report.ai_analysis.diagnosis_summary_en || report.ai_analysis.diagnosis_summary_ar))}
               </p>
+              ${((isAr ? report.ai_analysis.repair_steps_ar : report.ai_analysis.repair_steps_en) || []).length > 0 ? `
+                <div style="padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.08);">
+                  <strong style="display: block; font-size: 13px; color: #38BDF8; margin-bottom: 6px;">${isAr ? 'خطة الإصلاح المقترحة بالذكاء الاصطناعي:' : 'AI-Guided Repair Sequence:'}</strong>
+                  <ol style="margin: 0; padding-inline-start: 20px; font-size: 13px; color: #CBD5E1; line-height: 1.7;">
+                    ${((isAr ? report.ai_analysis.repair_steps_ar : report.ai_analysis.repair_steps_en) || []).slice(0, 6).map(st => `<li>${this._esc(st)}</li>`).join('')}
+                  </ol>
+                </div>
+              ` : ''}
             </div>
           ` : ''}
 
@@ -3323,7 +3334,7 @@ class ByteForceApp {
           </div>
           <div class="form-group">
             <label class="form-label">${isAr ? 'مفتاح الـ API' : 'Secret API Key'}</label>
-            <input type="password" id="adminAiKeyInput" class="form-control" dir="ltr" placeholder="AIza... / sk-... / gsk_..." />
+            <input type="password" id="adminAiKeyInput" class="form-control" dir="ltr" placeholder="AIza... / AQ.... / sk-... / gsk_..." />
           </div>
         </div>
         <div style="display: flex; gap: 10px; flex-wrap: wrap;">

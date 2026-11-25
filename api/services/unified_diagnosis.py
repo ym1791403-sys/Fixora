@@ -273,18 +273,22 @@ class UnifiedDiagnosisEngine:
             guide_summary=matched_guide,
         )
 
-        # If AI returned a refined English visual query and current guide wasn't exact, enrich guide & images
+        # If AI returned a refined English visual query, only replace matched_guide if no guide exists OR the AI-guided lookup brings MORE illustrated step photos
         ai_query = (ai_analysis.get("visual_image_query") or "").strip() if ai_analysis.get("status") == "completed" else ""
-        if ai_query and not exact_model_match:
+        ai_device_query = (ai_analysis.get("device_photo_query") or "").strip() if ai_analysis.get("status") == "completed" else ""
+        orig_img_count = sum(1 for st in ((matched_guide or {}).get("steps") or []) if isinstance(st, dict) and (st.get("images") or st.get("Images")))
+        if ai_query and (not matched_guide or orig_img_count == 0 or not exact_model_match):
             ai_live_guide = fetch_ifixit_live_guide(
                 query=ai_query,
-                model=model,
+                model=ai_device_query or model,
                 brand=brand,
                 component_terms=component_terms,
                 category=normalized_cat,
             )
             if ai_live_guide:
-                matched_guide = ai_live_guide
+                ai_img_count = sum(1 for st in (ai_live_guide.get("steps") or []) if isinstance(st, dict) and (st.get("images") or st.get("Images")))
+                if not matched_guide or ai_img_count > orig_img_count or (ai_img_count >= 2 and not exact_model_match):
+                    matched_guide = ai_live_guide
 
         # 7. Extract Step Instructions + Visual Solution Photos + Real Device Photo
         troubleshooting_steps: List[Dict[str, Any]] = []
@@ -323,7 +327,7 @@ class UnifiedDiagnosisEngine:
         guide_image_url = matched_guide.get("guide_image_url") if matched_guide else None
         device_image_url = matched_guide.get("device_image_url") if matched_guide else None
         if not device_image_url:
-            dev_query = ai_query or f"{brand} {model}".strip() or (matched_guide.get("device_model") if matched_guide else "") or normalized_cat
+            dev_query = ai_device_query or ai_query or f"{brand} {model}".strip() or (matched_guide.get("device_model") if matched_guide else "") or normalized_cat
             resolved = resolve_device_image(dev_query, category=normalized_cat)
             device_image_url = resolved.get("image_url") or guide_image_url
         if not guide_image_url and visual_solution_steps:

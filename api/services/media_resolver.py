@@ -137,8 +137,7 @@ def fetch_ifixit_live_guide(
     if model and model.lower() not in [q.lower() for q in queries_to_try]:
         queries_to_try.append(model.strip())
 
-    best_guide_item = None
-    best_score = -1
+    ranked_candidates = []
     device_thumb = None
 
     for q in queries_to_try[:3]:
@@ -174,26 +173,55 @@ def fetch_ifixit_live_guide(
             for idx, comp in enumerate(component_terms[:4]):
                 c_low = comp.lower()
                 if c_low in title_low or c_low in subj_low:
-                    score += (42 - idx * 6)
+                    score += (48 - idx * 6)
                     break
+            g_type = (r.get("type") or "").lower()
+            if g_type in ("replacement", "teardown", "disassembly"):
+                score += 30
+            elif g_type == "troubleshooting" or title_low.startswith("how to fix") or "troubleshooting" in title_low:
+                score -= 45
             if img_obj.get("standard") or img_obj.get("medium"):
                 score += 8
 
-            if score > best_score:
-                best_score = score
-                best_guide_item = r
+            ranked_candidates.append((score, r))
 
-        if best_guide_item and best_score >= 60:
+        if ranked_candidates and max(s for s, _ in ranked_candidates) >= 85:
             break
 
-    if not best_guide_item:
+    if not ranked_candidates:
+        return None
+
+    # Deduplicate by guideid and sort descending by score
+    dedup = {}
+    for sc, item in ranked_candidates:
+        gid = item["guideid"]
+        if gid not in dedup or sc > dedup[gid][0]:
+            dedup[gid] = (sc, item)
+    sorted_items = sorted(dedup.values(), key=lambda x: -x[0])
+
+    # Pick highest-scoring guide that actually contains step images (fall back to top if none have images)
+    best_guide_item = None
+    detail = None
+    for _, cand in sorted_items[:3]:
+        d = _http_get_json(f"https://www.ifixit.com/api/2.0/guides/{cand['guideid']}", timeout=5.0)
+        if not d or not d.get("steps"):
+            continue
+        has_step_imgs = any(
+            isinstance(st, dict) and isinstance(st.get("media"), dict) and bool(st["media"].get("data"))
+            for st in d.get("steps", [])
+        )
+        if best_guide_item is None:
+            best_guide_item = cand
+            detail = d
+        if has_step_imgs:
+            best_guide_item = cand
+            detail = d
+            break
+
+    if not best_guide_item or not detail:
         return None
 
     guide_id = best_guide_item["guideid"]
-    detail = _http_get_json(f"https://www.ifixit.com/api/2.0/guides/{guide_id}", timeout=5.0)
-    if not detail or not detail.get("steps"):
-        return None
-
     guide_img = (detail.get("image") or {}).get("standard") or (best_guide_item.get("image") or {}).get("standard")
     tools: List[str] = []
     for t in detail.get("tools") or []:
