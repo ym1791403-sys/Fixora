@@ -15,6 +15,7 @@ from api.services.db import (
     get_matching_repair_incidents,
     DatabaseUnavailableError
 )
+from api.services.symptom_extractor import extract_fault_signals
 
 _ORA_CATEGORY_ALIASES = {
     "storage": "Desktop Computer",
@@ -113,29 +114,11 @@ class OpenRepairAnalysisService:
         all_modes = cat_stats.get("top_failure_modes", [])
         barriers = cat_stats.get("top_repair_barriers", [])
 
-        # Match description against empirical failure modes
-        desc_lower = (description or "").lower()
-        cluster_keywords = {
-            "POWER_FAILURE": ["power", "turn on", "dead", "won't start", "startet nicht", "لا يعمل", "لا يفتح", "باور", "طافي"],
-            "BATTERY_CHARGING": ["battery", "charge", "drain", "lädt nicht", "akku", "بطارية", "شحن", "شاحن", "تفريغ"],
-            "SCREEN_DISPLAY": ["screen", "display", "black screen", "flicker", "lines", "شاشة", "وميض", "خطوط", "كسر"],
-            "CABLE_CONNECTION": ["cable", "wire", "kabel", "contact", "loose", "سلك", "توصيل", "مقبس", "قطع"],
-            "SWITCH_BUTTON": ["switch", "button", "taste", "schalter", "زر", "مفتاح"],
-            "MECHANICAL_WEAR": ["broken", "crack", "mechanik", "hinge", "gear", "ميكانيكي", "مفصلة", "ترس"],
-            "THERMAL_OVERHEAT": ["heat", "hot", "overheat", "fan", "thermal", "حرارة", "سخونة", "مروحة"],
-            "MOTOR_DRIVE": ["motor", "drive", "pump", "moteur", "محرك", "موتور", "طلمبة"],
-            "PAPER_FEED": ["paper", "jam", "feed", "roller", "ورق", "انحشار"],
-            "COMPONENT_SHORT": ["fuse", "short", "capacitor", "sicherung", "مكثف", "فيوز", "قصر"],
-            "LIQUID_LEAK": ["water", "leak", "liquid", "wasser", "ماء", "سوائل", "تسريب"]
-        }
+        # Match description against empirical failure modes using multilingual symptom extractor
+        signals = extract_fault_signals(category=category, brand=brand or "", description=description or "")
+        matched_cluster_name = signals.get("primary_cluster")
 
         matched_mode = None
-        matched_cluster_name = None
-        for cluster, words in cluster_keywords.items():
-            if any(w in desc_lower for w in words):
-                matched_cluster_name = cluster
-                break
-
         if matched_cluster_name:
             for mode in all_modes:
                 if isinstance(mode, dict) and mode.get("cluster") == matched_cluster_name:
@@ -143,12 +126,18 @@ class OpenRepairAnalysisService:
                     break
 
         if not matched_mode and all_modes:
-            matched_mode = all_modes[0]
+            non_general = [m for m in all_modes if isinstance(m, dict) and m.get("cluster") != "GENERAL_DEFECT"]
+            matched_mode = non_general[0] if non_general else all_modes[0]
 
-        # Also retrieve matching incident examples from Supabase
+        # Retrieve matching real historical incident examples from Supabase (mapped across ORA categories & cluster)
         real_incidents = []
         try:
-            real_incidents = get_matching_repair_incidents(category, brand, limit=3)
+            real_incidents = get_matching_repair_incidents(
+                category,
+                brand=brand,
+                problem_cluster=matched_cluster_name,
+                limit=5,
+            )
         except Exception:
             pass
 

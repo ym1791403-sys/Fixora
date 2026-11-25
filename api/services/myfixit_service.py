@@ -55,6 +55,14 @@ class MyFixitGuideRetrievalService:
                     mins = max(15, (r.get("step_count") or 5) * 4)
 
                 g_id = r.get("id") or r.get("guide_id")
+                thumb_url = None
+                for st in (r.get("steps") or []):
+                    if isinstance(st, dict):
+                        imgs = st.get("Images") or st.get("images") or []
+                        if imgs and isinstance(imgs, list):
+                            thumb_url = imgs[0]
+                            break
+
                 formatted.append({
                     "id": g_id,
                     "guide_id": g_id,
@@ -72,6 +80,7 @@ class MyFixitGuideRetrievalService:
                     "summary_en": r.get("summary", ""),
                     "summary_ar": r.get("summary", ""),
                     "url": r.get("url") or f"https://www.ifixit.com/Guide/{g_id}",
+                    "thumbnail_url": thumb_url,
                     "step_count": r.get("step_count", 0)
                 })
 
@@ -197,6 +206,7 @@ class MyFixitGuideRetrievalService:
                 "title_en": row.get("title", ""),
                 "title_ar": row.get("title", ""),
                 "file_source": row.get("file_source", "myfixit_dataset"),
+                "source": "MyFixit Verified Manuals",
                 "device_category": row.get("device_category", "Hardware"),
                 "device_model": row.get("device_model", ""),
                 "component": row.get("component", ""),
@@ -208,6 +218,7 @@ class MyFixitGuideRetrievalService:
                 "summary_en": row.get("summary", ""),
                 "summary_ar": row.get("summary", ""),
                 "url": row.get("url") or f"https://www.ifixit.com/Guide/{g_id}",
+                "guide_image_url": next((st["images"][0] for st in formatted_steps if st.get("images")), None),
                 "step_count": row.get("step_count") or len(formatted_steps),
                 "toolbox": clean_tools,
                 "required_tools": clean_tools,
@@ -221,7 +232,136 @@ class MyFixitGuideRetrievalService:
         except DatabaseUnavailableError:
             raise
         except Exception as e:
-            raise DatabaseUnavailableError(f"Failed to fetch guide #{guide_id}: {str(e)}")
+            raise DatabaseUnavailableError(f"MyFixit get_guide_by_id error: {str(e)}")
+
+    def find_best_guide(
+        self,
+        category: str,
+        brand: str = "",
+        model: str = "",
+        component_terms: Optional[List[str]] = None,
+        extra_tokens: Optional[List[str]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Scores candidate guides in Supabase across model + symptom components (avoiding
+        blind LIMIT 1 repeats), and supplements modern devices cleanly with iFixit Public API 2.0.
+        """
+        from api.services.media_resolver import fetch_ifixit_live_guide
+
+        component_terms = [c for c in (component_terms or []) if c]
+        extra_tokens = [t for t in (extra_tokens or []) if t]
+
+        search_queries: List[str] = []
+        primary_comp = component_terms[0] if component_terms else ""
+
+        if model and primary_comp:
+            search_queries.append(f"{model} {primary_comp}")
+        if brand and primary_comp:
+            search_queries.append(f"{brand} {primary_comp}")
+        for comp in component_terms[:3]:
+            search_queries.append(comp)
+        if model:
+            search_queries.append(model)
+        if brand:
+            search_queries.append(brand)
+        for tok in extra_tokens[:2]:
+            search_queries.append(tok)
+
+        seen_ids = set()
+        candidates: List[Dict[str, Any]] = []
+        for q in search_queries:
+            if not q or len(q.strip()) < 2:
+                continue
+            try:
+                res = self.search_guides(query=q.strip(), category=category, limit=10)
+                for g in res.get("guides") or []:
+                    gid = g.get("guide_id")
+                    if gid and gid not in seen_ids:
+                        seen_ids.add(gid)
+                        candidates.append(g)
+            except Exception:
+                continue
+            if len(candidates) >= 12:
+                break
+
+        best_candidate = None
+        best_score = -1
+        exact_model_match = False
+
+        import re
+        model_norm = re.sub(r"\bps\s*(\d+)\b", r"playstation \1", (model or "").lower())
+        model_tokens = [tok for tok in re.findall(r"[a-z0-9]+", model_norm) if len(tok) >= 2 or tok.isdigit()]
+        digit_tokens = [tok for tok in model_tokens if any(ch.isdigit() for ch in tok)]
+        brand_low = (brand or "").lower()
+
+        for g in candidates:
+            title_low = (g.get("title") or "").lower()
+            model_low = (g.get("device_model") or "").lower()
+            comp_low = (g.get("component") or "").lower()
+            hay = f"{title_low} {model_low} {comp_low}"
+            hay_tokens = set(re.findall(r"[a-z0-9]+", hay))
+
+            score = 0
+            m_match = False
+            if model_tokens:
+                hits = sum(1 for tok in model_tokens if (tok in hay_tokens if (tok.isdigit() or len(tok) <= 3) else tok in hay))
+                digit_ok = all(dtok in hay_tokens for dtok in digit_tokens) if digit_tokens else True
+                if hits == len(model_tokens) and digit_ok:
+                    score += 65
+                    m_match = True
+                elif hits > 0 and digit_ok:
+                    score += hits * 15
+                elif digit_tokens and not digit_ok:
+                    # Mismatched generation (e.g., PS2 when user asked for PS5)
+                    score -= 35
+            if brand_low and brand_low in hay:
+                score += 18
+            for idx, comp in enumerate(component_terms[:4]):
+                if comp.lower() in hay:
+                    score += (35 - idx * 6)
+                    break
+            if g.get("thumbnail_url"):
+                score += 8
+
+            if score > best_score:
+                best_score = score
+                best_candidate = g
+                exact_model_match = m_match
+
+        # If user specified an exact modern model not matched in local MyFixit snapshot (or score < 35),
+        # query live iFixit 2.0 public manuals for known electronics categories!
+        known_cats = {
+            "Smartphone", "Laptop", "Desktop Computer", "Gaming Console", "Smart TV",
+            "Storage", "Tablet", "Smartwatch", "Audio", "Camera", "Printer", "Home Appliance"
+        }
+        live_query = f"{brand} {model} {primary_comp}".strip() or f"{category} {primary_comp}".strip()
+        if (category in known_cats or component_terms) and ((model and not exact_model_match) or best_score < 35):
+            live_guide = fetch_ifixit_live_guide(
+                query=live_query,
+                model=model,
+                brand=brand,
+                component_terms=component_terms,
+                category=category,
+            )
+            if live_guide:
+                live_exact = bool(model and model.lower() in f"{live_guide.get('title', '')} {live_guide.get('device_model', '')}".lower())
+                return {"guide": live_guide, "exact_model_match": live_exact}
+
+        if best_candidate:
+            full_guide = self.get_guide_by_id(best_candidate["guide_id"])
+            if full_guide:
+                return {"guide": full_guide, "exact_model_match": exact_model_match}
+
+        # Category-level DB fallback ONLY as last resort for known electronics categories
+        res_cat = self.search_guides(category=category, limit=8)
+        cat_guides = res_cat.get("guides") or []
+        if cat_guides:
+            with_img = next((g for g in cat_guides if g.get("thumbnail_url")), cat_guides[0])
+            full_guide = self.get_guide_by_id(with_img["guide_id"])
+            if full_guide:
+                return {"guide": full_guide, "exact_model_match": False}
+
+        return {"guide": None, "exact_model_match": False}
 
     def get_categories_summary(self) -> List[Dict[str, Any]]:
         """Returns categories with guide counts from Supabase (paginated past 1,000-row cap)."""

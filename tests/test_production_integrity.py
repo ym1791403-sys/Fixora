@@ -233,5 +233,45 @@ class TestProductionIntegrity(unittest.TestCase):
             toggle_self = self.client.post("/api/admin/users/3a1610f8-c0a2-4b3e-8c6a-ce07e7349cff/toggle", headers={"Authorization": "Bearer mock-admin-token"})
             self.assertEqual(toggle_self.status_code, 400)
 
+            ai_resp = self.client.get("/api/admin/ai-status", headers={"Authorization": "Bearer mock-admin-token"})
+            self.assertEqual(ai_resp.status_code, 200)
+            self.assertIn("supported_providers", ai_resp.json())
+
+        # Ensure AI status route also rejects unauthorized callers
+        self.assertEqual(self.client.get("/api/admin/ai-status").status_code, 401)
+
+    def test_09_distinct_symptom_diagnosis_and_media_api(self):
+        """Verifies bilingual diagnosis returns distinct symptom-matched guides, visual step photos, and device media."""
+        r_bat = self.diagnosis_engine.diagnose({
+            "device_category": "Smartphone",
+            "brand": "Apple",
+            "model": "iPhone 13",
+            "problem_category": "Hardware",
+            "description": "البطارية تخلص بسرعة جدا"
+        })
+        self.assertEqual(r_bat["status"], "completed")
+        self.assertIn("Battery", (r_bat.get("verified_guide") or {}).get("title", ""))
+        self.assertNotIn("Antenna Cover", (r_bat.get("verified_guide") or {}).get("title", ""))
+        self.assertGreater(len(r_bat.get("visual_solution_steps", [])), 0)
+        self.assertGreaterEqual(len(r_bat.get("possible_causes", [])), 2)
+
+        r_scr = self.diagnosis_engine.diagnose({
+            "device_category": "Smartphone",
+            "brand": "Samsung",
+            "model": "Galaxy S23",
+            "problem_category": "Hardware",
+            "description": "الشاشة مكسورة واللمس لا يعمل"
+        })
+        self.assertEqual(r_scr["status"], "completed")
+        self.assertNotEqual(
+            (r_bat.get("verified_guide") or {}).get("guide_id"),
+            (r_scr.get("verified_guide") or {}).get("guide_id"),
+            "Different faults must not return the exact same memorized guide."
+        )
+
+        img_resp = self.client.get("/api/media/device-image?q=PlayStation%205&category=Gaming%20Console")
+        self.assertEqual(img_resp.status_code, 200)
+        self.assertTrue((img_resp.json().get("image_url") or "").startswith("http"))
+
 if __name__ == "__main__":
     unittest.main()

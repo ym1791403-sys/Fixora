@@ -19,6 +19,7 @@ from api.services.db import (
     get_table_count,
     postgrest_request,
 )
+from api.services.ai_engine import get_ai_status, save_ai_api_key, AIAssistantService
 
 EXCLUSIVE_ADMIN_EMAIL = "snsr19344@gmail.com"
 CLOSED_REQUEST_STATUSES = {"COMPLETED", "CANCELED", "CANCELLED", "REJECTED"}
@@ -446,3 +447,50 @@ def notify_admin_of_pending_tech(request: Request, payload: Dict[str, Any]) -> D
         raise
     except DatabaseUnavailableError as e:
         raise HTTPException(status_code=503, detail=str(e))
+
+
+@router.get("/api/admin/ai-status")
+@router.get("/api/v1/admin/ai-status")
+def admin_get_ai_status(request: Request) -> Dict[str, Any]:
+    """Returns safe status of configured external AI model API provider (admin only)."""
+    _require_exclusive_admin(request)
+    return get_ai_status()
+
+
+@router.post("/api/admin/ai-config")
+@router.post("/api/v1/admin/ai-config")
+def admin_configure_ai_key(request: Request, payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Configures external AI API key on server runtime/.env (admin only)."""
+    admin_user = _require_exclusive_admin(request)
+    try:
+        provider = str(payload.get("provider") or "gemini")
+        api_key = str(payload.get("api_key") or "")
+        result = save_ai_api_key(provider, api_key)
+        _record_admin_audit(
+            admin_user,
+            f"ai:config:{result.get('provider')}",
+            "تحديث إعدادات نموذج الذكاء الاصطناعي",
+            f"Provider={result.get('provider')}, Key={result.get('masked_key')}",
+        )
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+
+
+@router.post("/api/admin/ai-test")
+@router.post("/api/v1/admin/ai-test")
+def admin_test_ai_connection(request: Request) -> Dict[str, Any]:
+    """Tests the active external AI model key with a brief diagnostic sanity prompt."""
+    _require_exclusive_admin(request)
+    res = AIAssistantService().analyze_with_datasets(
+        device_info={
+            "device_category": "Smartphone",
+            "brand": "Apple",
+            "model": "iPhone 13",
+            "description": "Battery drains rapidly",
+        },
+        ora_summary={"category_sample_size": 6290, "empirical_repair_status": {"fixed_rate": 50.0}, "matched_failure_cluster": "BATTERY_CHARGING"},
+        guide_summary={"title": "iPhone 13 Battery Replacement"},
+        timeout=8.0,
+    )
+    return res

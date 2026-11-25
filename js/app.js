@@ -955,15 +955,34 @@ class ByteForceApp {
               </div>
             </div>
 
-            <!-- Step 3: Problem Category -->
+            <!-- Step 3: Problem Category (Real Fault Subsystems) -->
             <div class="form-group">
               <label class="form-label" data-i18n="diag_step3">3. Problem Category</label>
               <select id="diagProbCat" class="form-control">
                 <option value="Hardware" ${this.wizardData.problem_category === 'Hardware' ? 'selected' : ''}>${window.i18n.t('diag_prob_hardware')}</option>
+                <option value="Battery">${isAr ? 'البطارية وضعف الشحن' : 'Battery & Charging'}</option>
+                <option value="Screen">${isAr ? 'الشاشة وكسر العرض / اللمس' : 'Screen & Display / Touch'}</option>
+                <option value="Power">${isAr ? 'انقطاع الطاقة / الجهاز لا يفتح' : 'Power & Boot Failure'}</option>
+                <option value="Overheating">${isAr ? 'سخونة زائدة وصوت المروحة' : 'Overheating & Cooling Fan'}</option>
+                <option value="Charging Port">${isAr ? 'منفذ الشحن أو HDMI / الكابلات' : 'Charging Port / HDMI / Cables'}</option>
+                <option value="Speaker">${isAr ? 'السماعة أو الميكروفون' : 'Speaker & Audio'}</option>
+                <option value="Camera">${isAr ? 'الكاميرا أو العدسة' : 'Camera & Optics'}</option>
+                <option value="Keyboard">${isAr ? 'لوحة المفاتيح أو الأزرار' : 'Keyboard & Mechanical Buttons'}</option>
+                <option value="Storage">${isAr ? 'وسيط التخزين HDD / SSD' : 'Hard Drive / SSD Storage'}</option>
+                <option value="Paper Feed">${isAr ? 'بكرات وسحب الورق (للطابعات)' : 'Printer Paper Feed / Ink'}</option>
                 <option value="Software" ${this.wizardData.problem_category === 'Software' ? 'selected' : ''}>${window.i18n.t('diag_prob_software')}</option>
                 <option value="Network" ${this.wizardData.problem_category === 'Network' ? 'selected' : ''}>${window.i18n.t('diag_prob_network')}</option>
                 <option value="Unknown" ${this.wizardData.problem_category === 'Unknown' ? 'selected' : ''}>${window.i18n.t('diag_prob_unknown')}</option>
               </select>
+            </div>
+
+            <!-- Live Device Visual Match Preview (resolved automatically from iFixit/Wikimedia) -->
+            <div id="diagDevicePreview" style="display: none; margin-bottom: 18px; padding: 12px 14px; background: #0E131F; border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 10px; align-items: center; gap: 14px;">
+              <img id="diagPreviewImg" src="" alt="Device Preview" style="width: 64px; height: 64px; border-radius: 10px; object-fit: cover; border: 1px solid rgba(255,255,255,0.12);" />
+              <div>
+                <div style="font-size: 12px; color: #38BDF8; font-weight: 700;" id="diagPreviewSource"></div>
+                <div style="font-size: 14px; color: #FFFFFF; font-weight: 600;" id="diagPreviewTitle"></div>
+              </div>
             </div>
 
             <!-- Step 4: Problem Description -->
@@ -1075,6 +1094,26 @@ class ByteForceApp {
 
       this.submitDiagnosis();
     });
+
+    const refreshPreview = async () => {
+      const b = container.querySelector("#diagBrand")?.value.trim() || "";
+      const m = container.querySelector("#diagModel")?.value.trim() || "";
+      const q = `${b} ${m}`.trim();
+      const box = container.querySelector("#diagDevicePreview");
+      if (!box || q.length < 3) return;
+      const res = await window.api.getDeviceImage(q, this.wizardData.device_category || "");
+      if (res && res.image_url) {
+        const imgEl = container.querySelector("#diagPreviewImg");
+        const titEl = container.querySelector("#diagPreviewTitle");
+        const srcEl = container.querySelector("#diagPreviewSource");
+        if (imgEl) imgEl.src = res.image_url;
+        if (titEl) titEl.textContent = res.title || q;
+        if (srcEl) srcEl.textContent = isAr ? `صورة الجهاز المطابقة (${res.source || 'iFixit'})` : `Verified Device Image (${res.source || 'iFixit'})`;
+        box.style.display = "flex";
+      }
+    };
+    container.querySelector("#diagModel")?.addEventListener("change", refreshPreview);
+    container.querySelector("#diagBrand")?.addEventListener("change", refreshPreview);
   }
 
   setWizardCat(cat, el) {
@@ -1151,14 +1190,19 @@ class ByteForceApp {
       <section style="padding: 40px 0 80px;">
         <div class="container" style="max-width: 900px;">
           
-          <!-- Top Bar Action -->
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
-            <div>
-              <span class="tag" style="background-color: rgba(56, 189, 248, 0.15); color: #38BDF8; border: 1px solid rgba(56, 189, 248, 0.3); margin-bottom: 6px;">Report #${report.report_id || 'TEMP'}</span>
-              <h1 style="font-size: 28px;" data-i18n="results_title">Diagnostic Report</h1>
-              <p style="color: var(--color-text-muted); font-size: 14px;">
-                ${report.brand || ''} ${report.model || ''} (${report.device_category || ''})
-              </p>
+          <!-- Top Bar Action with Verified Device Photo -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
+            <div class="report-device-hero">
+              ${(report.device_image_url || report.guide_image_url) ? `
+                <img src="${this._esc(report.device_image_url || report.guide_image_url)}" alt="${this._esc(report.model || report.device_category)}" class="report-device-thumb" onerror="this.style.display='none'" />
+              ` : ''}
+              <div>
+                <span class="tag" style="background-color: rgba(56, 189, 248, 0.15); color: #38BDF8; border: 1px solid rgba(56, 189, 248, 0.3); margin-bottom: 6px;">Report #${this._esc(report.report_id || 'TEMP')}</span>
+                <h1 style="font-size: 28px;" data-i18n="results_title">Diagnostic Report</h1>
+                <p style="color: var(--color-text-muted); font-size: 14px;">
+                  ${this._esc(report.brand || '')} ${this._esc(report.model || '')} (${this._esc(report.device_category || '')})
+                </p>
+              </div>
             </div>
             <div style="display: flex; gap: 10px;">
               <button class="btn btn-outline btn-sm" onclick="window.print()">
@@ -1171,6 +1215,18 @@ class ByteForceApp {
               </button>
             </div>
           </div>
+
+          ${report.ai_analysis && report.ai_analysis.status === 'completed' ? `
+            <div class="card" style="margin-bottom: 24px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(15, 23, 42, 0.9) 100%); border: 1px solid rgba(16, 185, 129, 0.3);">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; color: #34D399; font-weight: 700;">
+                <i class="fas fa-robot"></i>
+                <span>${isAr ? `تحليل نموذج الذكاء الاصطناعي (${String(report.ai_analysis.provider || 'AI').toUpperCase()})` : `AI Deep Analysis (${String(report.ai_analysis.provider || 'AI').toUpperCase()})`}</span>
+              </div>
+              <p style="color: #F1F5F9; font-size: 14px; line-height: 1.7; margin: 0;">
+                ${this._esc(isAr ? (report.ai_analysis.diagnosis_summary_ar || report.ai_analysis.diagnosis_summary_en) : (report.ai_analysis.diagnosis_summary_en || report.ai_analysis.diagnosis_summary_ar))}
+              </p>
+            </div>
+          ` : ''}
 
           ${isInsufficient ? `
             <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 12px; padding: 20px; margin-bottom: 24px;">
@@ -1300,25 +1356,31 @@ class ByteForceApp {
             </div>
           ` : ''}
 
-          <!-- Possible Root Causes -->
+          <!-- Possible Root Causes + Direct Visual Repair Photos Underneath -->
           <div class="card" style="margin-bottom: 24px;">
             <h3 style="font-size: 18px; margin-bottom: 16px;" data-i18n="results_causes_title">Most Probable Root Causes</h3>
             ${causesList.length > 0 ? `
-              <div style="display: flex; flex-direction: column; gap: 16px;">
-                ${causesList.map(c => {
+              <div style="display: flex; flex-direction: column; gap: 18px;">
+                ${causesList.map((c, idx) => {
                 const fixRate = c.empirical_repairability_pct != null ? c.empirical_repairability_pct : Math.round((c.probability || 0.5) * 100);
+                const causeImages = (Array.isArray(c.repair_images) && c.repair_images.length > 0)
+                  ? c.repair_images
+                  : (idx === 0 && Array.isArray(report.visual_solution_steps) ? report.visual_solution_steps.slice(0, 4).map(v => v.image_url) : []);
                 return `
-                <div style="padding: 16px; background-color: #0E131F; border-radius: var(--radius-sm); border: 1px solid rgba(255, 255, 255, 0.08);">
-                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                    <strong style="color: #FFFFFF; font-size: 15px;">${isAr ? c.title_ar : c.title_en}</strong>
+                <div style="padding: 18px; background-color: #0E131F; border-radius: var(--radius-sm); border: 1px solid rgba(255, 255, 255, 0.08);">
+                  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
+                    <div>
+                      <strong style="color: #FFFFFF; font-size: 15.5px; display: block;">${this._esc(isAr ? c.title_ar : c.title_en)}</strong>
+                      ${c.source_dataset ? `<span style="font-size: 11px; color: #94A3B8;"><i class="fas fa-database" style="color: #38BDF8;"></i> ${this._esc(c.source_dataset)}</span>` : ''}
+                    </div>
                     <span style="font-weight: 700; color: #38BDF8; font-size: 14px;">${fixRate}% ${isAr ? '(نجاح الإصلاح واقعياً)' : '(Empirical Fix Rate)'}</span>
                   </div>
                   <!-- Progress bar -->
                   <div style="width: 100%; height: 6px; background-color: rgba(255, 255, 255, 0.1); border-radius: var(--radius-full); margin-bottom: 10px; overflow: hidden;">
                     <div style="width: ${fixRate}%; height: 100%; background-color: var(--color-secondary);"></div>
                   </div>
-                  <p style="font-size: 13.5px; color: var(--color-text-muted); margin: 0 0 10px 0; line-height: 1.5;">
-                    ${isAr ? c.explanation_ar : c.explanation_en}
+                  <p style="font-size: 13.5px; color: var(--color-text-muted); margin: 0 0 10px 0; line-height: 1.6;">
+                    ${this._esc(isAr ? c.explanation_ar : c.explanation_en)}
                   </p>
                   
                   <!-- Dedicated Instant Repair Method Banner -->
@@ -1326,10 +1388,34 @@ class ByteForceApp {
                     <div style="margin-top: 10px; padding: 12px 14px; background: rgba(56, 189, 248, 0.08); border-left: 3px solid #38BDF8; border-right: ${isAr ? '3px solid #38BDF8' : 'none'}; border-radius: 6px; font-size: 13px; line-height: 1.6;">
                       <div style="display: flex; align-items: center; gap: 6px; color: #38BDF8; font-weight: 700; margin-bottom: 4px;">
                         <i class="fas fa-tools"></i>
-                        <span>${isAr ? 'طريقة التصليح المعتمدة (MyFixit & ORA):' : 'Verified Repair Method (MyFixit & ORA):'}</span>
+                        <span>${isAr ? 'طريقة التصليح المعتمدة:' : 'Verified Repair Solution:'}</span>
                       </div>
                       <div style="color: #F1F5F9; font-weight: 500;">
-                        ${(isAr ? (c.repair_method_ar || c.repair_method_en) : (c.repair_method_en || c.repair_method_ar)).replace(/^(طريقة التصليح المعتمدة:\s*|Repair Method:\s*)/i, '')}
+                        ${this._esc((isAr ? (c.repair_method_ar || c.repair_method_en) : (c.repair_method_en || c.repair_method_ar)).replace(/^(طريقة التصليح المعتمدة:\s*|Repair Method:\s*)/i, ''))}
+                      </div>
+                    </div>
+                  ` : ''}
+
+                  <!-- Real Illustrated Fix Photos Directly Under the Cause -->
+                  ${causeImages.length > 0 ? `
+                    <div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.07);">
+                      <div style="font-size: 12.5px; font-weight: 700; color: #38BDF8; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                        <i class="fas fa-images"></i>
+                        <span data-i18n="results_visual_solution_title">${isAr ? 'صور خطوات الإصلاح التوضيحية لهذا العطل' : 'Illustrated Fix & Disassembly Photos'}</span>
+                      </div>
+                      <div class="visual-solution-grid">
+                        ${causeImages.slice(0, 4).map((imgUrl, imgIdx) => {
+                          const stepMatch = (report.visual_solution_steps || [])[imgIdx];
+                          const cap = stepMatch ? (isAr ? (stepMatch.title_ar || `خطوة ${stepMatch.step_number}`) : (stepMatch.title_en || `Step ${stepMatch.step_number}`)) : (isAr ? `صورة حل ${imgIdx + 1}` : `Fix Photo ${imgIdx + 1}`);
+                          return `
+                            <div class="visual-step-card" style="cursor: pointer;" onclick="app.showImagePreview('${this._esc(imgUrl)}', '${this._esc(cap)}')">
+                              <img src="${this._esc(imgUrl)}" alt="${this._esc(cap)}" class="visual-step-thumb" loading="lazy" onerror="this.parentElement.style.display='none'" />
+                              <div style="padding: 7px 10px; font-size: 11.5px; color: #CBD5E1; line-height: 1.4;">
+                                <strong style="color: #38BDF8;">${this._esc(cap)}</strong>
+                              </div>
+                            </div>
+                          `;
+                        }).join('')}
                       </div>
                     </div>
                   ` : ''}
@@ -1338,6 +1424,30 @@ class ByteForceApp {
               </div>
             ` : `<p style="color: var(--color-text-muted); font-size: 14px;">${isAr ? 'لم يتم العثور على مسببات جذرية مطابقة بقدر كافٍ من الأدلة لهذه الحالة.' : 'No statistically backed root causes met the evidence threshold.'}</p>`}
           </div>
+
+          <!-- Matching Real Historical Incidents (ORA Dataset Proof) -->
+          ${(report.empirical_statistics?.matching_incidents && report.empirical_statistics.matching_incidents.length > 0) ? `
+            <div class="card" style="margin-bottom: 24px;">
+              <h3 style="font-size: 18px; margin-bottom: 14px; display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-history" style="color: #38BDF8;"></i>
+                <span data-i18n="results_ora_incidents_title">${isAr ? 'حالات أعطال حقيقية مطابقة (Open Repair Alliance)' : 'Matching Real-World Cases (Open Repair Alliance)'}</span>
+              </h3>
+              <div style="display: flex; flex-direction: column; gap: 10px;">
+                ${report.empirical_statistics.matching_incidents.map(inc => `
+                  <div class="ora-incident-row">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 4px;">
+                      <strong style="color: #FFFFFF;">${this._esc(inc.brand || report.device_category)} · ${this._esc(inc.normalized_category || '')}</strong>
+                      <div style="display: flex; gap: 6px; align-items: center;">
+                        ${inc.problem_cluster ? `<span class="tag" style="font-size: 11px;">${this._esc(inc.problem_cluster)}</span>` : ''}
+                        <span class="tag" style="font-size: 11px; background: ${inc.repair_status === 'Fixed' ? 'rgba(16,185,129,0.15)' : 'rgba(245,158,11,0.15)'}; color: ${inc.repair_status === 'Fixed' ? '#34D399' : '#FBBF24'};">${this._esc(inc.repair_status || 'Recorded')}</span>
+                      </div>
+                    </div>
+                    <p style="color: #94A3B8; margin: 0; line-height: 1.5;" dir="ltr">${this._esc(inc.problem || '-')}</p>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          ` : ''}
 
           <!-- Required Tools -->
           ${report.required_tools && report.required_tools.length > 0 ? `
@@ -1441,6 +1551,16 @@ class ByteForceApp {
     `;
   }
 
+  showImagePreview(imgUrl, caption = "") {
+    if (!imgUrl) return;
+    this.openModal(`
+      <div style="text-align: center;">
+        <h4 style="color: #FFFFFF; margin-bottom: 12px;">${this._esc(caption)}</h4>
+        <img src="${this._esc(imgUrl)}" alt="${this._esc(caption)}" style="max-width: 100%; max-height: 70vh; border-radius: 10px; border: 1px solid rgba(255,255,255,0.14);" />
+      </div>
+    `);
+  }
+
   bookTechnicianForReport() {
     this.navigate("technicians");
   }
@@ -1520,9 +1640,17 @@ class ByteForceApp {
           const duration = g.estimated_minutes || (g.time_required ? (String(g.time_required).match(/\d+/) ? String(g.time_required).match(/\d+/)[0] : '25') : '25');
           const difficulty = g.difficulty || 'Moderate';
           const diffClass = difficulty.toLowerCase().includes('easy') ? 'low' : (difficulty.toLowerCase().includes('mod') ? 'medium' : 'high');
+          let thumb = g.thumbnail_url || null;
+          if (!thumb && Array.isArray(g.steps)) {
+            for (const st of g.steps) {
+              const imgs = st && (st.Images || st.images);
+              if (Array.isArray(imgs) && imgs.length > 0) { thumb = imgs[0]; break; }
+            }
+          }
 
           return `
           <div class="card card-interactive" onclick="app.showGuideModal(${g.id || g.guide_id})">
+            ${thumb ? `<img src="${this._esc(thumb)}" alt="${this._esc(title)}" class="guide-card-thumb" loading="lazy" onerror="this.style.display='none'" />` : ''}
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
               <span class="tag" style="background-color: rgba(37,99,235,0.08); color: var(--color-secondary);">
                 ${g.device_category || 'Hardware'}
@@ -2908,6 +3036,10 @@ class ByteForceApp {
               <span data-i18n="admin_tab_audit">سجل تدقيق الإدارة</span>
               <span class="admin-count-pill" id="tabCountAudit">0</span>
             </button>
+            <button type="button" class="admin-tab-btn ${activeTab === 'ai' ? 'active' : ''}" data-tab="ai" onclick="app.switchAdminTab('ai')">
+              <i class="fas fa-robot"></i>
+              <span data-i18n="admin_tab_ai">نموذج الذكاء الاصطناعي</span>
+            </button>
           </div>
 
           <!-- Active Tab Card -->
@@ -2920,12 +3052,13 @@ class ByteForceApp {
     `;
 
     // Load Stats + All Admin Datasets in Parallel
-    const [statsRes, centersRes, usersRes, reqsRes, auditRes] = await Promise.allSettled([
+    const [statsRes, centersRes, usersRes, reqsRes, auditRes, aiRes] = await Promise.allSettled([
       window.api.getAdminStats(),
       window.api.getAllAdminCenters("all"),
       window.api.getAdminUsers(),
       window.api.getAdminRequests(),
-      window.api.getAdminAuditLogs()
+      window.api.getAdminAuditLogs(),
+      window.api.getAdminAiStatus()
     ]);
 
     const stats = statsRes.status === "fulfilled" ? statsRes.value : {};
@@ -2934,12 +3067,14 @@ class ByteForceApp {
       users: usersRes.status === "fulfilled" ? (usersRes.value || []) : [],
       requests: reqsRes.status === "fulfilled" ? (reqsRes.value || []) : [],
       audit: auditRes.status === "fulfilled" ? (auditRes.value || []) : [],
+      aiStatus: aiRes.status === "fulfilled" ? (aiRes.value || {}) : { configured: false },
       errors: {
         stats: statsRes.status === "rejected" ? statsRes.reason?.message : null,
         centers: centersRes.status === "rejected" ? centersRes.reason?.message : null,
         users: usersRes.status === "rejected" ? usersRes.reason?.message : null,
         requests: reqsRes.status === "rejected" ? reqsRes.reason?.message : null,
-        audit: auditRes.status === "rejected" ? auditRes.reason?.message : null
+        audit: auditRes.status === "rejected" ? auditRes.reason?.message : null,
+        aiStatus: aiRes.status === "rejected" ? aiRes.reason?.message : null
       }
     };
 
@@ -3160,6 +3295,49 @@ class ByteForceApp {
       return;
     }
 
+    // Tab 5: AI Model Integration Setup
+    if (tab === "ai") {
+      const aiSt = cache.aiStatus || { configured: false };
+      panel.innerHTML = `
+        <h3 style="font-size: 18px; margin-bottom: 12px;" data-i18n="admin_tab_ai">${isAr ? 'نموذج الذكاء الاصطناعي ومفاتيح API' : 'AI Model Integration & API Key'}</h3>
+        <div style="padding: 14px 16px; border-radius: 10px; margin-bottom: 18px; background: ${aiSt.configured ? 'rgba(16,185,129,0.12)' : 'rgba(56,189,248,0.1)'}; border: 1px solid ${aiSt.configured ? 'rgba(16,185,129,0.3)' : 'rgba(56,189,248,0.28)'};">
+          <div style="font-weight: 700; color: ${aiSt.configured ? '#34D399' : '#38BDF8'}; margin-bottom: 4px;">
+            <i class="fas ${aiSt.configured ? 'fa-check-circle' : 'fa-key'}"></i>
+            ${aiSt.configured
+              ? (isAr ? `متصل ونشط عبر ${String(aiSt.provider || '').toUpperCase()} (${this._esc(aiSt.masked_key || '')})` : `Connected via ${String(aiSt.provider || '').toUpperCase()} (${this._esc(aiSt.masked_key || '')})`)
+              : (isAr ? 'بانتظار إدخال مفتاح AI API (يعمل التشخيص حالياً عبر قواعد البيانات الحية ORA + MyFixit + iFixit)' : 'Awaiting AI API Key (Real dataset diagnosis is active via ORA + MyFixit + iFixit)')}
+          </div>
+          <p style="font-size: 12.5px; color: #94A3B8; margin: 0;">
+            ${isAr ? 'يدعم النظام الربط المباشر مع Google Gemini أو OpenAI أو Groq أو OpenRouter. للعمل الدائم على Vercel أضف المتغير في إعدادات البيئة بـ Vercel.' : 'Supports Google Gemini, OpenAI, Groq, and OpenRouter. For permanent Vercel deployment, also set the variable in Vercel Environment Variables.'}
+          </p>
+        </div>
+        <div class="form-row-2" style="margin-bottom: 14px;">
+          <div class="form-group">
+            <label class="form-label">${isAr ? 'مزود الذكاء الاصطناعي' : 'AI Provider'}</label>
+            <select id="adminAiProvider" class="form-control">
+              <option value="gemini">Google Gemini (GEMINI_API_KEY)</option>
+              <option value="openai">OpenAI GPT (OPENAI_API_KEY)</option>
+              <option value="groq">Groq Llama (GROQ_API_KEY)</option>
+              <option value="openrouter">OpenRouter (OPENROUTER_API_KEY)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">${isAr ? 'مفتاح الـ API' : 'Secret API Key'}</label>
+            <input type="password" id="adminAiKeyInput" class="form-control" dir="ltr" placeholder="AIza... / sk-... / gsk_..." />
+          </div>
+        </div>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+          <button type="button" class="btn btn-primary btn-sm" onclick="app.saveAdminAiKey()">
+            <i class="fas fa-save"></i> ${isAr ? 'حفظ وتفعيل المفتاح' : 'Save & Activate Key'}
+          </button>
+          <button type="button" class="btn btn-outline btn-sm" onclick="app.testAdminAiConnection()">
+            <i class="fas fa-vial"></i> ${isAr ? 'اختبار اتصال الذكاء الاصطناعي' : 'Test AI Connection'}
+          </button>
+        </div>
+      `;
+      return;
+    }
+
     // Tab 4: Audit Log
     if (cache.errors.audit) {
       panel.innerHTML = `<p style="color: #FCA5A5;">${this._esc(cache.errors.audit)}</p>`;
@@ -3182,6 +3360,39 @@ class ByteForceApp {
         </div>
       `}
     `;
+  }
+
+  async saveAdminAiKey() {
+    const isAr = window.i18n.currentLang === "ar";
+    const provider = document.getElementById("adminAiProvider")?.value || "gemini";
+    const apiKey = document.getElementById("adminAiKeyInput")?.value.trim() || "";
+    if (!apiKey) {
+      this._setAdminNotice("error", isAr ? "يرجى إدخال مفتاح API صحيح أولاً." : "Please enter a valid API key.");
+      this.navigate("admin");
+      return;
+    }
+    try {
+      const res = await window.api.saveAdminAiConfig(provider, apiKey);
+      this._setAdminNotice("success", isAr ? `تم حفظ وتفعيل ${res.provider} بنجاح (${res.masked_key}).` : `Saved ${res.provider} key (${res.masked_key}).`);
+    } catch (e) {
+      this._setAdminNotice("error", (isAr ? "تعذر حفظ المفتاح: " : "Failed to save key: ") + (e.message || ""));
+    }
+    this.navigate("admin");
+  }
+
+  async testAdminAiConnection() {
+    const isAr = window.i18n.currentLang === "ar";
+    try {
+      const res = await window.api.testAdminAi();
+      if (res.status === "completed") {
+        this._setAdminNotice("success", isAr ? `اتصال AI ناجح عبر ${res.provider}! (${res.diagnosis_summary_ar || res.diagnosis_summary_en || 'OK'})` : `AI Test Passed via ${res.provider}!`);
+      } else {
+        this._setAdminNotice("error", isAr ? `حالة AI: ${res.status} ${res.error ? '(' + res.error + ')' : ''}` : `AI Status: ${res.status} ${res.error || ''}`);
+      }
+    } catch (e) {
+      this._setAdminNotice("error", (isAr ? "فشل اختبار الذكاء الاصطناعي: " : "AI test failed: ") + (e.message || ""));
+    }
+    this.navigate("admin");
   }
 
   async approveTech(id) {

@@ -339,9 +339,23 @@ class ApiClient {
   }
 
   // ==========================================
+  // DEVICE & GUIDE VISUAL MEDIA LOOKUP
+  // ==========================================
+  async getDeviceImage(query, category = "") {
+    try {
+      const q = new URLSearchParams();
+      if (query) q.set("q", query);
+      if (category) q.set("category", category);
+      return await this.request(`/media/device-image?${q.toString()}`);
+    } catch (e) {
+      return { image_url: null, title: null, source: null };
+    }
+  }
+
+  // ==========================================
   // ADMIN SYSTEM METRICS & CONTROLS (EXCLUSIVE TO snsr19344@gmail.com)
   // ==========================================
-  async _adminRequest(endpoint, method = "GET", fallbackFn = null) {
+  async _adminRequest(endpoint, method = "GET", fallbackFn = null, bodyPayload = null) {
     let token = this.token;
     if (window.SupabaseBridge && typeof window.SupabaseBridge.getAccessToken === "function") {
       try {
@@ -353,7 +367,11 @@ class ApiClient {
     try {
       const headers = { "Content-Type": "application/json" };
       if (token) headers["Authorization"] = `Bearer ${token}`;
-      const response = await fetch(`${this.baseUrl}${endpoint}`, { method, headers });
+      const fetchOpts = { method, headers };
+      if (bodyPayload !== null && method !== "GET" && method !== "HEAD") {
+        fetchOpts.body = JSON.stringify(bodyPayload);
+      }
+      const response = await fetch(`${this.baseUrl}${endpoint}`, fetchOpts);
       if (response.status === 401 || response.status === 403) {
         let errData = {};
         try { errData = await response.json(); } catch (e) {}
@@ -434,6 +452,18 @@ class ApiClient {
 
   async getAdminAuditLogs() {
     return await this._adminRequest("/admin/audit", "GET", () => window.SupabaseBridge.fetchAdminAuditLogs());
+  }
+
+  async getAdminAiStatus() {
+    return await this._adminRequest("/admin/ai-status", "GET", null);
+  }
+
+  async saveAdminAiConfig(provider, apiKey) {
+    return await this._adminRequest("/admin/ai-config", "POST", null, { provider, api_key: apiKey });
+  }
+
+  async testAdminAi() {
+    return await this._adminRequest("/admin/ai-test", "POST", null, {});
   }
 }
 

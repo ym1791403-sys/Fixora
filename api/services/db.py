@@ -187,21 +187,60 @@ def get_openrepair_all_categories() -> List[Dict[str, Any]]:
     """Fetches all category empirical statistics from Supabase."""
     return postgrest_request("openrepair_statistics", {"select": "*", "order": "sample_size.desc"})
 
+_INCIDENT_CATEGORY_MAP = {
+    "smartphone": ["Mobile", "Handheld entertainment device"],
+    "laptop": ["Laptop"],
+    "desktop computer": ["Desktop computer", "PC accessory"],
+    "gaming console": ["Games console", "Handheld entertainment device", "TV and gaming-related accessories"],
+    "smart tv": ["Flat screen", "Projector", "TV and gaming-related accessories"],
+    "tablet": ["Tablet"],
+    "storage": ["Desktop computer", "Laptop", "PC accessory"],
+    "printer": ["Printer/scanner", "Paper shredder"],
+    "audio": ["Headphones", "Hi-Fi integrated", "Hi-Fi separates", "Portable radio"],
+    "smartwatch": ["Watch/clock"],
+    "camera": ["Digital compact camera", "DSLR/video camera"],
+    "home appliance": ["Vacuum", "Coffee maker", "Food processor", "Fan", "Kettle", "Iron", "Large home electrical", "Small home electrical"],
+    "other": ["Small home electrical", "Miscellaneous", "Misc", "Toy", "Power tool", "Lamp"],
+}
+
 def get_matching_repair_incidents(
     category: str,
     brand: Optional[str] = None,
+    problem_cluster: Optional[str] = None,
     limit: int = 10
 ) -> List[Dict[str, Any]]:
-    """Fetches real repair incidents matching category and brand from Supabase."""
-    params = {
-        "select": "id,partner_category,normalized_category,brand,product_age,repair_status,repair_barrier,problem,problem_cluster",
-        "normalized_category": f"ilike.{category.strip()}",
-        "limit": str(limit),
-        "order": "created_at.desc"
-    }
-    if brand:
-        params["brand"] = f"ilike.{brand.strip()}"
-    return postgrest_request("repair_incidents", params)
+    """Fetches real repair incidents matching mapped ORA category, optional cluster, and brand from Supabase."""
+    cat_key = (category or "").strip().lower()
+    mapped_cats = _INCIDENT_CATEGORY_MAP.get(cat_key)
+
+    def _query_incidents(with_brand: bool, with_cluster: bool) -> List[Dict[str, Any]]:
+        params: Dict[str, str] = {
+            "select": "id,partner_category,normalized_category,brand,product_age,repair_status,repair_barrier,problem,problem_cluster",
+            "limit": str(limit),
+            "order": "created_at.desc"
+        }
+        if mapped_cats:
+            in_list = ",".join(f'"{c}"' for c in mapped_cats)
+            params["normalized_category"] = f"in.({in_list})"
+        elif category:
+            params["normalized_category"] = f"ilike.{category.strip()}"
+
+        if with_brand and brand:
+            params["brand"] = f"ilike.%{brand.strip()}%"
+        if with_cluster and problem_cluster and problem_cluster not in ("GENERAL_DEFECT", "UNKNOWN"):
+            params["problem_cluster"] = f"eq.{problem_cluster}"
+        return postgrest_request("repair_incidents", params) or []
+
+    # Try progressive specificity: cluster+brand -> cluster -> brand -> category
+    for wb, wc in [(True, True), (False, True), (True, False), (False, False)]:
+        if wb and not brand:
+            continue
+        if wc and (not problem_cluster or problem_cluster in ("GENERAL_DEFECT", "UNKNOWN")):
+            continue
+        rows = _query_incidents(wb, wc)
+        if rows:
+            return rows
+    return []
 
 def search_repair_guides(
     query: Optional[str] = None,
