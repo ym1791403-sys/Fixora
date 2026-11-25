@@ -88,28 +88,6 @@ class ByteForceApp {
     }[c]));
   }
 
-  toggleTheme() {
-    const current = document.documentElement.getAttribute("data-theme") || "light";
-    const next = current === "dark" ? "light" : "dark";
-    document.documentElement.setAttribute("data-theme", next);
-    try {
-      localStorage.setItem("byteforce_theme", next);
-    } catch (e) {}
-    this._updateThemeButtonUI();
-  }
-
-  _updateThemeButtonUI() {
-    const theme = document.documentElement.getAttribute("data-theme") || "light";
-    const btn = document.getElementById("themeToggleBtn");
-    if (btn) {
-      const isDark = theme === "dark";
-      btn.innerHTML = `<i class="fas ${isDark ? "fa-sun" : "fa-moon"}"></i>`;
-      btn.title = isDark
-        ? "تفعيل المظهر الفاتح (الأساسي) / Switch to Light Theme"
-        : "تفعيل المظهر الداكن / Switch to Dark Theme";
-    }
-  }
-
   applyHomeSectionOrder() {
     const main = document.getElementById("mainContent");
     if (!main) return;
@@ -125,7 +103,10 @@ class ByteForceApp {
   }
 
   async init() {
-    this._updateThemeButtonUI();
+    try {
+      localStorage.removeItem("byteforce_theme");
+    } catch (e) {}
+    document.documentElement.setAttribute("data-theme", "light");
     this.applyHomeSectionOrder();
     this.bindEvents();
     this.updateNavAuth();

@@ -1,5 +1,5 @@
 /* ==========================================================================
-   ByteForce — Clean Crisp White Primary Theme (with Optional Dark Toggle)
+   ByteForce — Clean Crisp White Theme
    High-End Enterprise Hardware Diagnostics & Repair Aesthetic
    ========================================================================== */
 
@@ -73,68 +73,6 @@
 
   --font-en: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-ar: 'IBM Plex Sans Arabic', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-[data-theme="dark"] {
-  --color-bg: #0B0E14;
-  --color-bg-alt: #0F131C;
-  --color-surface: #121722;
-  --color-surface-alt: #0E131F;
-  --color-surface-hover: #18202F;
-  --color-card: #121722;
-  --color-card-hover: #18202F;
-  --color-border: rgba(255, 255, 255, 0.09);
-  --color-border-hover: rgba(255, 255, 255, 0.2);
-
-  --color-primary: #FFFFFF;
-  --color-secondary: #1D64F2;
-  --color-secondary-hover: #1550C4;
-  --color-accent: #38BDF8;
-  --color-purple: #C084FC;
-
-  --color-text-main: #FFFFFF;
-  --color-text-body: #CBD5E1;
-  --color-text-muted: #94A3B8;
-  --color-text-dim: #64748B;
-
-  --color-success: #34D399;
-  --color-danger: #F87171;
-  --color-warning: #FBBF24;
-
-  --nav-bg: rgba(11, 14, 20, 0.95);
-  --nav-shadow: none;
-  --footer-bg: #07090E;
-  --input-bg: #090C12;
-  --input-border: rgba(255, 255, 255, 0.12);
-  --input-placeholder: #475569;
-
-  --hero-overlay-bg: linear-gradient(180deg, rgba(11, 14, 20, 0.4) 0%, rgba(11, 14, 20, 0.65) 55%, #0B0E14 100%);
-  --hero-card-bg: rgba(11, 14, 20, 0.6);
-  --hero-card-border: rgba(255, 255, 255, 0.1);
-  --hero-card-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
-
-  --card-shadow: none;
-  --card-hover-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
-
-  --btn-emergency-bg: #FFFFFF;
-  --btn-emergency-text: #0B0E14;
-  --btn-emergency-hover: #E2E8F0;
-  --btn-outline-bg: transparent;
-  --btn-outline-border: rgba(255, 255, 255, 0.18);
-  --btn-outline-text: #FFFFFF;
-  --btn-outline-hover: rgba(255, 255, 255, 0.08);
-  --pill-bg: rgba(255, 255, 255, 0.06);
-  --pill-border: rgba(255, 255, 255, 0.12);
-
-  --auth-gate-bg: linear-gradient(135deg, rgba(37,99,235,0.12) 0%, rgba(15,23,42,0.85) 100%);
-  --ai-card-bg: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(15, 23, 42, 0.9) 100%);
-  --dataset-card-bg: linear-gradient(135deg, rgba(14, 165, 233, 0.08) 0%, rgba(30, 41, 59, 0.4) 100%);
-  --callout-card-bg: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
-  --callout-card-border: rgba(56, 189, 248, 0.25);
-  --modal-backdrop: rgba(0, 0, 0, 0.85);
-  --badge-ring: rgba(255, 255, 255, 0.22);
-  --selected-bg: #152238;
-  --hazard-text: #FCA5A5;
 }
 
 /* Global Reset */
@@ -376,12 +314,6 @@ h1, h2, h3, h4, h5, h6 {
   border-color: var(--color-border-hover);
 }
 
-.theme-toggle-btn {
-  padding: 7px 11px;
-  min-width: 36px;
-  justify-content: center;
-}
-
 /* ==========================================
    Hero Section
    ========================================== */
@@ -410,14 +342,6 @@ h1, h2, h3, h4, h5, h6 {
   background-size: cover;
   background-repeat: no-repeat;
   border-bottom: none !important;
-}
-
-[data-theme="dark"] .hero-wrapper,
-[data-theme="dark"][dir="rtl"] .hero-wrapper {
-  background-image:
-    var(--hero-overlay-bg),
-    url('../images/hero-bg.webp');
-  background-position: center top;
 }
 
 .hero-content-col {
@@ -1155,13 +1079,6 @@ textPath {
     background-repeat: no-repeat;
     border-bottom: none !important;
   }
-  [data-theme="dark"] .hero-wrapper,
-  [data-theme="dark"][dir="rtl"] .hero-wrapper {
-    background-image:
-      var(--hero-overlay-bg),
-      url('../images/hero-bg.webp');
-    background-position: center top;
-  }
   .hero-content-col {
     padding: 22px 18px;
     background: var(--hero-card-bg);
@@ -1225,10 +1142,6 @@ textPath {
   .lang-btn {
     padding: 6px 9px;
     font-size: 12px;
-  }
-  .theme-toggle-btn {
-    min-width: 32px;
-    padding: 6px 8px;
   }
   .lang-btn span {
     display: none;

@@ -5,12 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ByteForce — Fixing Tech Issues Fast and Right</title>
   <meta name="description" content="ByteForce — Expert IT Support, universal hardware diagnostics, and certified repair services across all consumer electronics.">
-  <script>
-    try {
-      var _bfTheme = localStorage.getItem("byteforce_theme");
-      document.documentElement.setAttribute("data-theme", _bfTheme === "dark" ? "dark" : "light");
-    } catch (e) {}
-  </script>
 
   <!-- Google Fonts: Plus Jakarta Sans (English), Cairo & Almarai (Arabic) -->
   <!-- Google Fonts: IBM Plex Sans Arabic (Modern Tech Typography), Plus Jakarta Sans & Inter -->
@@ -22,14 +16,14 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
   <!-- ByteForce Stylesheet -->
-  <link rel="stylesheet" href="css/style.css?v=4.0.11">
+  <link rel="stylesheet" href="css/style.css?v=4.0.12">
   <!-- Leaflet Interactive Maps (ByteForce Centers & Technicians Network) -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
 </head>
 <body>
 
-  <!-- Navigation Bar (ByteFix Inspired Matte Dark Nav) -->
+  <!-- Navigation Bar (ByteForce Clean White Nav) -->
   <header class="navbar">
     <div class="container nav-container">
       
@@ -51,11 +45,6 @@
 
       <!-- Action Buttons & Language Switcher -->
       <div class="nav-actions">
-        <!-- Theme Switcher Button (Light Primary Default) -->
-        <button id="themeToggleBtn" class="lang-btn theme-toggle-btn" onclick="app.toggleTheme()" title="تبديل المظهر / Toggle Theme" aria-label="Toggle Theme">
-          <i class="fas fa-moon"></i>
-        </button>
-
         <!-- Language Switcher Button -->
         <button id="langToggleBtn" class="lang-btn" title="Switch Language / تغيير اللغة">
           <i class="fas fa-globe"></i>
@@ -535,7 +524,7 @@
           <a href="#" onclick="app.showSafetyModal(); return false;" style="color: var(--color-text-muted); text-decoration: none;">إرشادات الأمان</a>
           <a href="#" onclick="app.showDatasetsModal(); return false;" style="color: var(--color-text-muted); text-decoration: none;">تراخيص البيانات المفتوحة</a>
           <span style="color: var(--color-border-hover);">|</span>
-          <span style="color: var(--color-text-muted);">v4.0.11 Enterprise Edition</span>
+          <span style="color: var(--color-text-muted);">v4.0.12 Enterprise Edition</span>
         </div>
       </div>
     </div>
@@ -543,12 +532,12 @@
 
   <!-- Supabase Official JS SDK & Auth Bridge -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/supabase-init.js?v=4.0.11"></script>
+  <script src="js/supabase-init.js?v=4.0.12"></script>
 
   <!-- ByteForce Core Scripts & Real Datasets -->
-  <script src="js/i18n.js?v=4.0.11"></script>
-  <script src="js/api.js?v=4.0.11"></script>
-  <script src="js/app.js?v=4.0.11"></script>
+  <script src="js/i18n.js?v=4.0.12"></script>
+  <script src="js/api.js?v=4.0.12"></script>
+  <script src="js/app.js?v=4.0.12"></script>
   <script>
     if (!window.app && (typeof ByteForceApp !== 'undefined' || typeof FixoraApp !== 'undefined')) {
       const AppClass = typeof ByteForceApp !== 'undefined' ? ByteForceApp : FixoraApp;
