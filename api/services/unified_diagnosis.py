@@ -22,7 +22,15 @@ from api.services.backblaze_service import BackblazeFailurePredictionService
 from api.services.symptom_extractor import extract_fault_signals
 from api.services.media_resolver import resolve_device_image, fetch_ifixit_live_guide
 from api.services.ai_engine import AIAssistantService
-from api.services.db import save_diagnosis_report
+from api.services.db import save_diagnosis_report, save_verified_repair_feedback
+from api.services.translator import (
+    translate_repair_text,
+    translate_guide_title_ar,
+    translate_tool_ar,
+    translate_cluster_ar,
+    translate_status_ar,
+    has_substantial_arabic,
+)
 
 _ORA_CLUSTER_LABELS = {
     "BATTERY_CHARGING": (
@@ -186,6 +194,10 @@ class UnifiedDiagnosisEngine:
         desc = (request_data.get("description") or "").strip()
         err_msg = (request_data.get("error_message") or "").strip()
         telemetry = request_data.get("smart_telemetry") or {}
+        attempt_number = max(1, int(request_data.get("attempt_number") or 1))
+        raw_excluded = request_data.get("exclude_guide_ids") or []
+        exclude_guide_ids = [int(x) for x in raw_excluded if x is not None and str(x).isdigit()]
+        failed_solutions = [str(x).strip() for x in (request_data.get("failed_solutions") or []) if str(x).strip()]
 
         normalized_cat = self._normalize_category(raw_cat, f"{model} {desc}")
         is_storage = (normalized_cat == "Storage") or any(
@@ -201,7 +213,11 @@ class UnifiedDiagnosisEngine:
             description=desc,
             error_message=err_msg,
         )
-        primary_domain = signals.get("primary_domain")
+        matched_domains = signals.get("matched_domains") or []
+        if attempt_number > 1 and len(matched_domains) > 1:
+            primary_domain = matched_domains[(attempt_number - 1) % len(matched_domains)]
+        else:
+            primary_domain = signals.get("primary_domain")
         component_terms = signals.get("component_terms") or []
         eng_tokens = signals.get("english_tokens") or []
 
@@ -220,13 +236,14 @@ class UnifiedDiagnosisEngine:
         matched_cluster = ora_analysis.get("matched_failure_cluster", "GENERAL_DEFECT")
         is_statistically_significant = ora_analysis.get("is_statistically_significant", False)
 
-        # 3. Search Symptom-Matched + Model-Matched Repair Manual (MyFixit Supabase -> Live iFixit 2.0)
+        # 3. Search Symptom-Matched + Model-Matched Repair Manual (skipping failed guide IDs on retry)
         guide_lookup = self.myfixit.find_best_guide(
             category=normalized_cat,
             brand=brand,
             model=model,
             component_terms=component_terms,
             extra_tokens=eng_tokens,
+            exclude_guide_ids=exclude_guide_ids,
         )
         matched_guide = guide_lookup.get("guide")
         exact_model_match = guide_lookup.get("exact_model_match", False)
@@ -280,7 +297,17 @@ class UnifiedDiagnosisEngine:
                 "created_at": datetime.now().isoformat() + "Z",
             }
 
-        # 6. Optional External AI Reasoning (only when real API key is configured)
+        # 6. Smart Reasoning + Single-Call Arabic Step/Case Translation (ZERO redundant token calls)
+        raw_guide_step_texts = [
+            (st.get("instruction_en") or "").strip()
+            for st in ((matched_guide or {}).get("steps") or [])[:8]
+            if isinstance(st, dict) and (st.get("instruction_en") or "").strip()
+        ]
+        raw_inc_texts = [
+            (inc.get("problem") or "").strip()
+            for inc in (sample_incidents or [])[:5]
+            if isinstance(inc, dict) and (inc.get("problem") or "").strip()
+        ]
         ai_analysis = self.ai_assistant.analyze_with_datasets(
             device_info={
                 "device_category": normalized_cat,
@@ -292,9 +319,13 @@ class UnifiedDiagnosisEngine:
             ora_summary=ora_analysis,
             guide_summary=matched_guide,
             timeout=14.0,
+            guide_steps=raw_guide_step_texts,
+            ora_incidents=raw_inc_texts,
+            failed_attempts=failed_solutions,
+            attempt_number=attempt_number,
         )
 
-        # If AI returned a refined English visual query, only fetch live iFixit if no guide exists OR zero photos exist
+        # If refined visual query returned and no guide exists OR zero photos exist, fetch matching manual
         ai_query = (ai_analysis.get("visual_image_query") or "").strip() if ai_analysis.get("status") == "completed" else ""
         ai_device_query = (ai_analysis.get("device_photo_query") or "").strip() if ai_analysis.get("status") == "completed" else ""
         orig_img_count = sum(1 for st in ((matched_guide or {}).get("steps") or []) if isinstance(st, dict) and (st.get("images") or st.get("Images")))
@@ -306,27 +337,60 @@ class UnifiedDiagnosisEngine:
                 component_terms=component_terms,
                 category=normalized_cat,
             )
-            if ai_live_guide:
+            if ai_live_guide and int(ai_live_guide.get("guide_id") or -1) not in exclude_guide_ids:
                 ai_img_count = sum(1 for st in (ai_live_guide.get("steps") or []) if isinstance(st, dict) and (st.get("images") or st.get("Images")))
                 if not matched_guide or ai_img_count > orig_img_count:
                     matched_guide = ai_live_guide
 
-        # 7. Extract Step Instructions + Visual Solution Photos + Real Device Photo
+        ai_translated_steps = ai_analysis.get("translated_guide_steps_ar") if isinstance(ai_analysis.get("translated_guide_steps_ar"), list) else []
+        ai_translated_incs = ai_analysis.get("translated_incidents_ar") if isinstance(ai_analysis.get("translated_incidents_ar"), list) else []
+        ai_custom_steps_ar = ai_analysis.get("repair_steps_ar") if isinstance(ai_analysis.get("repair_steps_ar"), list) else []
+        ai_custom_steps_en = ai_analysis.get("repair_steps_en") if isinstance(ai_analysis.get("repair_steps_en"), list) else []
+
+        # Translate ORA incidents cleanly to Arabic (prefer verified community Arabic -> single-call AI translation -> deterministic translator)
+        localized_incidents: List[Dict[str, Any]] = []
+        for idx_inc, inc in enumerate(sample_incidents or []):
+            if not isinstance(inc, dict):
+                continue
+            raw_prob = (inc.get("problem") or "").strip()
+            if has_substantial_arabic(raw_prob):
+                prob_ar = raw_prob
+            elif idx_inc < len(ai_translated_incs) and has_substantial_arabic(str(ai_translated_incs[idx_inc] or "")):
+                prob_ar = str(ai_translated_incs[idx_inc]).strip()
+            else:
+                prob_ar = translate_repair_text(raw_prob, is_incident=True)
+            localized_incidents.append({
+                **inc,
+                "problem_ar": prob_ar or "حالة عطل موثقة لنفس الفئة",
+                "repair_status_ar": translate_status_ar(inc.get("repair_status") or ""),
+                "problem_cluster_ar": translate_cluster_ar(inc.get("problem_cluster") or ""),
+            })
+        sample_incidents = localized_incidents
+
+        # 7. Extract Step Instructions (Arabic + English) + Visual Solution Photos + Real Device Photo
         troubleshooting_steps: List[Dict[str, Any]] = []
         visual_solution_steps: List[Dict[str, Any]] = []
         tools: List[str] = []
         if matched_guide:
             raw_steps = matched_guide.get("steps", [])
-            for s in raw_steps[:15]:
+            for step_idx, s in enumerate(raw_steps[:15]):
                 inst_en = (s.get("instruction_en") or "").strip()
-                inst_ar = (s.get("instruction_ar") or inst_en).strip()
                 imgs = s.get("images") or s.get("Images") or []
                 if not inst_en and not imgs:
                     continue
+                raw_ar = (s.get("instruction_ar") or "").strip()
+                if has_substantial_arabic(raw_ar):
+                    inst_ar = raw_ar
+                elif step_idx < len(ai_translated_steps) and has_substantial_arabic(str(ai_translated_steps[step_idx] or "")):
+                    inst_ar = str(ai_translated_steps[step_idx]).strip()
+                else:
+                    inst_ar = translate_repair_text(inst_en, is_incident=False) if inst_en else "راجع الصورة التوضيحية المرفقة لهذه الخطوة."
+
+                step_num = s.get("step_number", len(troubleshooting_steps) + 1)
                 step_obj = {
-                    "step_number": s.get("step_number", len(troubleshooting_steps) + 1),
-                    "title_en": s.get("title_en") or f"Step {s.get('step_number', len(troubleshooting_steps) + 1)}",
-                    "title_ar": s.get("title_ar") or f"الخطوة {s.get('step_number', len(troubleshooting_steps) + 1)}",
+                    "step_number": step_num,
+                    "title_en": s.get("title_en") or f"Step {step_num}",
+                    "title_ar": f"الخطوة {step_num}",
                     "instruction_en": inst_en,
                     "instruction_ar": inst_ar,
                     "images": imgs if isinstance(imgs, list) else [],
@@ -343,6 +407,31 @@ class UnifiedDiagnosisEngine:
                         "image_url": step_obj["images"][0],
                     })
             tools = matched_guide.get("required_tools", []) or matched_guide.get("toolbox", [])
+
+        # If manual is absent or steps lack depth and smart engine produced Arabic sequence, synthesize clean Arabic step objects
+        if not troubleshooting_steps and ai_custom_steps_ar:
+            for idx_cs, cs_ar in enumerate(ai_custom_steps_ar[:8]):
+                cs_en = ai_custom_steps_en[idx_cs] if idx_cs < len(ai_custom_steps_en) else str(cs_ar)
+                troubleshooting_steps.append({
+                    "step_number": idx_cs + 1,
+                    "title_en": f"Step {idx_cs + 1}",
+                    "title_ar": f"الخطوة {idx_cs + 1}",
+                    "instruction_en": str(cs_en),
+                    "instruction_ar": str(cs_ar),
+                    "images": [],
+                    "requires_tools": bool(tools),
+                })
+
+        tools_ar = [translate_tool_ar(t) for t in tools]
+        guide_title_ar = (
+            (ai_analysis.get("translated_guide_title_ar") or "").strip()
+            if has_substantial_arabic(str(ai_analysis.get("translated_guide_title_ar") or ""))
+            else translate_guide_title_ar(
+                matched_guide.get("title", "") if matched_guide else "",
+                component=(matched_guide.get("component") if matched_guide else ""),
+                model=(matched_guide.get("device_model") if matched_guide else model),
+            )
+        ) if matched_guide else None
 
         # Resolve device photo for header card
         guide_image_url = matched_guide.get("guide_image_url") if matched_guide else None
@@ -383,14 +472,14 @@ class UnifiedDiagnosisEngine:
             dom_title_en = f"{primary_domain['label_en']}" + (f" ({matched_guide.get('component')})" if matched_guide and matched_guide.get("component") else "")
             dom_title_ar = f"{primary_domain['label_ar']}" + (f" — {matched_guide.get('component')}" if matched_guide and matched_guide.get("component") else "")
             guide_ref_en = f" | Guide: '{matched_guide['title']}'" if matched_guide else ""
-            guide_ref_ar = f" | وفق الدليل المعتمد: '{matched_guide['title']}'" if matched_guide else ""
+            guide_ref_ar = f" | وفق الدليل المعتمد: '{guide_title_ar or matched_guide['title']}'" if matched_guide else ""
             possible_causes.append({
                 "title_en": dom_title_en,
                 "title_ar": dom_title_ar,
                 "empirical_repairability_pct": empirical_fix_rate,
                 "source_dataset": matched_guide.get("source", "MyFixit & Open Repair Alliance") if matched_guide else "Open Repair Alliance Symptom Analysis",
-                "explanation_en": f"{primary_domain['cause_en']} Matched empirical fix rate for {normalized_cat}: {empirical_fix_rate}% across {ora_sample_size:,} cases.",
-                "explanation_ar": f"{primary_domain['cause_ar']} معدل نجاح الإصلاح الواقعي لفئة {normalized_cat} هو {empirical_fix_rate}% من واقع {ora_sample_size:,} حالة مسجلة.",
+                "explanation_en": f"{primary_domain['cause_en']} Matched across {ora_sample_size:,} verified {normalized_cat} cases.",
+                "explanation_ar": f"{primary_domain['cause_ar']} مدعوم بـ {ora_sample_size:,} سجل فحص في فئة {normalized_cat}.",
                 "repair_method_en": f"{primary_domain['fix_en']}{guide_ref_en}",
                 "repair_method_ar": f"{primary_domain['fix_ar']}{guide_ref_ar}",
                 "source_guide_id": matched_guide.get("guide_id") if matched_guide else None,
@@ -405,13 +494,13 @@ class UnifiedDiagnosisEngine:
             summary = matched_guide.get("summary") or f"Targeted disassembly and service procedure for {matched_guide.get('component', 'internal hardware')} on {matched_guide.get('device_model', normalized_cat)}."
             possible_causes.append({
                 "title_en": f"Component Fault: {matched_guide.get('component') or guide_title}",
-                "title_ar": f"عطل مكون: {matched_guide.get('component') or guide_title}",
+                "title_ar": f"عطل مكون: {guide_title_ar or guide_title}",
                 "empirical_repairability_pct": empirical_fix_rate,
                 "source_dataset": matched_guide.get("source", "MyFixit Verified Manuals & Open Repair Alliance"),
                 "explanation_en": summary,
-                "explanation_ar": f"عطل مرتبط بمكون {matched_guide.get('component', 'الجهاز')} وفق دليل '{guide_title}'. نسبة النجاح الموثقة في ORA هي {empirical_fix_rate}% عبر {ora_sample_size:,} سجل.",
+                "explanation_ar": f"عطل مرتبط بمكون {matched_guide.get('component', 'الجهاز')} وفق دليل '{guide_title_ar or guide_title}' عبر {ora_sample_size:,} سجل تاريخي.",
                 "repair_method_en": f"Follow verified guide '{guide_title}'. Source: {guide_url}",
-                "repair_method_ar": f"اتباع خطوات الصيانة الموضحة في دليل '{guide_title}' بالأدوات المحددة أدناه.",
+                "repair_method_ar": f"اتباع خطوات الصيانة العربية الموضحة لدليل '{guide_title_ar or guide_title}' بالأدوات المحددة أدناه.",
                 "source_guide_id": matched_guide.get("guide_id"),
                 "source_guide_url": guide_url,
                 "repair_images": solution_photos,
@@ -447,7 +536,7 @@ class UnifiedDiagnosisEngine:
             if len(possible_causes) >= 3:
                 break
 
-        # 8d. Append External AI Model Root Causes if configured and active
+        # 8d. Prepend ByteForce Smart Engine root causes cleanly without exposing external model/provider names
         if ai_analysis.get("status") == "completed":
             for ai_c in (ai_analysis.get("root_causes") or [])[:2]:
                 if isinstance(ai_c, dict) and (ai_c.get("title_en") or ai_c.get("title_ar")):
@@ -455,7 +544,7 @@ class UnifiedDiagnosisEngine:
                         "title_en": ai_c.get("title_en") or ai_c.get("title_ar"),
                         "title_ar": ai_c.get("title_ar") or ai_c.get("title_en"),
                         "empirical_repairability_pct": empirical_fix_rate,
-                        "source_dataset": f"AI Model ({ai_analysis.get('provider', 'AI').upper()}) + Empirical Grounding",
+                        "source_dataset": "ByteForce Smart Engine + Empirical Grounding",
                         "explanation_en": ai_c.get("explanation_en") or "",
                         "explanation_ar": ai_c.get("explanation_ar") or "",
                         "repair_method_en": ai_c.get("repair_method_en") or "",
@@ -463,6 +552,16 @@ class UnifiedDiagnosisEngine:
                         "repair_images": solution_photos[:3],
                         "is_hardware": True,
                     })
+
+        # Sanitize public diagnostic insights so third-party AI model/provider names never leak
+        public_ai_summary = {
+            "status": ai_analysis.get("status"),
+            "configured": ai_analysis.get("configured", False),
+            "diagnosis_summary_ar": ai_analysis.get("diagnosis_summary_ar"),
+            "diagnosis_summary_en": ai_analysis.get("diagnosis_summary_en"),
+            "repair_steps_ar": ai_analysis.get("repair_steps_ar"),
+            "repair_steps_en": ai_analysis.get("repair_steps_en"),
+        }
 
         # 9. Confidence & Severity
         dynamic_confidence = self._calculate_dynamic_confidence(
@@ -491,17 +590,20 @@ class UnifiedDiagnosisEngine:
         report_payload = {
             "report_id": report_id,
             "status": "completed",
+            "attempt_number": attempt_number,
             "device_category": normalized_cat,
             "brand": brand or "Standard",
             "model": model or "Standard",
             "problem_category": prob_cat or (primary_domain["domain"] if primary_domain else "General"),
+            "problem_cluster": matched_cluster,
+            "description": desc,
             "extracted_symptoms": extracted_sym,
             "severity": severity,
             "confidence_score": dynamic_confidence,
             "device_image_url": device_image_url,
             "guide_image_url": guide_image_url,
             "visual_solution_steps": visual_solution_steps,
-            "ai_analysis": ai_analysis,
+            "ai_analysis": public_ai_summary,
             "empirical_statistics": {
                 "source": "Open Repair Alliance (416,282 real records)",
                 "category": normalized_cat,
@@ -514,17 +616,20 @@ class UnifiedDiagnosisEngine:
                 "source": matched_guide.get("source", "MyFixit Verified Manuals") if matched_guide else None,
                 "guide_id": matched_guide.get("guide_id") if matched_guide else None,
                 "title": matched_guide.get("title") if matched_guide else None,
+                "title_ar": guide_title_ar,
                 "url": matched_guide.get("url") if matched_guide else None,
                 "difficulty": matched_guide.get("difficulty") if matched_guide else None,
                 "time_required": matched_guide.get("time_required") if matched_guide else None,
                 "image_url": guide_image_url,
                 "tools": tools,
+                "tools_ar": tools_ar,
                 "step_count": len(troubleshooting_steps),
             } if matched_guide else None,
             "hard_drive_ml_prediction": backblaze_result,
             "possible_causes": possible_causes,
             "troubleshooting_steps": troubleshooting_steps,
             "required_tools": tools,
+            "required_tools_ar": tools_ar,
             "estimated_difficulty": matched_guide.get("difficulty", "moderate") if matched_guide else "moderate",
             "estimated_minutes": matched_guide.get("estimated_minutes", 30) if matched_guide else 30,
             "safety_warnings_ar": [
@@ -546,6 +651,25 @@ class UnifiedDiagnosisEngine:
             pass
 
         return report_payload
+
+    def record_feedback(self, feedback_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Saves verified fix outcomes to Supabase dataset and optionally produces a brand-new alternative solution."""
+        res = save_verified_repair_feedback(feedback_data)
+        if not bool(feedback_data.get("fixed", False)) and bool(feedback_data.get("request_alternative", False)):
+            alt_report = self.diagnose({
+                "device_category": feedback_data.get("device_category"),
+                "brand": feedback_data.get("brand"),
+                "model": feedback_data.get("model"),
+                "problem_category": feedback_data.get("problem_category"),
+                "description": feedback_data.get("description"),
+                "device_age_years": feedback_data.get("device_age_years"),
+                "exclude_guide_ids": feedback_data.get("exclude_guide_ids") or [],
+                "failed_solutions": feedback_data.get("failed_solutions") or [],
+                "attempt_number": int(feedback_data.get("attempt_number") or 1) + 1,
+                "user_id": feedback_data.get("user_id"),
+            })
+            res["alternative_report"] = alt_report
+        return res
 
 
 UnifiedDiagnosisService = UnifiedDiagnosisEngine

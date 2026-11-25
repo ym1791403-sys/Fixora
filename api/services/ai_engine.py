@@ -29,6 +29,7 @@ PROVIDER_ENV_MAP = [
 ]
 
 _FAILED_AUTH_KEYS: set = set()
+_RATE_LIMIT_COOLDOWN_UNTIL: Dict[str, float] = {}
 _SUPABASE_AI_CACHE: Dict[str, Any] = {"ts": 0.0, "val": None}
 
 
@@ -250,26 +251,28 @@ def _extract_json_object(text: str) -> Optional[Dict[str, Any]]:
 def _call_gemini(api_key: str, prompt: str, timeout: float = 12.0) -> Tuple[Dict[str, Any], str]:
     """
     Calls Google Gemini Generative Language API using x-goog-api-key header (supports both
-    AIza... and AQ.... keys) with resilient fallback across active Gemini Flash models.
+    AIza... and AQ.... keys) cleanly without burning quota in redundant retry loops on 429.
     """
+    now = time.time()
+    cooldown_until = float(_RATE_LIMIT_COOLDOWN_UNTIL.get("gemini") or 0.0)
+    if cooldown_until > now:
+        raise RuntimeError("Rate-limit cooldown active to preserve API quota")
+
     custom_model = (os.environ.get("GEMINI_MODEL") or "").strip()
     candidate_models = []
     for m in [
         custom_model,
-        "gemini-3.1-flash-lite-preview",
         "gemini-2.5-flash",
-        "gemini-3-flash-preview",
-        "gemini-flash-latest",
+        "gemini-3.1-flash-lite-preview",
     ]:
         if m and m not in candidate_models:
             candidate_models.append(m)
 
     last_err: Optional[Exception] = None
-    timeouts_seen = 0
     for mdl in candidate_models:
         gen_cfg: Dict[str, Any] = {
             "temperature": 0.2,
-            "maxOutputTokens": 950,
+            "maxOutputTokens": 1350,
             "responseMimeType": "application/json",
         }
         payload = json.dumps({
@@ -306,8 +309,12 @@ def _call_gemini(api_key: str, prompt: str, timeout: float = 12.0) -> Tuple[Dict
         except urllib.error.HTTPError as e:
             if e.code in (401, 403):
                 raise
+            if e.code == 429:
+                # Immediately back off instead of retrying extra models and burning quota
+                _RATE_LIMIT_COOLDOWN_UNTIL["gemini"] = time.time() + 45.0
+                raise
             last_err = RuntimeError(f"{mdl}: HTTP {e.code}")
-            if e.code in (404, 429, 500, 503):
+            if e.code == 404:
                 continue
             raise
         except urllib.error.URLError as e:
@@ -315,15 +322,11 @@ def _call_gemini(api_key: str, prompt: str, timeout: float = 12.0) -> Tuple[Dict
             break
         except Exception as e:
             last_err = RuntimeError(f"{mdl}: {type(e).__name__}: {e}")
-            if "timed out" in str(e).lower():
-                timeouts_seen += 1
-                if timeouts_seen >= 2:
-                    break
-            continue
+            break
 
     if last_err:
         raise last_err
-    raise RuntimeError("No Gemini model responded successfully.")
+    raise RuntimeError("No diagnosis engine model responded.")
 
 
 def _call_openai_compatible(url: str, api_key: str, model: str, prompt: str, timeout: float = 12.0) -> Tuple[Dict[str, Any], str]:
@@ -365,6 +368,10 @@ class AIAssistantService:
         ora_summary: Dict[str, Any],
         guide_summary: Optional[Dict[str, Any]],
         timeout: float = 10.0,
+        guide_steps: Optional[List[str]] = None,
+        ora_incidents: Optional[List[str]] = None,
+        failed_attempts: Optional[List[str]] = None,
+        attempt_number: int = 1,
     ) -> Dict[str, Any]:
         provider, _, api_key = get_active_ai_provider()
         if not provider or not api_key:
@@ -375,30 +382,47 @@ class AIAssistantService:
                 "supported_providers": ["gemini", "openai", "groq", "openrouter"],
             }
 
+        step_lines = "\n".join(f"- [{i+1}] {str(s)[:160]}" for i, s in enumerate((guide_steps or [])[:8]))
+        inc_lines = "\n".join(f"- [{i+1}] {str(x)[:140]}" for i, x in enumerate((ora_incidents or [])[:5]))
+        failed_ctx = ""
+        if attempt_number > 1 or failed_attempts:
+            prev = "; ".join(str(x)[:120] for x in (failed_attempts or [])[:5])
+            failed_ctx = (
+                f"\nIMPORTANT RETRY CONTEXT (Attempt #{attempt_number}): "
+                f"Previous suggested fixes FAILED to solve the issue ({prev or 'prior guide did not resolve it'}). "
+                "You MUST propose a COMPLETELY DIFFERENT root cause hypothesis and alternative diagnostic/repair plan.\n"
+            )
+
         prompt = (
             "You are ByteForce's senior hardware diagnostic engineer. "
             "Analyze the device & symptom report below grounded on the empirical dataset context. "
             "Provide device-specific technical root causes (NEVER generic filler), step-by-step fix guidance, "
-            "and precise English search terms to look up real photos of this exact device and repair manual.\n\n"
+            "clean English search terms for device/manual photo lookup, AND translate the reference manual steps "
+            "and historical cases into clear natural Arabic in this same response.\n\n"
             f"Device Category: {device_info.get('device_category')}\n"
             f"Brand: {device_info.get('brand')}\n"
             f"Model: {device_info.get('model')}\n"
             f"Error Code: {device_info.get('error_message') or 'None'}\n"
             f"User Symptom Description: {device_info.get('description')}\n"
-            f"Open Repair Alliance Stats: sample={ora_summary.get('category_sample_size')}, "
-            f"fix_rate={ora_summary.get('empirical_repair_status', {}).get('fixed_rate')}%, "
+            f"Dataset Stats: sample={ora_summary.get('category_sample_size')}, "
             f"matched_cluster={ora_summary.get('matched_failure_cluster')}\n"
-            f"Initial Matched Repair Manual: {guide_summary.get('title') if guide_summary else 'None'}\n\n"
-            "Return valid JSON ONLY with keys:\n"
+            f"Initial Reference Manual: {guide_summary.get('title') if guide_summary else 'None'}\n"
+            f"{failed_ctx}"
+            + (f"\nManual Steps to Translate to Arabic:\n{step_lines}\n" if step_lines else "")
+            + (f"\nHistorical Cases (English/German) to Translate to Arabic:\n{inc_lines}\n" if inc_lines else "")
+            + "\nReturn valid JSON ONLY with keys:\n"
             "{\n"
             '  "diagnosis_summary_ar": "تشخيص فني دقيق ومفصل بالعربية لهذا الجهاز والعطل",\n'
             '  "diagnosis_summary_en": "Detailed technical diagnosis summary in English",\n'
             '  "device_photo_query": "Clean English device name for photo lookup (e.g. iPhone 13 or Asus TUF Gaming laptop)",\n'
-            '  "visual_image_query": "Clean English repair guide query for iFixit/MyFixit (e.g. iPhone 13 battery replacement)",\n'
+            '  "visual_image_query": "Clean English repair guide query for manual lookup (e.g. iPhone 13 battery replacement)",\n'
+            '  "translated_guide_title_ar": "ترجمة عربية واضحة لاسم دليل الصيانة",\n'
+            '  "translated_guide_steps_ar": ["ترجمة الخطوة 1 بالعربية...", "ترجمة الخطوة 2..."],\n'
+            '  "translated_incidents_ar": ["ترجمة الحالة التاريخية 1 بالعربية...", "ترجمة الحالة 2..."],\n'
             '  "root_causes": [\n'
             '    {"title_ar": "...", "title_en": "...", "explanation_ar": "...", "explanation_en": "...", "repair_method_ar": "...", "repair_method_en": "..."}\n'
             '  ],\n'
-            '  "repair_steps_ar": ["خطوة 1...", "خطوة 2..."],\n'
+            '  "repair_steps_ar": ["خطوة 1 بالعربية...", "خطوة 2 بالعربية..."],\n'
             '  "repair_steps_en": ["Step 1...", "Step 2..."]\n'
             "}"
         )

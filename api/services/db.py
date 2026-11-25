@@ -231,6 +231,25 @@ def get_matching_repair_incidents(
             params["problem_cluster"] = f"eq.{problem_cluster}"
         return postgrest_request("repair_incidents", params) or []
 
+    # Prioritize community-verified Arabic fixes for matching category first
+    community_rows: List[Dict[str, Any]] = []
+    try:
+        comm_params: Dict[str, str] = {
+            "select": "id,data_provider,country,partner_category,normalized_category,brand,product_age,repair_status,repair_barrier,problem,problem_cluster",
+            "data_provider": "eq.ByteForce Verified Community",
+            "repair_status": "eq.Fixed",
+            "limit": "2",
+            "order": "created_at.desc",
+        }
+        if mapped_cats:
+            in_list = ",".join(f'"{c}"' for c in mapped_cats)
+            comm_params["normalized_category"] = f"in.({in_list})"
+        elif category:
+            comm_params["normalized_category"] = f"ilike.{category.strip()}"
+        community_rows = postgrest_request("repair_incidents", comm_params) or []
+    except Exception:
+        community_rows = []
+
     # Try progressive specificity: cluster+brand -> cluster -> brand -> category
     for wb, wc in [(True, True), (False, True), (True, False), (False, False)]:
         if wb and not brand:
@@ -239,8 +258,10 @@ def get_matching_repair_incidents(
             continue
         rows = _query_incidents(wb, wc)
         if rows:
-            return rows
-    return []
+            seen = {r.get("id") for r in community_rows if r.get("id")}
+            merged = list(community_rows) + [r for r in rows if r.get("id") not in seen]
+            return merged[:limit]
+    return community_rows[:limit]
 
 def search_repair_guides(
     query: Optional[str] = None,
@@ -335,3 +356,87 @@ def save_diagnosis_report(report_data: Dict[str, Any]) -> str:
     except Exception:
         pass
     return report_data.get("report_id", "")
+
+
+def save_verified_repair_feedback(feedback_data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Persists user-confirmed repair outcomes into Supabase `repair_incidents` when fixed=True,
+    and updates `diagnosis_reports` status cleanly so verified community fixes enrich future diagnostics.
+    """
+    import uuid
+
+    fixed = bool(feedback_data.get("fixed", False))
+    report_id = (feedback_data.get("report_id") or "").strip()
+    category = (feedback_data.get("device_category") or "Other").strip()
+    brand = (feedback_data.get("brand") or "Standard").strip()
+    model = (feedback_data.get("model") or "").strip()
+    description = (feedback_data.get("description") or "").strip()
+    applied_solution = (feedback_data.get("applied_solution") or "").strip()
+    user_notes = (feedback_data.get("user_notes") or "").strip()
+    problem_cluster = (feedback_data.get("problem_cluster") or "GENERAL_DEFECT").strip()
+
+    cat_key = category.lower()
+    mapped_cats = _INCIDENT_CATEGORY_MAP.get(cat_key)
+    norm_cat = mapped_cats[0] if mapped_cats else category
+
+    if report_id:
+        try:
+            new_status = "verified_fixed" if fixed else "needs_alternative"
+            postgrest_request(
+                "diagnosis_reports",
+                params={"report_code": f"eq.{report_id}"},
+                method="PATCH",
+                body={"status": new_status},
+                headers_extra={"Prefer": "return=minimal"},
+                use_service_role=True,
+            )
+        except Exception:
+            pass
+
+    if not fixed:
+        return {
+            "status": "retry_logged",
+            "fixed": False,
+            "added_to_dataset": False,
+            "report_id": report_id,
+        }
+
+    inc_id = f"bf_fixed_{uuid.uuid4().hex[:12]}"
+    summary_parts = []
+    if model and model.lower() not in ("standard", "unknown"):
+        summary_parts.append(f"الموديل: {model}")
+    if description:
+        summary_parts.append(f"العطل: {description[:180]}")
+    sol_text = user_notes or applied_solution
+    if sol_text:
+        summary_parts.append(f"الحل المؤكد: {sol_text[:220]}")
+    problem_text = " | ".join(summary_parts) or "تم تأكيد نجاح خطوات الإصلاح وعمل الجهاز بكفاءة."
+
+    row = {
+        "id": inc_id,
+        "data_provider": "ByteForce Verified Community",
+        "country": "EGY",
+        "partner_category": f"User Verified Fix ~ {category}",
+        "normalized_category": norm_cat,
+        "brand": brand,
+        "product_age": feedback_data.get("device_age_years"),
+        "repair_status": "Fixed",
+        "repair_barrier": None,
+        "problem": problem_text,
+        "problem_cluster": problem_cluster,
+        "event_date": datetime.now().strftime("%Y-%m-%d"),
+    }
+    postgrest_request(
+        "repair_incidents",
+        method="POST",
+        body=[row],
+        headers_extra={"Prefer": "return=minimal"},
+        use_service_role=True,
+    )
+    return {
+        "status": "saved_to_dataset",
+        "fixed": True,
+        "added_to_dataset": True,
+        "incident_id": inc_id,
+        "report_id": report_id,
+    }

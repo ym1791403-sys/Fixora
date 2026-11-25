@@ -241,15 +241,17 @@ class MyFixitGuideRetrievalService:
         model: str = "",
         component_terms: Optional[List[str]] = None,
         extra_tokens: Optional[List[str]] = None,
+        exclude_guide_ids: Optional[List[int]] = None,
     ) -> Dict[str, Any]:
         """
         Scores candidate guides in Supabase across model + symptom components (avoiding
-        blind LIMIT 1 repeats), and supplements modern devices cleanly with iFixit Public API 2.0.
+        blind LIMIT 1 repeats), skips previously failed guide IDs on retry, and supplements modern devices via iFixit.
         """
         from api.services.media_resolver import fetch_ifixit_live_guide
 
         component_terms = [c for c in (component_terms or []) if c]
         extra_tokens = [t for t in (extra_tokens or []) if t]
+        excluded_ids = {int(gid) for gid in (exclude_guide_ids or []) if gid is not None and str(gid).isdigit()}
 
         search_queries: List[str] = []
         primary_comp = component_terms[0] if component_terms else ""
@@ -277,15 +279,15 @@ class MyFixitGuideRetrievalService:
 
         for q_s in dedup_queries[:4]:
             try:
-                res = self.search_guides(query=q_s, category=category, limit=8)
+                res = self.search_guides(query=q_s, category=category, limit=10)
                 for g in res.get("guides") or []:
                     gid = g.get("guide_id")
-                    if gid and gid not in seen_ids:
+                    if gid and int(gid) not in excluded_ids and gid not in seen_ids:
                         seen_ids.add(gid)
                         candidates.append(g)
             except Exception:
                 continue
-            if len(candidates) >= 8:
+            if len(candidates) >= 10:
                 break
 
         best_candidate = None
@@ -325,6 +327,10 @@ class MyFixitGuideRetrievalService:
                 if comp.lower() in hay:
                     score += (35 - idx * 6)
                     break
+            # Penalize generic antenna/SIM tray guides unless SIM or signal/antenna is actually part of the query
+            wants_sim_or_ant = any(k in " ".join(component_terms + extra_tokens).lower() for k in ("sim", "antenna", "signal", "tray"))
+            if not wants_sim_or_ant and ("antenna cover" in hay or "sim tray" in hay):
+                score -= 25
             if category == "Storage" and not apple_mentioned:
                 if any(v in hay for v in ("powerbook", "wallstreet", "ibook", "performa")):
                     score -= 22
@@ -353,7 +359,7 @@ class MyFixitGuideRetrievalService:
                 component_terms=component_terms,
                 category=category,
             )
-            if live_guide:
+            if live_guide and int(live_guide.get("guide_id") or -1) not in excluded_ids:
                 live_exact = bool(model and model.lower() in f"{live_guide.get('title', '')} {live_guide.get('device_model', '')}".lower())
                 return {"guide": live_guide, "exact_model_match": live_exact}
 
@@ -362,11 +368,13 @@ class MyFixitGuideRetrievalService:
             if full_guide:
                 return {"guide": full_guide, "exact_model_match": exact_model_match}
 
-        # Category-level DB fallback ONLY as last resort for known electronics categories
-        res_cat = self.search_guides(category=category, limit=8)
-        cat_guides = res_cat.get("guides") or []
+        # Category-level DB fallback skipping excluded guides and generic antenna cover when alternatives exist
+        res_cat = self.search_guides(category=category, limit=15)
+        cat_guides = [g for g in (res_cat.get("guides") or []) if int(g.get("guide_id") or -1) not in excluded_ids]
         if cat_guides:
-            with_img = next((g for g in cat_guides if g.get("thumbnail_url")), cat_guides[0])
+            wants_sim = any(k in " ".join(component_terms + extra_tokens).lower() for k in ("sim", "antenna", "signal"))
+            filtered_cat = [g for g in cat_guides if wants_sim or "antenna cover" not in (g.get("title") or "").lower()] or cat_guides
+            with_img = next((g for g in filtered_cat if g.get("thumbnail_url")), filtered_cat[0])
             full_guide = self.get_guide_by_id(with_img["guide_id"])
             if full_guide:
                 return {"guide": full_guide, "exact_model_match": False}

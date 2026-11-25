@@ -42,3 +42,17 @@ async def run_diagnosis(request: Request):
         body = dict(request.query_params)
         
     return service.diagnose(body)
+
+
+@router.post("/api/diagnosis/feedback")
+@router.post("/api/v1/diagnosis/feedback")
+async def submit_diagnosis_feedback(request: Request):
+    """
+    Records user-verified repair outcome (fixed -> stores solution in live Supabase dataset;
+    not fixed -> logs failed attempt and returns an alternative solution path).
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    return service.record_feedback(body)

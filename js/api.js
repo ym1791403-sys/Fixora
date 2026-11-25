@@ -160,6 +160,18 @@ class ApiClient {
     return await this.diagnoseDevice(data);
   }
 
+  async submitDiagnosisFeedback(data) {
+    const user = this.getUser();
+    const payload = { ...data };
+    if (user?.id && !payload.user_id) {
+      payload.user_id = user.id;
+    }
+    return await this.request("/diagnosis/feedback", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    });
+  }
+
   async getReports() {
     if (window.SupabaseBridge && window.SupabaseBridge.isReady()) {
       return await window.SupabaseBridge.fetchDiagnosisReports();
@@ -200,6 +212,7 @@ class ApiClient {
     if (params.difficulty && params.difficulty !== "all") qParams.set("difficulty", params.difficulty);
     qParams.set("limit", String(params.limit || 60));
     if (params.offset) qParams.set("offset", String(params.offset));
+    if (window.i18n?.currentLang) qParams.set("lang", window.i18n.currentLang);
 
     const queryStr = qParams.toString();
     const endpoint = `/guides${queryStr ? '?' + queryStr : ''}`;
@@ -217,8 +230,9 @@ class ApiClient {
   }
 
   async getGuideById(guideId) {
+    const lang = window.i18n?.currentLang || "en";
     try {
-      const g = await this.request(`/guides/${guideId}`);
+      const g = await this.request(`/guides/${guideId}?lang=${encodeURIComponent(lang)}`);
       return (window.SupabaseBridge && window.SupabaseBridge._normalizeGuide) ? window.SupabaseBridge._normalizeGuide(g) : g;
     } catch (e) {
       if (window.SupabaseBridge && window.SupabaseBridge.isReady()) {

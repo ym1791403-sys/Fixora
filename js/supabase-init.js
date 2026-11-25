@@ -404,8 +404,8 @@ window.SupabaseBridge = {
         window.app.navigate(dest);
       } else if (this._oauthRedirectPending) {
         this._oauthRedirectPending = false;
-        const targetView = this.isExclusiveAdminEmail(u.email) ? "admin" : "dashboard";
-        window.app.navigate(targetView);
+        // Land signed-in users & exclusive admin cleanly on the home page (admin pill stays accessible in navbar)
+        window.app.navigate("home");
       }
     }
   },
