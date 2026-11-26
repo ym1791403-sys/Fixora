@@ -135,7 +135,11 @@ window.SupabaseBridge = {
     }
 
     const cleanEmail = String(email || "").trim();
-    const assignedRole = this.resolveRole(cleanEmail, null, role);
+    // A technician/center account stays a normal user until the admin approves
+    // it (approval flips the profile role to "technician"). The application
+    // itself is still recorded as pending for the admin to review.
+    const isTechApplication = role === "technician";
+    const assignedRole = isTechApplication ? "user" : this.resolveRole(cleanEmail, null, role);
 
     const { data, error } = await supabaseClient.auth.signUp({
       email: cleanEmail,
@@ -160,7 +164,7 @@ window.SupabaseBridge = {
 
     await this.syncUserProfile(user, { full_name: name, role: assignedRole });
 
-    if (assignedRole === "technician" && techDetails) {
+    if (isTechApplication && techDetails) {
       try {
         await this.submitTechnicianApplication({
           user_id: user.id,
@@ -959,6 +963,16 @@ window.SupabaseBridge = {
         type: "request"
       });
     }
+
+    // Notify the exclusive admin: who sent the request and from which center.
+    // Fire-and-forget, same pattern as the pending-tech alert.
+    try {
+      fetch("/api/notifications/repair-request-alert", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ request_id: data.id })
+      }).catch(() => {});
+    } catch (notifyErr) {}
 
     return this._normalizeRequest(data);
   },
