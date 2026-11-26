@@ -23,9 +23,9 @@ class DatabaseUnavailableError(Exception):
     pass
 
 # Supabase Production Configuration
-SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://czwndaulnxvmncbtzsao.supabase.co").rstrip("/")
-SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY") or os.environ.get("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6d25kYXVsbnh2bW5jYnR6c2FvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTU0MDE1ODQsImV4cCI6MjExMDk3NzU4NH0.MQOTwn8IxW_FzCyXUs65fZamVtkDfCq3wTZ58ko_utw")
-SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6d25kYXVsbnh2bW5jYnR6c2FvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5NTQwMTU4NCwiZXhwIjoyMTEwOTc3NTg0fQ.dwZq4RYeTrnIC360GfMeplwnbX4iBkCZDeyUwfKopIY")
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "").rstrip("/")
+SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY") or os.environ.get("SUPABASE_KEY")
+SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
 
 def get_db_path() -> str:
     return os.path.join(PROJECT_ROOT, "data", "processed", "fixora.db")
