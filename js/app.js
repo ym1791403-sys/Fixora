@@ -1319,6 +1319,7 @@ class ByteForceApp {
       return;
     }
     let port = null;
+    let opened = false;
     try {
       port = await navigator.serial.requestPort();
       const info = typeof port.getInfo === "function" ? port.getInfo() : {};
@@ -1331,6 +1332,7 @@ class ByteForceApp {
         };
       }
       await port.open({ baudRate: 115200 });
+      opened = true;
       const reader = port.readable?.getReader();
       let captured = "";
       if (reader) {
@@ -1361,7 +1363,13 @@ class ByteForceApp {
     } catch (err) {
       try { if (port) await port.close(); } catch (e) {}
       if (err?.name === "NotFoundError") return;
-      alert((isAr ? "تعذر فتح منفذ السيريال: " : "Serial port notice: ") + (err?.message || err));
+      if (!opened) {
+        alert(isAr
+          ? "تعذر فتح منفذ السيريال. غالباً المنفذ مشغول في برنامج آخر (مثل Arduino أو PuTTY)، أو الجهاز مفصول، أو الجهاز لا يوفّر منفذ سيريال (الموبايلات العادية لا توفّر منفذ سيريال). جرّب: اقفل أي برنامج آخر يستخدم المنفذ، افصل الجهاز ووصّله تاني، أو استخدم زر فحص كابل USB بدل السيريال."
+          : "Could not open the serial port. It is probably busy in another program (e.g. Arduino or PuTTY), the device is unplugged, or the device does not offer a serial port (regular phones do not). Try closing other programs using the port, replugging the device, or use the USB cable scan button instead.");
+        return;
+      }
+      alert((isAr ? "انقطع الاتصال بمنفذ السيريال أثناء القراءة: " : "Serial connection dropped while reading: ") + (err?.message || err));
     }
   }
 
