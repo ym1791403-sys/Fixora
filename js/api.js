@@ -43,6 +43,27 @@ class ApiClient {
     return !!this.token || (window.SupabaseBridge && !!window.SupabaseBridge.currentUser);
   }
 
+  // Auth gate: block any write/action when there is no logged-in session.
+  // Reuses the app's existing modal shell (window.app.openModal) and the
+  // existing Google sign-in (SupabaseBridge.signInWithGoogle), mirroring the
+  // diagnosis flow that asks the user to sign in first.
+  requireLogin() {
+    if (this.isLoggedIn()) return true;
+    if (window.app && typeof window.app.openModal === "function") {
+      window.app.openModal(
+        '<div style="text-align:center;padding:8px 4px;">' +
+        '<h3>سجّل دخولك أولاً</h3>' +
+        '<p>لازم تسجّل دخولك عشان تعمل طلب صيانة أو أي إجراء.</p>' +
+        '<button onclick="window.SupabaseBridge && window.SupabaseBridge.signInWithGoogle()" style="padding:10px 18px;cursor:pointer;">تسجيل الدخول عبر Google</button>' +
+        '<p><button onclick="window.app.closeModal()" style="padding:6px 12px;cursor:pointer;">إلغاء</button></p>' +
+        '</div>'
+      );
+    }
+    const err = new Error("Authentication required. Please sign in first.");
+    err.status = 401;
+    throw err;
+  }
+
   getUser() {
     if (window.SupabaseBridge && window.SupabaseBridge.currentUser) {
       return this._normalizeUserRole(window.SupabaseBridge.currentUser);
@@ -128,6 +149,7 @@ class ApiClient {
   }
 
   async updateProfile(data) {
+    this.requireLogin();
     if (window.SupabaseBridge && window.SupabaseBridge.isReady()) {
       return await window.SupabaseBridge.updateProfile(data);
     }
@@ -145,6 +167,7 @@ class ApiClient {
   // GENUINE DATA-DRIVEN DIAGNOSIS
   // ==========================================
   async diagnoseDevice(data) {
+    this.requireLogin();
     const user = this.getUser();
     const payload = { ...data };
     if (user?.id && !payload.user_id) {
@@ -161,6 +184,7 @@ class ApiClient {
   }
 
   async submitDiagnosisFeedback(data) {
+    this.requireLogin();
     const user = this.getUser();
     const payload = { ...data };
     if (user?.id && !payload.user_id) {
@@ -258,6 +282,7 @@ class ApiClient {
   // BACKBLAZE HARD DRIVE PREDICTION
   // ==========================================
   async predictHardDrive(telemetryData) {
+    this.requireLogin();
     return await this.request("/prediction/hard-drive", {
       method: "POST",
       body: JSON.stringify(telemetryData)
@@ -279,6 +304,7 @@ class ApiClient {
   }
 
   async bookTechnician(booking) {
+    this.requireLogin();
     if (window.SupabaseBridge && window.SupabaseBridge.isReady()) {
       return await window.SupabaseBridge.bookTechnician(booking);
     }
@@ -300,6 +326,7 @@ class ApiClient {
   }
 
   async addDevice(device) {
+    this.requireLogin();
     if (window.SupabaseBridge && window.SupabaseBridge.isReady()) {
       return await window.SupabaseBridge.syncDevice(device);
     }
@@ -307,6 +334,7 @@ class ApiClient {
   }
 
   async deleteDevice(deviceId) {
+    this.requireLogin();
     if (window.SupabaseBridge && window.SupabaseBridge.isReady()) {
       return await window.SupabaseBridge.deleteDevice(deviceId);
     }
@@ -321,6 +349,7 @@ class ApiClient {
   }
 
   async createRepairRequest(reqData) {
+    this.requireLogin();
     if (window.SupabaseBridge && window.SupabaseBridge.isReady()) {
       return await window.SupabaseBridge.createRepairRequest(reqData);
     }
@@ -328,6 +357,7 @@ class ApiClient {
   }
 
   async updateRequestStatus(reqId, newStatus, updates = {}) {
+    this.requireLogin();
     if (window.SupabaseBridge && window.SupabaseBridge.isReady()) {
       return await window.SupabaseBridge.updateRequestStatus(reqId, newStatus, updates);
     }
@@ -559,6 +589,7 @@ class ApiClient {
   }
 
   async submitRepairReview(reqId, rating, reviewComment) {
+    this.requireLogin();
     const headers = { "Content-Type": "application/json" };
     let hasToken = false;
     try {
