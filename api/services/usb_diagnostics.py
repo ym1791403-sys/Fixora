@@ -41,6 +41,12 @@ USB_VENDOR_MAP: Dict[int, Dict[str, str]] = {
     0x8564: {"brand": "Transcend", "category": "Storage"},
     0x04B0: {"brand": "Nikon", "category": "Camera"},
     0x091E: {"brand": "Garmin", "category": "Smartwatch"},
+    0x1949: {"brand": "Amazon Kindle", "category": "Tablet"},
+    0x2CA3: {"brand": "DJI Drone", "category": "Camera"},
+    0x2833: {"brand": "Meta Quest", "category": "Gaming Console"},
+    0x0BB4: {"brand": "HTC Vive", "category": "Gaming Console"},
+    0x28DE: {"brand": "Valve SteamVR", "category": "Gaming Console"},
+    0x0A12: {"brand": "Fitbit", "category": "Smartwatch"},
     0x04A9: {"brand": "Canon", "category": "Printer"},
     0x04B8: {"brand": "Epson", "category": "Printer"},
     0x04F9: {"brand": "Brother", "category": "Printer"},
@@ -164,6 +170,18 @@ def analyze_cable_telemetry(
     detected_brand = (usb.get("manufacturerName") or (vendor_info["brand"] if vendor_info else "") or "Unknown").strip()
     detected_model = (usb.get("productName") or "").strip()
     detected_category = vendor_info["category"] if vendor_info else None
+
+    # One VID can cover several device kinds (Apple/Samsung make phones,
+    # tablets, watches and TVs under a single VID), so the product name
+    # decides: an iPad is a Tablet, a Galaxy Watch is a Smartwatch, a
+    # QLED TV is a Smart TV — never the wizard default.
+    prod_low = f"{detected_brand} {detected_model}".lower()
+    if re.search(r"ipad|\btab\b|matepad|mi pad|lenovo tab|tablet", prod_low):
+        detected_category = "Tablet"
+    elif "watch" in prod_low:
+        detected_category = "Smartwatch"
+    elif re.search(r"\btv\b|bravia|television", prod_low) or prod_low.endswith("tv"):
+        detected_category = "Smart TV"
 
     interfaces = usb.get("interfaces") if isinstance(usb.get("interfaces"), list) else []
     usb_classes = {int(usb.get("deviceClass"))} if usb.get("deviceClass") is not None else set()
