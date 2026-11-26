@@ -974,9 +974,6 @@ class ByteForceApp {
                   <span>${isAr ? 'قراءة منفذ السيريال (UART)' : 'Read Serial / UART Port'}</span>
                 </button>
               </div>
-              <p style="margin: 10px 0 0 0; font-size: 12px; color: var(--color-text-muted); line-height: 1.6;">
-                ${isAr ? 'لو جهازك مش ظاهر في القايمة: افصل الجهاز ووصّله تاني قبل ما تدوس على الزرار، واستخدم كابل بينقل بيانات مش شحن بس، ولو موبايل أندرويد اختار "نقل الملفات" من إشعار الـ USB.' : 'If your device is missing from the list: unplug it and plug it back in before clicking the button, use a data cable (not charge-only), and on Android choose "File transfer" from the USB notification.'}
-              </p>
               <div id="usbCableStatusBox" style="display: ${this.wizardData?.usb_telemetry || this.wizardData?.serial_logs ? 'block' : 'none'}; margin-top: 12px; padding: 12px 14px; border-radius: 8px; background: #FFFFFF; border: 1px solid #CBD5E1; font-size: 13px;">
                 ${this._renderUsbStatusMarkup(isAr)}
               </div>
@@ -1285,6 +1282,23 @@ class ByteForceApp {
       };
       this.wizardData.usb_telemetry = telemetry;
 
+      // Auto-detect the device category from the USB scan so a connected
+      // phone is never diagnosed as the wizard default (Laptop): the cable
+      // evidence wins over the pre-selected category, and the user can still
+      // change it manually afterwards.
+      const phoneVids = [0x05AC, 0x04E8, 0x18D1, 0x2717, 0x12D1, 0x22D9, 0x2A70, 0x22B8, 0x0FCE, 0x1004, 0x0421];
+      const hasIface = (cls, sub, proto) => interfaces.some(i => i.interfaceClass === cls && (sub === undefined || i.interfaceSubclass === sub) && (proto === undefined || i.interfaceProtocol === proto));
+      let detectedCat = "";
+      if (phoneVids.includes(dev.vendorId) || hasIface(255, 66, 1) || hasIface(255, 66, 3) || interfaces.some(i => i.interfaceClass === 6)) detectedCat = "Smartphone";
+      else if (interfaces.some(i => i.interfaceClass === 8)) detectedCat = "Storage";
+      else if (interfaces.some(i => i.interfaceClass === 7)) detectedCat = "Printer";
+      else if (interfaces.some(i => i.interfaceClass === 14)) detectedCat = "Camera";
+      else if (interfaces.some(i => i.interfaceClass === 1)) detectedCat = "Audio";
+      if (detectedCat) {
+        const catEl = document.querySelector(`.wizard-cat-item[onclick*="'${detectedCat}'"]`);
+        this.setWizardCat(detectedCat, catEl || undefined);
+      }
+
       const brandEl = document.getElementById("diagBrand");
       const modelEl = document.getElementById("diagModel");
       const errEl = document.getElementById("diagError");
@@ -1308,9 +1322,7 @@ class ByteForceApp {
       }
     } catch (err) {
       if (err?.name === "NotFoundError") return; // User closed picker cleanly
-      alert(isAr
-        ? "تعذر قراءة الجهاز عبر كابل USB. جرّب: افصل الجهاز ووصّله تاني، واستخدم كابل بينقل بيانات مش شحن بس ومنفذ USB تاني، ولو موبايل أندرويد اختار \"نقل الملفات\" من إشعار الـ USB. ولو لسه مش شغال، اكتب الماركة والموديل يدوي وكمل التشخيص."
-        : "Could not read the device over the USB cable. Try unplugging it and plugging it back in, using a data cable (not charge-only) and another USB port, and on Android choose \"File transfer\" from the USB notification. If it still does not work, enter the brand and model manually and continue the diagnosis.");
+      alert((isAr ? "تعذر قراءة الجهاز عبر كابل USB: " : "USB read notice: ") + (err?.message || err));
     }
   }
 

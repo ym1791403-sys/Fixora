@@ -28,11 +28,19 @@ USB_VENDOR_MAP: Dict[int, Dict[str, str]] = {
     0x0781: {"brand": "SanDisk", "category": "Storage"},
     0x0951: {"brand": "Kingston", "category": "Storage"},
     0x0480: {"brand": "Toshiba Storage", "category": "Storage"},
-    0x04E8_0: {"brand": "Samsung", "category": "Storage"},
     0x03F0: {"brand": "HP", "category": "Laptop"},
     0x413C: {"brand": "Dell", "category": "Laptop"},
     0x17EF: {"brand": "Lenovo", "category": "Laptop"},
     0x0B05: {"brand": "ASUS", "category": "Laptop"},
+    0x0502: {"brand": "Acer", "category": "Laptop"},
+    0x1462: {"brand": "MSI", "category": "Laptop"},
+    0x1532: {"brand": "Razer", "category": "Laptop"},
+    0x1004: {"brand": "LG", "category": "Smartphone"},
+    0x0421: {"brand": "Nokia", "category": "Smartphone"},
+    0x125F: {"brand": "ADATA", "category": "Storage"},
+    0x8564: {"brand": "Transcend", "category": "Storage"},
+    0x04B0: {"brand": "Nikon", "category": "Camera"},
+    0x091E: {"brand": "Garmin", "category": "Smartwatch"},
     0x04A9: {"brand": "Canon", "category": "Printer"},
     0x04B8: {"brand": "Epson", "category": "Printer"},
     0x04F9: {"brand": "Brother", "category": "Printer"},
@@ -165,6 +173,7 @@ def analyze_cable_telemetry(
     has_mass_storage = False
     has_printer = False
     has_audio = False
+    has_video = False
 
     for iface in interfaces:
         if not isinstance(iface, dict):
@@ -186,14 +195,19 @@ def analyze_cable_telemetry(
             has_printer = True
         elif cls == 1:
             has_audio = True
+        elif cls == 14:
+            has_video = True
 
-    if has_mass_storage and not detected_category:
+    phone_ifaces = has_adb or has_fastboot or has_mtp
+    if has_mass_storage and not phone_ifaces:
         detected_category = "Storage"
-    elif has_printer and not detected_category:
+    elif has_printer and not phone_ifaces:
         detected_category = "Printer"
-    elif has_audio and not detected_category:
+    elif has_video and not phone_ifaces:
+        detected_category = "Camera"
+    elif has_audio and not phone_ifaces:
         detected_category = "Audio"
-    elif (has_adb or has_fastboot or has_mtp) and not detected_category:
+    elif phone_ifaces and not detected_category:
         detected_category = "Smartphone"
 
     causes: List[Dict[str, Any]] = []
