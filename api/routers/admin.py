@@ -7,6 +7,7 @@ Fixora workflow) backed by Supabase PostgreSQL and strictly locked to snsr19344@
 
 import json
 import time
+from datetime import datetime, timezone
 import urllib.request
 import urllib.error
 from typing import Dict, Any, List, Optional
@@ -168,7 +169,7 @@ def get_admin_stats(request: Request) -> Dict[str, Any]:
 
         req_rows = postgrest_request(
             "repair_requests",
-            {"select": "id,status"},
+            {"select": "id,status,created_at"},
             use_service_role=True,
         ) or []
         active_requests = sum(
@@ -177,6 +178,27 @@ def get_admin_stats(request: Request) -> Dict[str, Any]:
         completed_requests = sum(
             1 for r in req_rows if str(r.get("status") or "").upper() == "COMPLETED"
         )
+
+        # Monthly repair-request counts for the last 12 months (real DB data only).
+        _now = datetime.now(timezone.utc)
+        _months = []
+        for _i in range(11, -1, -1):
+            _y, _m = _now.year, _now.month - _i
+            while _m <= 0:
+                _m += 12
+                _y -= 1
+            _months.append((_y, _m))
+        _monthly_counts = {_k: 0 for _k in _months}
+        for _r in req_rows:
+            try:
+                _dt = datetime.fromisoformat(str(_r.get("created_at") or "").replace("Z", "+00:00"))
+                _key = (_dt.year, _dt.month)
+                if _key in _monthly_counts:
+                    _monthly_counts[_key] += 1
+            except Exception:
+                pass
+        monthly_requests = [{"month": f"{_y}-{_m:02d}", "count": _monthly_counts[(_y, _m)]} for (_y, _m) in _months]
+        completion_rate = round(100.0 * completed_requests / len(req_rows), 1) if req_rows else 0.0
 
         return {
             "verified_guides_count": guides_count,
@@ -191,6 +213,8 @@ def get_admin_stats(request: Request) -> Dict[str, Any]:
             "pending_approvals": pending_approvals,
             "suspended_centers": suspended_centers,
             "total_diagnoses": diagnoses_count,
+            "monthly_requests": monthly_requests,
+            "completion_rate": completion_rate,
             "source": "Supabase Production Database",
         }
     except DatabaseUnavailableError as e:
@@ -440,6 +464,59 @@ def notify_admin_of_pending_tech(request: Request, payload: Dict[str, Any]) -> D
             "طلب اعتماد مركز/فني صيانة جديد",
             f"تقدم {biz} ({city}) بطلب اعتماد جديد وبانتظار مراجعتك في لوحة الإدارة.",
             notif_type="pending_approval",
+            unread=True,
+        )
+        return {"notified": True}
+    except HTTPException:
+        raise
+    except DatabaseUnavailableError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+
+
+
+@router.post("/api/notifications/repair-request-alert")
+@router.post("/api/v1/notifications/repair-request-alert")
+def notify_admin_of_new_repair_request(request: Request, payload: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Notifies the exclusive admin inside Supabase notifications whenever a real
+    repair request is created: which person, from which center, sent it.
+    The request is verified against the database before any notification.
+    """
+    try:
+        req_id = str(payload.get("request_id") or payload.get("id") or "").strip()
+        if not req_id or not _is_valid_request_id(req_id):
+            raise HTTPException(status_code=422, detail="Repair request id required.")
+        rows = postgrest_request(
+            "repair_requests",
+            {"select": "id,user_name,technician_business,technician_name,tech_profile_id,device_info,status",
+             "id": f"eq.{req_id}"},
+            use_service_role=True,
+        ) or []
+        if not rows:
+            return {"notified": False, "reason": "Repair request not found."}
+        row = rows[0]
+        person = str(row.get("user_name") or "عميل").strip()
+        center = str(row.get("technician_business") or row.get("technician_name") or "").strip()
+        if not center and row.get("tech_profile_id"):
+            try:
+                tech_rows = postgrest_request(
+                    "technicians",
+                    {"select": "business_name,name", "id": f"eq.{row.get('tech_profile_id')}"},
+                    use_service_role=True,
+                ) or []
+                if tech_rows:
+                    center = str(tech_rows[0].get("business_name") or tech_rows[0].get("name") or "").strip()
+            except Exception:
+                pass
+        center_label = center or "بدون مركز محدد"
+        admin_uid = _get_admin_profile_id()
+        if not admin_uid:
+            return {"notified": False, "reason": "Administrator profile not registered yet."}
+        _notify_user(
+            admin_uid,
+            "طلب صيانة جديد",
+            f"بعت {person} طلب صيانة من مركز {center_label} ({row.get('device_info') or 'جهاز'}).",
+            notif_type="repair_request",
             unread=True,
         )
         return {"notified": True}

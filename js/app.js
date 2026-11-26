@@ -3295,7 +3295,11 @@ class ByteForceApp {
 
     // 1. Load Requests (ByteForce Lifecycle Engine)
     try {
-      const requests = await window.api.getMyRequests();
+      const _allDashboardRequests = await window.api.getMyRequests();
+      // Technicians only see the repair requests assigned to them.
+      const requests = user.role === "technician"
+        ? _allDashboardRequests.filter(r => r.technician_id && r.technician_id === user.id)
+        : _allDashboardRequests;
       const reqContainer = container.querySelector("#dashRequestsList");
       if (requests.length === 0) {
         reqContainer.innerHTML = `<p style="color: var(--color-text-muted); font-size: 14px;">${window.i18n.t('dash_no_requests')}</p>`;
@@ -3479,6 +3483,20 @@ class ByteForceApp {
                       `).join('')}
                     </div>
                   </details>
+
+                  <!-- Chat between the customer and the technician of this request -->
+                  <details style="margin-top: 10px; font-size: 13px;" ontoggle="if (this.open) app.loadRequestChat('${r.id}', this.querySelector('.req-chat-body'))">
+                    <summary style="cursor: pointer; color: var(--color-accent); outline: none;">
+                      <i class="fas fa-comments"></i> ${isAr ? 'المحادثة مع ' + (isTech ? 'العميل' : 'الفني') : 'Chat with ' + (isTech ? 'the customer' : 'the technician')}
+                    </summary>
+                    <div class="req-chat-body" style="padding: 10px 0; border-top: 1px solid var(--color-border); margin-top: 6px;">
+                      <div style="color: #64748B; text-align: center; padding: 8px;"><i class="fas fa-spinner fa-spin"></i></div>
+                    </div>
+                    <div style="display: flex; gap: 8px; margin-top: 8px;">
+                      <input type="text" id="chatInput_${r.id}" placeholder="${isAr ? 'اكتب رسالتك...' : 'Type your message...'}" class="form-control" style="flex: 1;">
+                      <button class="btn btn-primary btn-sm" onclick="app.sendRequestChat('${r.id}')"><i class="fas fa-paper-plane"></i> ${isAr ? 'إرسال' : 'Send'}</button>
+                    </div>
+                  </details>
                 </div>
               `;
             }).join('')}
@@ -3554,6 +3572,48 @@ class ByteForceApp {
       }
     } catch (err) {
       container.querySelector("#dashDevicesList").innerHTML = `<span style="color: var(--color-danger);">${err.message}</span>`;
+    }
+  }
+
+
+  // Per-request chat between the customer and the assigned technician.
+  async loadRequestChat(reqId, bodyEl) {
+    const isAr = window.i18n.currentLang === "ar";
+    try {
+      const messages = await window.api.getRequestMessages(reqId);
+      const me = window.api.getUser();
+      if (!bodyEl) return;
+      if (!messages || messages.length === 0) {
+        bodyEl.innerHTML = `<div style="color: #64748B; text-align: center; padding: 8px; font-size: 13px;">${isAr ? 'لا توجد رسائل بعد — ابدأ المحادثة.' : 'No messages yet — start the conversation.'}</div>`;
+        return;
+      }
+      bodyEl.innerHTML = messages.map(m => {
+        const mine = me && m.sender_id && String(m.sender_id) === String(me.id);
+        const who = mine ? (isAr ? 'أنت' : 'You') : (m.sender_name || (m.sender_role === 'technician' ? (isAr ? 'الفني' : 'Technician') : (isAr ? 'العميل' : 'Customer')));
+        return `<div style="display: flex; justify-content: ${mine ? 'flex-start' : 'flex-end'}; margin-bottom: 6px;">
+          <div style="max-width: 85%; padding: 8px 12px; border-radius: 10px; font-size: 13px; line-height: 1.5; background: ${mine ? 'var(--color-accent)' : 'var(--color-surface-alt)'}; color: ${mine ? '#fff' : 'var(--color-text-main)'};">
+            <div style="font-size: 11px; opacity: 0.8; margin-bottom: 2px;">${this._esc(who)}</div>
+            ${this._esc(m.body || '')}
+          </div>
+        </div>`;
+      }).join('');
+    } catch (err) {
+      if (bodyEl) bodyEl.innerHTML = `<div style="color: var(--color-danger); font-size: 13px; text-align: center; padding: 8px;">${this._esc(err.message || '')}</div>`;
+    }
+  }
+
+  async sendRequestChat(reqId) {
+    const input = document.getElementById(`chatInput_${reqId}`);
+    const body = (input && input.value || "").trim();
+    if (!body) return;
+    try {
+      await window.api.sendRequestMessage(reqId, body);
+      if (input) input.value = "";
+      const details = input ? input.closest("details") : null;
+      const bodyEl = details ? details.querySelector(".req-chat-body") : null;
+      await this.loadRequestChat(reqId, bodyEl);
+    } catch (err) {
+      alert(err.message || "Failed to send message.");
     }
   }
 
@@ -3729,6 +3789,9 @@ class ByteForceApp {
             <div style="padding: 20px; text-align: center; color: var(--color-text-muted);"><i class="fas fa-spinner fa-spin"></i></div>
           </div>
 
+          <!-- Monthly requests chart + completion rate (real data only) -->
+          <div id="adminMonthlyWrap" style="margin-bottom: 26px;"></div>
+
           <!-- Admin Navigation Tabs -->
           <div class="admin-tabs">
             <button type="button" class="admin-tab-btn ${activeTab === 'centers' ? 'active' : ''}" data-tab="centers" onclick="app.switchAdminTab('centers')">
@@ -3822,6 +3885,47 @@ class ByteForceApp {
           <div style="font-size: 28px; font-weight: 800; color: var(--color-purple); margin-top: 6px;">${stats.total_diagnoses ?? 0}</div>
         </div>
       `;
+    }
+
+    // Monthly requests chart + completion ring (real data from /api/admin/stats only)
+    const monthlyWrap = container.querySelector("#adminMonthlyWrap");
+    if (monthlyWrap) {
+      const monthly = Array.isArray(stats.monthly_requests) ? stats.monthly_requests : [];
+      const rate = typeof stats.completion_rate === "number" ? stats.completion_rate : null;
+      if (monthly.length > 0 || rate !== null) {
+        const maxCount = Math.max(1, ...monthly.map(m => m.count || 0));
+        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const monthLabel = (mm) => {
+          const parts = String(mm.month || "").split("-");
+          const mi = parseInt(parts[1], 10) - 1;
+          return (monthNames[mi] || parts[1] || "") + " " + String(parts[0] || "").slice(2);
+        };
+        monthlyWrap.innerHTML = `
+          <div style="display: grid; grid-template-columns: 1fr 260px; gap: 14px;">
+            <div class="card" style="padding: 18px;">
+              <h3 style="font-size: 16px; margin: 0 0 4px;">${isAr ? 'طلبات الصيانة الشهرية (آخر 12 شهراً)' : 'Monthly Repair Requests (last 12 months)'}</h3>
+              <p style="font-size: 12.5px; color: var(--color-text-muted); margin: 0 0 14px;">${isAr ? 'عدد حقيقي من قاعدة البيانات — بدون أي أرقام افتراضية.' : 'Real counts from the database — no synthetic numbers.'}</p>
+              <div style="display: flex; align-items: flex-end; gap: 6px; height: 140px;">
+                ${monthly.map(m => `
+                  <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end;">
+                    <span style="font-size: 11px; font-weight: 700; color: var(--color-text-main);">${m.count || 0}</span>
+                    <div title="${monthLabel(m)}: ${m.count || 0}" style="width: 100%; max-width: 34px; height: ${Math.max(3, Math.round(((m.count || 0) / maxCount) * 100))}%; background: var(--color-accent); border-radius: 4px 4px 0 0;"></div>
+                    <span style="font-size: 10.5px; color: var(--color-text-muted);">${monthLabel(m)}</span>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+            <div class="card" style="padding: 18px; text-align: center;">
+              <h3 style="font-size: 16px; margin: 0 0 4px;">${isAr ? 'نسبة الإصلاحات المكتملة' : 'Completed Repairs Rate'}</h3>
+              <p style="font-size: 12.5px; color: var(--color-text-muted); margin: 0 0 14px;">${isAr ? 'المكتملة من إجمالي طلبات الصيانة.' : 'Completed out of all repair requests.'}</p>
+              <div style="width: 120px; height: 120px; margin: 0 auto; border-radius: 50%; background: conic-gradient(#10B981 ${rate !== null ? rate * 3.6 : 0}deg, rgba(100,116,139,0.2) 0deg); display: flex; align-items: center; justify-content: center;">
+                <div style="width: 88px; height: 88px; border-radius: 50%; background: var(--color-card); display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 800; color: var(--color-text-main);">${rate !== null ? rate + '%' : '—'}</div>
+              </div>
+              <p style="font-size: 12.5px; color: var(--color-text-muted); margin: 12px 0 0;">${isAr ? 'المكتملة: ' : 'Completed: '} ${stats.completed_requests ?? 0} / ${stats.repair_requests_count ?? 0}</p>
+            </div>
+          </div>
+        `;
+      }
     }
 
     const setCount = (id, count) => {
