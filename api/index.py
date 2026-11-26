@@ -1,6 +1,8 @@
 import os
 import sys
 import json
+import time
+from collections import defaultdict, deque
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 
@@ -47,6 +49,48 @@ class VercelPathRewriter:
         await self.app(scope, receive, send)
 
 app.add_middleware(VercelPathRewriter)
+
+
+# Simple per-IP sliding-window rate limit for API abuse protection.
+# In-memory per serverless instance: 120 requests per 60 seconds per IP
+# on /api/* paths. Static assets and the homepage are not limited.
+_RATE_LIMIT = 120
+_RATE_WINDOW = 60.0
+_rate_buckets: dict = defaultdict(deque)
+
+
+class RateLimitMiddleware:
+    """Pure ASGI middleware that rejects bursts with HTTP 429."""
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope.get("type") == "http" and scope.get("path", "").startswith("/api"):
+            ip = "unknown"
+            for k, v in scope.get("headers", []):
+                if k.lower() == b"x-forwarded-for":
+                    ip = v.decode("latin1", errors="ignore").split(",")[0].strip() or "unknown"
+                    break
+                if k.lower() == b"x-real-ip":
+                    ip = v.decode("latin1", errors="ignore").strip() or "unknown"
+            now = time.monotonic()
+            bucket = _rate_buckets[ip]
+            while bucket and bucket[0] <= now - _RATE_WINDOW:
+                bucket.popleft()
+            if len(bucket) >= _RATE_LIMIT:
+                resp = JSONResponse(
+                    status_code=429,
+                    content={"error": "Too many requests. Please wait a moment and try again."},
+                    headers={"Retry-After": "60"},
+                )
+                await resp(scope, receive, send)
+                return
+            bucket.append(now)
+        await self.app(scope, receive, send)
+
+
+app.add_middleware(RateLimitMiddleware)
 
 @app.exception_handler(DatabaseUnavailableError)
 async def db_unavailable_exception_handler(request: Request, exc: DatabaseUnavailableError):

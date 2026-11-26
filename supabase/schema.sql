@@ -21,7 +21,7 @@ alter table public.profiles add column if not exists avatar_url text;
 alter table public.profiles add column if not exists is_active boolean default true;
 
 alter table public.profiles enable row level security;
-create policy "Allow public read access to profiles" on public.profiles for select using (true);
+create policy "Allow scoped read profiles" on public.profiles for select using (auth.uid() = id or lower(trim(auth.jwt() ->> 'email')) = 'snsr19344@gmail.com');
 create policy "Allow authenticated users to insert own profile" on public.profiles for insert with check (auth.uid() = id);
 create policy "Allow users to update own profile" on public.profiles for update using (auth.uid() = id);
 create policy "Allow admin update any profile" on public.profiles for update using (lower(trim(auth.jwt() ->> 'email')) = 'snsr19344@gmail.com');
@@ -79,10 +79,10 @@ create table if not exists public.devices (
 );
 
 alter table public.devices enable row level security;
-create policy "Allow read devices" on public.devices for select using (true);
-create policy "Allow insert devices" on public.devices for insert with check (true);
-create policy "Allow update devices" on public.devices for update using (true);
-create policy "Allow delete devices" on public.devices for delete using (true);
+create policy "Allow own read devices" on public.devices for select using (auth.uid() = user_id);
+create policy "Allow own insert devices" on public.devices for insert with check (auth.uid() = user_id);
+create policy "Allow own update devices" on public.devices for update using (auth.uid() = user_id);
+create policy "Allow own delete devices" on public.devices for delete using (auth.uid() = user_id);
 
 -- 3. Diagnosis Reports Table
 create table if not exists public.diagnosis_reports (
@@ -104,9 +104,9 @@ create table if not exists public.diagnosis_reports (
 );
 
 alter table public.diagnosis_reports enable row level security;
-create policy "Allow read reports" on public.diagnosis_reports for select using (true);
-create policy "Allow insert reports" on public.diagnosis_reports for insert with check (true);
-create policy "Allow delete reports" on public.diagnosis_reports for delete using (true);
+create policy "Allow scoped read reports" on public.diagnosis_reports for select using (auth.uid() = user_id or lower(trim(auth.jwt() ->> 'email')) = 'snsr19344@gmail.com');
+create policy "Allow insert reports" on public.diagnosis_reports for insert with check (auth.uid() = user_id or user_id is null);
+create policy "Allow own delete reports" on public.diagnosis_reports for delete using (auth.uid() = user_id or lower(trim(auth.jwt() ->> 'email')) = 'snsr19344@gmail.com');
 
 -- 4. Repair Service Requests Table
 create table if not exists public.repair_requests (
@@ -124,10 +124,9 @@ create table if not exists public.repair_requests (
 );
 
 alter table public.repair_requests enable row level security;
-create policy "Allow read repair_requests" on public.repair_requests for select using (true);
-create policy "Allow insert repair_requests" on public.repair_requests for insert with check (true);
-create policy "Allow update repair_requests" on public.repair_requests for update using (true);
-create policy "Allow delete repair_requests" on public.repair_requests for delete using (true);
+create policy "Allow scoped read repair_requests" on public.repair_requests for select using (auth.uid() = user_id or auth.uid() = technician_id or exists (select 1 from public.technicians t where t.id = repair_requests.tech_profile_id and t.user_id = auth.uid()) or lower(trim(auth.jwt() ->> 'email')) = 'snsr19344@gmail.com');
+create policy "Allow auth insert repair_requests" on public.repair_requests for insert with check (auth.uid() = user_id);
+create policy "Allow scoped update repair_requests" on public.repair_requests for update using (auth.uid() = user_id or auth.uid() = technician_id or exists (select 1 from public.technicians t where t.id = repair_requests.tech_profile_id and t.user_id = auth.uid()) or lower(trim(auth.jwt() ->> 'email')) = 'snsr19344@gmail.com');
 
 -- 5. Certified Datasets Inventory Table
 create table if not exists public.certified_datasets (
@@ -220,7 +219,7 @@ create index if not exists idx_repair_incidents_cluster on public.repair_inciden
 
 alter table public.repair_incidents enable row level security;
 create policy "Allow public read repair_incidents" on public.repair_incidents for select using (true);
-create policy "Allow service write repair_incidents" on public.repair_incidents for all using (true);
+create policy "Allow service write repair_incidents" on public.repair_incidents for all using (auth.role() = 'service_role');
 
 -- 9. Backblaze Models Table
 create table if not exists public.backblaze_models (
