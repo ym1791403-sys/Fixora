@@ -58,53 +58,68 @@ def _http_get_json(url: str, timeout: float = 4.5) -> Optional[Dict[str, Any]]:
         return None
 
 
+def _ifixit_image(term: str) -> Optional[Dict[str, Any]]:
+    """First iFixit Suggest hit with a photo for this exact term, or None."""
+    q_enc = urllib.parse.quote(term)
+    url = f"https://www.ifixit.com/api/2.0/suggest/{q_enc}?doctypes=device,guide"
+    data = _http_get_json(url, timeout=4.0)
+    results = (data or {}).get("results") or []
+    for r in results:
+        img_obj = r.get("image") or {}
+        img_url = img_obj.get("standard") or img_obj.get("medium") or img_obj.get("large")
+        if img_url and str(img_url).startswith("http"):
+            return {
+                "image_url": img_url,
+                "title": r.get("title") or term,
+                "source": "iFixit Public Device Catalog",
+            }
+    return None
+
+
+def _wikipedia_image(term: str) -> Optional[Dict[str, Any]]:
+    """First Wikimedia Commons thumbnail for this exact term, or None."""
+    q_enc = urllib.parse.quote(term)
+    url = (
+        f"https://en.wikipedia.org/w/api.php?action=query&generator=search"
+        f"&gsrsearch={q_enc}&gsrlimit=2&prop=pageimages&pithumbsize=500&format=json"
+    )
+    data = _http_get_json(url, timeout=4.0)
+    pages = ((data or {}).get("query") or {}).get("pages") or {}
+    for _, page in pages.items():
+        thumb = (page.get("thumbnail") or {}).get("source")
+        if thumb and str(thumb).startswith("http"):
+            return {
+                "image_url": thumb,
+                "title": page.get("title") or term,
+                "source": "Wikimedia Commons",
+            }
+    return None
+
+
 def resolve_device_image(query: str, category: str = "") -> Dict[str, Any]:
     """
-    Resolves a real photograph/thumbnail for a device query (or recognized category fallback).
+    Resolves a real photograph/thumbnail for the exact device searched
+    (brand/model from the diagnosis), not for a generic category device.
+    Lookup order per device: iFixit, then Wikipedia. The category's canonical
+    device (e.g. iPhone for Smartphone, MacBook Pro for Laptop) is only a last
+    resort, after the exact device was tried on both sources. This prevents
+    every search in a category from showing the same one device photo.
     Returns {"image_url": str|None, "title": str|None, "source": str|None}.
     """
     clean_q = (query or "").strip()
-    search_terms = []
-    if clean_q and len(clean_q) >= 2:
-        search_terms.append(clean_q)
+    exact_term = clean_q if len(clean_q) >= 2 else ""
+    fallback_term = ""
     if category and category in _CATEGORY_FALLBACK_QUERY:
         fb = _CATEGORY_FALLBACK_QUERY[category]
         if fb.lower() != clean_q.lower():
-            search_terms.append(fb)
+            fallback_term = fb
 
-    # 1. Try iFixit Device & Guide Suggest API first (exact hardware teardown photos)
-    for term in search_terms:
-        q_enc = urllib.parse.quote(term)
-        url = f"https://www.ifixit.com/api/2.0/suggest/{q_enc}?doctypes=device,guide"
-        data = _http_get_json(url, timeout=4.0)
-        results = (data or {}).get("results") or []
-        for r in results:
-            img_obj = r.get("image") or {}
-            img_url = img_obj.get("standard") or img_obj.get("medium") or img_obj.get("large")
-            if img_url and str(img_url).startswith("http"):
-                return {
-                    "image_url": img_url,
-                    "title": r.get("title") or term,
-                    "source": "iFixit Public Device Catalog",
-                }
-
-    # 2. Try Wikipedia / Wikimedia Commons PageImages for general devices
-    for term in search_terms[:1]:
-        q_enc = urllib.parse.quote(term)
-        url = (
-            f"https://en.wikipedia.org/w/api.php?action=query&generator=search"
-            f"&gsrsearch={q_enc}&gsrlimit=2&prop=pageimages&pithumbsize=500&format=json"
-        )
-        data = _http_get_json(url, timeout=4.0)
-        pages = ((data or {}).get("query") or {}).get("pages") or {}
-        for _, page in pages.items():
-            thumb = (page.get("thumbnail") or {}).get("source")
-            if thumb and str(thumb).startswith("http"):
-                return {
-                    "image_url": thumb,
-                    "title": page.get("title") or term,
-                    "source": "Wikimedia Commons",
-                }
+    for term in (exact_term, fallback_term):
+        if not term:
+            continue
+        hit = _ifixit_image(term) or _wikipedia_image(term)
+        if hit:
+            return hit
 
     return {"image_url": None, "title": None, "source": None}
 
