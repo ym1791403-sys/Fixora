@@ -341,25 +341,25 @@ class ByteForceApp {
     if (obBadge && obTitle && obDesc && obActions) {
       if (isLoggedIn && user) {
         const isAdminUser = this.isExclusiveAdmin(user);
-        obBadge.innerHTML = `<span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #10B981; border: 1px solid rgba(16, 185, 129, 0.3); font-size: 12px; padding: 4px 10px;"><i class="fas fa-check-circle"></i> ${isAr ? 'حساب نشط وموثق' : 'Verified Account Active'}</span>${isAdminUser ? `<span class="badge" style="background: rgba(239, 68, 68, 0.16); color: var(--color-danger); border: 1px solid rgba(239, 68, 68, 0.35); font-size: 12px; padding: 4px 10px;"><i class="fas fa-shield-alt"></i> ${isAr ? 'مدير النظام' : 'System Admin'}</span>` : ''}<span style="color: #94A3B8; font-size: 13px;">${this._esc(user.email || '')}</span>`;
-        obTitle.textContent = isAr ? `مرحباً بك مجدداً، ${user.full_name || user.email}! أدوات الفحص الذكي مفعلة` : `Welcome back, ${user.full_name || user.email}! Diagnostic tools unlocked`;
-        obDesc.textContent = isAr ? "تم التحقق من حسابك بنجاح. يمكنك الآن بدء تشخيص أي جهاز ومطابقة الأعطال مع قواعد بيانات الصيانة العالمية وتحميل التقارير المعتمدة." : "Your account is authenticated. You have full access to hardware diagnosis, empirical dataset matching, and verified repair manuals.";
+        obBadge.innerHTML = `<span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #10B981; border: 1px solid rgba(16, 185, 129, 0.3); font-size: 12px; padding: 4px 10px;"><i class="fas fa-check-circle"></i> ${isAr ? 'حساب نشط' : 'Account Active'}</span>${isAdminUser ? `<span class="badge" style="background: rgba(239, 68, 68, 0.16); color: var(--color-danger); border: 1px solid rgba(239, 68, 68, 0.35); font-size: 12px; padding: 4px 10px;"><i class="fas fa-shield-alt"></i> ${isAr ? 'مدير النظام' : 'System Admin'}</span>` : ''}<span style="color: #94A3B8; font-size: 13px;">${this._esc(user.email || '')}</span>`;
+        obTitle.textContent = isAr ? `أهلاً ${user.full_name || user.email}` : `Welcome, ${user.full_name || user.email}`;
+        obDesc.textContent = isAr ? "حسابك مفعّل ويمكنك استخدام الفحص وتقديم طلبات الصيانة." : "Your account is ready for diagnostics and repair requests.";
         obActions.innerHTML = `
           ${isAdminUser ? `
             <button class="btn btn-md" onclick="app.navigate('admin')" style="background: rgba(239, 68, 68, 0.18); color: var(--color-danger); border: 1px solid rgba(239, 68, 68, 0.45); display: inline-flex; align-items: center; gap: 8px; font-weight: 700;">
               <i class="fas fa-shield-alt" style="color: #EF4444;"></i>
-              <span>${isAr ? 'فتح لوحة تحكم الإدارة (Admin Panel)' : 'Open Admin Control Center'}</span>
+              <span>${isAr ? 'فتح لوحة الإدارة' : 'Open Admin Panel'}</span>
             </button>
           ` : ''}
           <button class="btn btn-primary btn-md" onclick="app.navigate('diagnose')" style="display: inline-flex; align-items: center; gap: 8px;">
-            <i class="fas fa-microchip"></i>
-            <span>${isAr ? 'ابدأ تشخيص أي جهاز الآن' : 'Start Diagnostic Inspection'}</span>
+            <i class="fas fa-wrench"></i>
+            <span>${isAr ? 'ابدأ فحص جهاز' : 'Start Diagnosis'}</span>
           </button>
         `;
       } else {
-        obBadge.innerHTML = `<span class="badge" style="background: rgba(239, 68, 68, 0.15); color: var(--color-danger); border: 1px solid rgba(239, 68, 68, 0.3); font-size: 12px; padding: 4px 10px;"><i class="fas fa-lock"></i> ${isAr ? 'وصول محمي وموثق' : 'Authentication Required'}</span><span style="color: #94A3B8; font-size: 13px;">${isAr ? 'حماية البيانات وتوثيق تاريخ الأجهزة' : 'Device history & data protection'}</span>`;
-        obTitle.textContent = isAr ? 'أدوات الفحص الذكي وتقارير الصيانة مخصصة للأعضاء المسجلين' : 'Diagnostic Tools & Reports are Reserved for Verified Accounts';
-        obDesc.textContent = isAr ? 'للحفاظ على سرية مواصفات أجهزتك وحفظ سجلات الفحص ومطابقتها مستقبلاً، يتطلب استخدام معالج التشخيص وتسجيل الأعراض إنشاء حساب موثق أو تسجيل الدخول السريع.' : 'To safeguard technical records, maintain device repair histories, and generate certified inspection reports, access to diagnostic tools requires signing in.';
+        obBadge.innerHTML = `<span class="badge" style="background: rgba(239, 68, 68, 0.15); color: var(--color-danger); border: 1px solid rgba(239, 68, 68, 0.3); font-size: 12px; padding: 4px 10px;"><i class="fas fa-lock"></i> ${isAr ? 'تسجيل الدخول مطلوب' : 'Sign In Required'}</span>`;
+        obTitle.textContent = isAr ? 'سجّل دخولك لاستخدام خدمات المنصة' : 'Sign in to use platform services';
+        obDesc.textContent = isAr ? 'يرجى تسجيل الدخول لتقديم طلب صيانة أو فحص جهاز أو عرض الأدلة.' : 'Please sign in to submit a repair request, run diagnostics, or view guides.';
         obActions.innerHTML = `
           <button class="btn btn-primary btn-md" onclick="app.showAuthModal('login')" style="display: inline-flex; align-items: center; gap: 8px;">
             <i class="fas fa-sign-in-alt"></i>
@@ -392,7 +392,27 @@ class ByteForceApp {
     if (toggleBtn) toggleBtn.innerHTML = '<i class="fas fa-bars"></i>';
   }
 
+  _requireAuth(destView = null, msgAr = "يرجى تسجيل الدخول للمتابعة.", msgEn = "Please sign in to continue.") {
+    if (window.api && window.api.isLoggedIn()) return true;
+    if (destView) this.pendingNavigation = destView;
+    const isAr = window.i18n.currentLang === "ar";
+    this.showAuthModal("login", "user", isAr ? msgAr : msgEn);
+    return false;
+  }
+
   navigate(viewName, params = {}) {
+    const protectedViews = new Set(["diagnose", "results", "guides", "technicians", "dashboard"]);
+    if (protectedViews.has(viewName)) {
+      const msgAr = viewName === "technicians" ? "سجّل دخولك أولاً لتقديم طلب صيانة." : "يرجى تسجيل الدخول للمتابعة.";
+      const msgEn = viewName === "technicians" ? "Please sign in first to submit a repair request." : "Please sign in to continue.";
+      if (!this._requireAuth(viewName, msgAr, msgEn)) {
+        if (!document.getElementById("mainContent")?.innerHTML.trim()) {
+          this.renderHome(document.getElementById("mainContent"));
+        }
+        return;
+      }
+    }
+
     this.currentView = viewName;
     document.querySelectorAll(".nav-link").forEach(l => {
       l.classList.toggle("active", l.getAttribute("data-nav") === viewName);
@@ -420,31 +440,23 @@ class ByteForceApp {
         }, 60);
         break;
       case "diagnose":
-        // STRICT AUTH GATE: Do not allow guest diagnosis
-        if (!window.api.isLoggedIn()) {
-          this.pendingNavigation = "diagnose";
-          const isAr = window.i18n.currentLang === "ar";
-          this.showAuthModal("login", "user", isAr ? 
-            "أدوات الفحص والتشخيص الذكي تتطلب تسجيل الدخول. يرجى تسجيل الدخول أو إنشاء حسابك للوصول إلى معالج الفحص وحفظ تقارير الصيانة لأجهزتك." : 
-            "Diagnostic tools require authentication. Please sign in or register to access the diagnostic wizard and save repair reports.");
-          return;
-        }
+        if (!this._requireAuth("diagnose")) return;
         this.renderDiagnose(mainContainer);
         break;
       case "results":
+        if (!this._requireAuth("results")) return;
         this.renderResults(mainContainer);
         break;
       case "guides":
+        if (!this._requireAuth("guides")) return;
         this.renderGuides(mainContainer);
         break;
       case "technicians":
+        if (!this._requireAuth("technicians", "سجّل دخولك أولاً لتقديم طلب صيانة.", "Please sign in first to submit a repair request.")) return;
         this.renderTechnicians(mainContainer);
         break;
       case "dashboard":
-        if (!window.api.isLoggedIn()) {
-          this.showAuthModal("login");
-          return;
-        }
+        if (!this._requireAuth("dashboard")) return;
         this.renderDashboard(mainContainer);
         break;
       case "admin":
@@ -510,9 +522,7 @@ class ByteForceApp {
             description: text
           };
           this.pendingNavigation = "diagnose";
-          this.showAuthModal("login", "user", isAr ? 
-            "أدوات الفحص والتشخيص الذكي تتطلب تسجيل الدخول. يرجى تسجيل الدخول أو إنشاء حسابك لبدء الفحص الفوري ومطابقة العطل مع قواعد البيانات العالمية." : 
-            "Diagnostic tools require authentication. Please sign in or register to initiate AI diagnosis and match your issue against repair datasets.");
+          this.showAuthModal("login", "user", isAr ? "يرجى تسجيل الدخول للمتابعة." : "Please sign in to continue.");
           return;
         }
 
@@ -900,6 +910,7 @@ class ByteForceApp {
   }
 
   filterGuidesByCategory(cat) {
+    if (!this._requireAuth("guides")) return;
     this.navigate("guides");
     setTimeout(() => {
       const catSelect = document.getElementById("guideCatFilter");
@@ -912,17 +923,7 @@ class ByteForceApp {
 
   startDiagnosisWithCat(cat) {
     this.wizardData.device_category = cat;
-    // STRICT AUTH GATE: Do not allow guest diagnosis
-    if (!window.api.isLoggedIn()) {
-      this.pendingNavigation = "diagnose";
-      const isAr = window.i18n.currentLang === "ar";
-      const catKey = "cat_" + (cat || "").toLowerCase().replace(/\s+/g, "_");
-      const catName = window.i18n.t(catKey) || cat;
-      this.showAuthModal("login", "user", isAr ? 
-        `يرجى تسجيل الدخول لبدء فحص جهازك (${catName}) والاطلاع على خطوات الإصلاح ومطابقة الأعطال.` : 
-        `Please sign in to diagnose your ${cat} and access verified repair procedures.`);
-      return;
-    }
+    if (!this._requireAuth("diagnose")) return;
     this.navigate("diagnose");
   }
 
@@ -931,12 +932,7 @@ class ByteForceApp {
   // ==========================================
   renderDiagnose(container) {
     const isAr = window.i18n.currentLang === "ar";
-    // STRICT AUTH GATE: Double protection at component level
-    if (!window.api.isLoggedIn()) {
-      this.pendingNavigation = "diagnose";
-      this.showAuthModal("login", "user", isAr ? 
-        "أدوات الفحص والتشخيص الذكي تتطلب تسجيل الدخول. يرجى تسجيل الدخول أو إنشاء حسابك للوصول إلى معالج الفحص وحفظ تقارير الصيانة لأجهزتك." : 
-        "Diagnostic tools require authentication. Please sign in or register to access the diagnostic wizard and save repair reports.");
+    if (!this._requireAuth("diagnose")) {
       this.navigate("home");
       return;
     }
@@ -1237,6 +1233,7 @@ class ByteForceApp {
   }
 
   async scanUsbCableDevice() {
+    if (!this._requireAuth("diagnose")) return;
     const isAr = window.i18n.currentLang === "ar";
     if (!navigator.usb || typeof navigator.usb.requestDevice !== "function") {
       alert(isAr
@@ -1313,6 +1310,7 @@ class ByteForceApp {
   }
 
   async scanSerialCablePort() {
+    if (!this._requireAuth("diagnose")) return;
     const isAr = window.i18n.currentLang === "ar";
     if (!("serial" in navigator) || typeof navigator.serial.requestPort !== "function") {
       alert(isAr
@@ -1377,6 +1375,7 @@ class ByteForceApp {
   }
 
   async submitDiagnosis(options = {}) {
+    if (!this._requireAuth("diagnose")) return;
     const isAr = window.i18n.currentLang === "ar";
     const mainContainer = document.getElementById("mainContent");
     
@@ -1889,10 +1888,12 @@ class ByteForceApp {
   }
 
   bookTechnicianForReport() {
+    if (!this._requireAuth("technicians", "سجّل دخولك أولاً لتقديم طلب صيانة.", "Please sign in first to submit a repair request.")) return;
     this.navigate("technicians");
   }
 
   async submitRepairOutcome(fixed) {
+    if (!this._requireAuth()) return;
     if (!this.currentReport) return;
     const isAr = window.i18n.currentLang === "ar";
     const report = this.currentReport;
@@ -2094,6 +2095,7 @@ class ByteForceApp {
   }
 
   async showGuideModal(guideId) {
+    if (!this._requireAuth("guides")) return;
     const isAr = window.i18n.currentLang === "ar";
     try {
       let guide = await window.api.getGuide(guideId);
@@ -3057,6 +3059,7 @@ class ByteForceApp {
   }
 
   async showTechReviewsModal(techId, techName = "") {
+    if (!this._requireAuth("technicians")) return;
     const isAr = window.i18n.currentLang === "ar";
     this.openModal(`
       <div style="text-align: center; padding: 28px 10px;">
@@ -3136,8 +3139,7 @@ class ByteForceApp {
 
   showBookTechnicianModal(techId, techName) {
     const isAr = window.i18n.currentLang === "ar";
-    if (!window.api.isLoggedIn()) {
-      this.showAuthModal("login", "user", isAr ? "يرجى تسجيل الدخول أولاً لتتمكن من حجز موعد مع الفني" : "Please sign in first to book a repair technician");
+    if (!this._requireAuth("technicians", "سجّل دخولك أولاً لتقديم طلب صيانة.", "Please sign in first to submit a repair request.")) {
       return;
     }
     const user = window.api.getUser();
