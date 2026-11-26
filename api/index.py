@@ -20,7 +20,7 @@ from api.services.db import DatabaseUnavailableError
 
 from urllib.parse import parse_qs
 
-app = FastAPI(title="ByteForce AI Platform", version="3.0.0")
+app = FastAPI(title="ByteForce AI Platform", version="4.0.13")
 
 class VercelPathRewriter:
     """Pure ASGI middleware that modifies scope['path'] before FastAPI route matching."""
@@ -81,7 +81,8 @@ def get_content_type(path: str) -> str:
         ".svg": "image/svg+xml",
         ".png": "image/png",
         ".jpg": "image/jpeg",
-        ".ico": "image/x-icon"
+        ".ico": "image/x-icon",
+        ".webp": "image/webp"
     }
     return types.get(ext, "application/octet-stream")
 
@@ -92,7 +93,7 @@ def health_check():
     return {
         "status": "healthy",
         "service": "ByteForce AI Platform",
-        "version": "3.0.0",
+        "version": "4.0.13",
         "database": "Supabase PostgreSQL",
         "policy": "Strict empirical evidence only; zero synthetic records or mock fallback."
     }
@@ -113,7 +114,9 @@ def serve_index():
 
 @app.api_route("/{full_path:path}", methods=["GET", "HEAD"])
 def serve_static(full_path: str):
-    target = os.path.join(root_dir, full_path)
+    target = os.path.abspath(os.path.join(root_dir, full_path))
+    if os.path.commonpath([root_dir, target]) != root_dir:
+        return HTMLResponse("<h1>Not Found</h1>", status_code=404)
     if os.path.exists(target) and os.path.isfile(target):
         media_type = get_content_type(target)
         with open(target, "rb") as f:
