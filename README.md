@@ -1,4 +1,4 @@
-# ByteForce — Production AI Hardware Diagnostics & Repair Platform
+# ByteForce — Production Hardware Diagnostics & Repair Platform
 
 [![Vercel Deployment](https://img.shields.io/badge/Deploy-Vercel%20Production-black.svg?style=flat&logo=vercel)](https://fixora-ai-omega.vercel.app/)
 [![Database](https://img.shields.io/badge/Database-Supabase%20PostgreSQL%2017-3ECF8E.svg?style=flat&logo=supabase)](https://supabase.com/)
@@ -50,7 +50,7 @@
   └── POST /api/prediction/hard-drive -> SMART ML failure inference
          │
          ▼
-[Frontend UI] (Pure Matte Dark Aesthetic - Arabic & English)
+[Frontend UI] (Clean White Theme only - Arabic & English)
   ├── Live counters updated directly from database query
   ├── Circular rotating seal with asterisk (strictly LTR in all languages)
   └── Zero mock fallbacks: returns 503 Dataset Unavailable on outage

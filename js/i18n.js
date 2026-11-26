@@ -22,11 +22,11 @@ const TRANSLATIONS = {
     
     // Hero (ByteFix Reference Typography & Copy)
     hero_headline: "Fixing Tech Issues Fast and Right",
-    hero_subtext: "From smartphones and laptops to gaming consoles, smart TVs, storage drives, and home electronics — AI-calibrated troubleshooting guides and direct connection to certified technicians.",
+    hero_subtext: "From smartphones and laptops to gaming consoles, smart TVs, storage drives, and home electronics — precision troubleshooting guides and direct connection to certified technicians.",
     hero_emergency_btn: "Get Emergency Service",
     hero_request_repair: "Request a Repair Today",
     hero_cta_diag: "New Diagnosis",
-    hero_badge: "ByteForce AI Universal Hardware Diagnostic Platform",
+    hero_badge: "ByteForce Universal Hardware Diagnostic Platform",
     
     // Quick Demo Triage Card
     demo_title: "Instant Smart Triage",
@@ -36,15 +36,15 @@ const TRANSLATIONS = {
     
     // About Us Section (ByteFix Reference)
     about_title: "About Us",
-    about_body_1: "At ByteForce, we provide reliable AI diagnosis and comprehensive repair services tailored to your needs. Our certified specialists and neural triage logic handle everything from hardware troubleshooting and component-level repairs to data recovery and cybersecurity.",
+    about_body_1: "At ByteForce, we provide reliable diagnosis and comprehensive repair services tailored to your needs. Our certified specialists and expert triage logic handle everything from hardware troubleshooting and component-level repairs to data recovery and cybersecurity.",
     about_body_2: "We keep your technology running smoothly with dependable solutions for smartphones, laptops, gaming consoles, smart TVs, storage drives, and home appliances.",
-    badge_text: "• BYTEFORCE AI PLATFORM • CERTIFIED REPAIRS • EST. 2026 •",
+    badge_text: "• BYTEFORCE PLATFORM • CERTIFIED REPAIRS • EST. 2026 •",
     stat_records: "+3,000",
     stat_records_lbl: "Real ORA Incidents Imported",
     stat_guides: "1,160",
     stat_guides_lbl: "Verified MyFixit Manuals",
     stat_ml_auc: "0.912",
-    stat_ml_auc_lbl: "Backblaze ML ROC-AUC",
+    stat_ml_auc_lbl: "Backblaze ROC-AUC",
 
     // Onboarding Showcase Section
     onboarding_badge: "Certified Hardware Diagnostic Platform",
@@ -52,7 +52,7 @@ const TRANSLATIONS = {
     onboarding_subtitle: "ByteForce combines advanced diagnostic models with the world's largest open repair datasets (Open Repair Alliance, MyFixit teardowns, and Backblaze SMART telemetry) to deliver evidence-based hardware troubleshooting without guesswork.",
     onboarding_step1_h: "1. Select Device & Record Symptoms",
     onboarding_step1_p: "Choose from 13 comprehensive hardware categories. Describe symptoms in natural English or Arabic with immediate safety triage.",
-    onboarding_step2_h: "2. Evidence Matching & ML Prediction",
+    onboarding_step2_h: "2. Evidence Matching & Prediction",
     onboarding_step2_p: "ByteForce correlates observations against 416K+ real repair cases and trained telemetry classifiers (ROC-AUC 0.912) to rank root causes.",
     onboarding_step3_h: "3. Step-by-Step Manuals or Certified Techs",
     onboarding_step3_p: "Access illustrated teardowns with required toolboxes, or dispatch verified diagnostic reports directly to certified local technicians.",
@@ -193,7 +193,7 @@ const TRANSLATIONS = {
     admin_tab_users: "User Accounts",
     admin_tab_requests: "All Repair Requests",
     admin_tab_audit: "Audit Log",
-    admin_tab_ai: "AI Model Setup",
+    admin_tab_ai: "Model Setup",
     admin_add_center_btn: "Add Center / Tech",
     admin_bulk_centers_btn: "Bulk Import Centers",
     admin_edit_btn: "Edit",
@@ -257,7 +257,7 @@ const TRANSLATIONS = {
     about_title: "عن ByteForce",
     about_body_1: "في ByteForce، نقدم حلول الدعم التقني الموثوقة وتشخيص وصيانة الحواسيب والأجهزة الإلكترونية بدقة عالية لتلائم احتياجاتك. يمتلك فريقنا المعتمد ومحركنا الذكي خبرة عملية تغطي كافة الجوانب من استكشاف الأعطال وحلها، وإصلاح اللوحات الأم، واستعادة البيانات، وحماية الأجهزة.",
     about_body_2: "نحافظ على سلامة أجهزتك التقنية عبر حلول موثوقة ومدروسة للهواتف، اللابتوبات، منصات الألعاب، الشاشات، وسائط التخزين، والأجهزة المنزلية الذكية.",
-    badge_text: "• BYTEFORCE AI PLATFORM • CERTIFIED REPAIRS • EST. 2026 •",
+    badge_text: "• BYTEFORCE PLATFORM • CERTIFIED REPAIRS • EST. 2026 •",
     stat_records: "+3,000",
     stat_records_lbl: "سجل صيانة حقيقي (ORA)",
     stat_guides: "1,160",
@@ -266,9 +266,9 @@ const TRANSLATIONS = {
     stat_ml_auc_lbl: "دقة التنبؤ بالأعطال (ROC-AUC)",
 
     // Onboarding Showcase Section (Arabic)
-    onboarding_badge: "المنظومة الهندسية المعتمدة لتشخيص الأجهزة بالذكاء الاصطناعي",
+    onboarding_badge: "المنظومة الهندسية المعتمدة لتشخيص الأجهزة",
     onboarding_title: "دليلك الشامل: كيف تعمل ByteForce على تشخيص وحل أعطال أجهزتك؟",
-    onboarding_subtitle: "ByteForce تجمع بين قوة خوارزميات الذكاء الاصطناعي وأضخم قواعد بيانات الصيانة المفتوحة في العالم (تحالف Open Repair Alliance، وأدلة MyFixit، وتنبؤات Backblaze SMART). صممت المنظومة لتقديم تشخيص هندسي دقيق بدون أي تخمين أو بيانات وهمية.",
+    onboarding_subtitle: "ByteForce تجمع بين أدق أساليب التشخيص الهندسي وأضخم قواعد بيانات الصيانة المفتوحة في العالم (تحالف Open Repair Alliance، وأدلة MyFixit، وتنبؤات Backblaze SMART). صممت المنظومة لتقديم تشخيص هندسي دقيق بدون أي تخمين أو بيانات وهمية.",
     onboarding_step1_h: "1. حدد جهازك وسجل الأعراض",
     onboarding_step1_p: "اختر نوع جهازك من بين 13 فئة شاملة (هواتف، حواسيب محمولة ومكتبية، منصات ألعاب، وسائط تخزين HDD/SSD، أجهزة منزلية). صف ما يحدث باللغة العربية أو الإنجليزية بدقة.",
     onboarding_step2_h: "2. تحليل الأدلة والتشخيص التنبؤي",
@@ -412,7 +412,7 @@ const TRANSLATIONS = {
     admin_tab_users: "إدارة حسابات المستخدمين",
     admin_tab_requests: "جميع طلبات الصيانة",
     admin_tab_audit: "سجل تدقيق الإدارة",
-    admin_tab_ai: "نموذج الذكاء الاصطناعي",
+    admin_tab_ai: "إعداد النموذج",
     admin_add_center_btn: "إضافة مركز / فني جديد",
     admin_bulk_centers_btn: "رفع مجموعة مراكز",
     admin_edit_btn: "تعديل",

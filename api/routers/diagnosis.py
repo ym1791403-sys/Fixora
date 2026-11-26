@@ -10,6 +10,7 @@ Strictly removes all hardcoded probabilities and static fabricated outcomes.
 """
 
 from fastapi import APIRouter, Request
+from api.routers import admin as admin_mod
 from typing import Dict, Any, Optional
 from pydantic import BaseModel, Field
 from api.services.unified_diagnosis import UnifiedDiagnosisService
@@ -35,6 +36,7 @@ async def run_diagnosis(request: Request):
     """
     Executes unified diagnosis using real empirical records and ML prediction.
     """
+    admin_mod._verify_supabase_bearer_user(request)
     if request.method == "POST":
         try:
             body = await request.json()
@@ -54,6 +56,7 @@ async def submit_diagnosis_feedback(request: Request):
     Records user-verified repair outcome (fixed -> stores solution in live Supabase dataset;
     not fixed -> logs failed attempt and returns an alternative solution path).
     """
+    admin_mod._verify_supabase_bearer_user(request)
     try:
         body = await request.json()
     except Exception:
