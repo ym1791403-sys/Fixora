@@ -20,7 +20,7 @@ from api.services.db import DatabaseUnavailableError
 
 from urllib.parse import parse_qs
 
-app = FastAPI(title="ByteForce AI Platform", version="4.0.13")
+app = FastAPI(title="ByteForce Platform", version="4.0.13")
 
 class VercelPathRewriter:
     """Pure ASGI middleware that modifies scope['path'] before FastAPI route matching."""
@@ -92,7 +92,7 @@ def get_content_type(path: str) -> str:
 def health_check():
     return {
         "status": "healthy",
-        "service": "ByteForce AI Platform",
+        "service": "ByteForce Platform",
         "version": "4.0.13",
         "database": "Supabase PostgreSQL",
         "policy": "Strict empirical evidence only; zero synthetic records or mock fallback."
