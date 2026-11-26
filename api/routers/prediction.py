@@ -7,6 +7,7 @@ Enforces that model applies strictly to storage drives.
 """
 
 from fastapi import APIRouter, Request, HTTPException
+from api.routers import admin as admin_mod
 from typing import Dict, Any, Optional
 from pydantic import BaseModel, Field
 from api.services.backblaze_service import BackblazeFailurePredictionService
@@ -29,11 +30,12 @@ class SmartTelemetryInput(BaseModel):
 
 @router.post("/api/prediction/hard-drive")
 @router.post("/api/v1/prediction/hard-drive")
-async def predict_storage_failure(telemetry: SmartTelemetryInput):
+async def predict_storage_failure(request: Request, telemetry: SmartTelemetryInput):
     """
     Evaluates SMART telemetry to predict hard drive failure risk.
     Trained on Backblaze Q2 2026 data with serial-number and chronological validation.
     """
+    admin_mod._verify_supabase_bearer_user(request)
     data = telemetry.model_dump()
     category = data.get("device_category") or "Storage"
     result = service.predict_failure(data, device_category=category)
