@@ -1,4 +1,4 @@
-# ByteForce — Production AI Hardware Diagnostics & Repair Platform
+# ByteForce — Production Hardware Diagnostics & Repair Platform
 
 [![Vercel Deployment](https://img.shields.io/badge/Deploy-Vercel%20Production-black.svg?style=flat&logo=vercel)](https://fixora-ai-omega.vercel.app/)
 [![Database](https://img.shields.io/badge/Database-Supabase%20PostgreSQL%2017-3ECF8E.svg?style=flat&logo=supabase)](https://supabase.com/)
