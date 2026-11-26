@@ -360,11 +360,13 @@ class ApiClient {
   // Backend /api/requests/{id}/messages only allows the request owner, its
   // technician, or the admin to read or write.
   async getRequestMessages(reqId) {
+    this.requireLogin();
     const res = await this._adminRequest(`/requests/${encodeURIComponent(reqId)}/messages`, "GET", null);
     return (res && res.messages) || [];
   }
 
   async sendRequestMessage(reqId, body) {
+    this.requireLogin();
     const res = await this._adminRequest(`/requests/${encodeURIComponent(reqId)}/messages`, "POST", null, { body });
     return (res && res.message) || res;
   }
