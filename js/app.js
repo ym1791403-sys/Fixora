@@ -974,6 +974,9 @@ class ByteForceApp {
                   <span>${isAr ? 'قراءة منفذ السيريال (UART)' : 'Read Serial / UART Port'}</span>
                 </button>
               </div>
+              <p style="margin: 10px 0 0 0; font-size: 12px; color: var(--color-text-muted); line-height: 1.6;">
+                ${isAr ? 'لو جهازك مش ظاهر في القايمة: افصل الجهاز ووصّله تاني قبل ما تدوس على الزرار، واستخدم كابل بينقل بيانات مش شحن بس، ولو موبايل أندرويد اختار "نقل الملفات" من إشعار الـ USB.' : 'If your device is missing from the list: unplug it and plug it back in before clicking the button, use a data cable (not charge-only), and on Android choose "File transfer" from the USB notification.'}
+              </p>
               <div id="usbCableStatusBox" style="display: ${this.wizardData?.usb_telemetry || this.wizardData?.serial_logs ? 'block' : 'none'}; margin-top: 12px; padding: 12px 14px; border-radius: 8px; background: #FFFFFF; border: 1px solid #CBD5E1; font-size: 13px;">
                 ${this._renderUsbStatusMarkup(isAr)}
               </div>
@@ -1305,7 +1308,9 @@ class ByteForceApp {
       }
     } catch (err) {
       if (err?.name === "NotFoundError") return; // User closed picker cleanly
-      alert((isAr ? "تعذر قراءة الجهاز عبر كابل USB: " : "USB read notice: ") + (err?.message || err));
+      alert(isAr
+        ? "تعذر قراءة الجهاز عبر كابل USB. جرّب: افصل الجهاز ووصّله تاني، واستخدم كابل بينقل بيانات مش شحن بس ومنفذ USB تاني، ولو موبايل أندرويد اختار \"نقل الملفات\" من إشعار الـ USB. ولو لسه مش شغال، اكتب الماركة والموديل يدوي وكمل التشخيص."
+        : "Could not read the device over the USB cable. Try unplugging it and plugging it back in, using a data cable (not charge-only) and another USB port, and on Android choose \"File transfer\" from the USB notification. If it still does not work, enter the brand and model manually and continue the diagnosis.");
     }
   }
 
