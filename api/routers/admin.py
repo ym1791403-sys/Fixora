@@ -436,6 +436,7 @@ def notify_admin_of_pending_tech(request: Request, payload: Dict[str, Any]) -> D
     Notifies snsr19344@gmail.com inside Supabase notifications whenever a real pending
     technician/center application is recorded (verified against the database).
     """
+    _verify_supabase_bearer_user(request)
     try:
         email = str(payload.get("email") or "").strip()
         business_name = str(payload.get("business_name") or "").strip()
@@ -482,6 +483,7 @@ def notify_admin_of_new_repair_request(request: Request, payload: Dict[str, Any]
     repair request is created: which person, from which center, sent it.
     The request is verified against the database before any notification.
     """
+    _verify_supabase_bearer_user(request)
     try:
         req_id = str(payload.get("request_id") or payload.get("id") or "").strip()
         if not req_id or not _is_valid_request_id(req_id):

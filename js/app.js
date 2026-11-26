@@ -232,11 +232,11 @@ class ByteForceApp {
     list.innerHTML = this.notifications.map(n => `
       <div class="notif-item ${n.read ? '' : 'unread'}" style="cursor: pointer;" onclick="app.markNotifRead('${n.id}')">
         <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
-          <strong style="color: var(--color-text-main); font-size: 13px;">${n.title}</strong>
+          <strong style="color: var(--color-text-main); font-size: 13px;">${this._esc(n.title)}</strong>
           ${!n.read ? '<span style="width: 8px; height: 8px; border-radius: 50%; background: #38BDF8; flex-shrink: 0; margin-top: 4px;"></span>' : ''}
         </div>
-        <p style="color: #94A3B8; font-size: 12px; margin-top: 4px; line-height: 1.4;">${n.message}</p>
-        <div class="notif-time">${n.time}</div>
+        <p style="color: #94A3B8; font-size: 12px; margin-top: 4px; line-height: 1.4;">${this._esc(n.message)}</p>
+        <div class="notif-time">${this._esc(n.time)}</div>
       </div>
     `).join("");
   }
@@ -311,7 +311,7 @@ class ByteForceApp {
       if (userNameEl) userNameEl.textContent = user.full_name || user.email;
       if (userAvatarEl) {
         if (user.avatar_url) {
-          userAvatarEl.innerHTML = `<img src="${user.avatar_url}" alt="${user.full_name || 'User'}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block;" onerror="this.parentElement.textContent='${user.avatar_initial || 'U'}'">`;
+          userAvatarEl.innerHTML = `<img src="${this._esc(user.avatar_url)}" alt="${this._esc(user.full_name || 'User')}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block;" onerror="this.parentElement.textContent='${this._esc(user.avatar_initial || 'U')}'">`;
         } else {
           userAvatarEl.textContent = user.avatar_initial || (user.full_name ? user.full_name.charAt(0).toUpperCase() : "U");
         }
@@ -2118,7 +2118,7 @@ class ByteForceApp {
         `;
         }).join('');
       } catch (err) {
-        grid.innerHTML = `<div style="color: var(--color-danger); text-align: center; grid-column: 1/-1;">Failed to load guides: ${err.message}</div>`;
+        grid.innerHTML = `<div style="color: var(--color-danger); text-align: center; grid-column: 1/-1;">Failed to load guides: ${this._esc(err.message)}</div>`;
       }
     };
 
@@ -3263,9 +3263,9 @@ class ByteForceApp {
           
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; flex-wrap: wrap; gap: 14px;">
             <div>
-              <span class="tag" style="background-color: rgba(37,99,235,0.08); color: var(--color-secondary);">${user.role.toUpperCase()}</span>
-              <h1 style="font-size: 28px; margin-top: 4px;"><span data-i18n="dash_welcome">Welcome back</span>, ${user.full_name}!</h1>
-              <p style="color: var(--color-text-muted); font-size: 14px;">${user.email}</p>
+              <span class="tag" style="background-color: rgba(37,99,235,0.08); color: var(--color-secondary);">${this._esc(user.role.toUpperCase())}</span>
+              <h1 style="font-size: 28px; margin-top: 4px;"><span data-i18n="dash_welcome">Welcome back</span>, ${this._esc(user.full_name)}!</h1>
+              <p style="color: var(--color-text-muted); font-size: 14px;">${this._esc(user.email)}</p>
             </div>
             <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
               ${this.isExclusiveAdmin(user) ? `
@@ -3538,7 +3538,7 @@ class ByteForceApp {
         `;
       }
     } catch (err) {
-      container.querySelector("#dashRequestsList").innerHTML = `<span style="color: var(--color-danger);">${err.message}</span>`;
+      container.querySelector("#dashRequestsList").innerHTML = `<span style="color: var(--color-danger);">${this._esc(err.message)}</span>`;
     }
 
     // 2. Load Reports
@@ -3575,7 +3575,7 @@ class ByteForceApp {
         `;
       }
     } catch (err) {
-      container.querySelector("#dashReportsList").innerHTML = `<span style="color: var(--color-danger);">${err.message}</span>`;
+      container.querySelector("#dashReportsList").innerHTML = `<span style="color: var(--color-danger);">${this._esc(err.message)}</span>`;
     }
 
     // 3. Load Devices
@@ -3605,7 +3605,7 @@ class ByteForceApp {
         `;
       }
     } catch (err) {
-      container.querySelector("#dashDevicesList").innerHTML = `<span style="color: var(--color-danger);">${err.message}</span>`;
+      container.querySelector("#dashDevicesList").innerHTML = `<span style="color: var(--color-danger);">${this._esc(err.message)}</span>`;
     }
   }
 
