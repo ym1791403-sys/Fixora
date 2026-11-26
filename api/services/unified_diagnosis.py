@@ -458,7 +458,7 @@ class UnifiedDiagnosisEngine:
         guide_image_url = matched_guide.get("guide_image_url") if matched_guide else None
         device_image_url = matched_guide.get("device_image_url") if matched_guide else None
         if not device_image_url:
-            dev_query = ai_device_query or ai_query or f"{brand} {model}".strip() or (matched_guide.get("device_model") if matched_guide else "") or normalized_cat
+            dev_query = f"{brand} {model}".strip() or (matched_guide.get("device_model") if matched_guide else "") or ai_device_query or ai_query or normalized_cat
             resolved = resolve_device_image(dev_query, category=normalized_cat)
             device_image_url = resolved.get("image_url") or guide_image_url
         if not guide_image_url and visual_solution_steps:
