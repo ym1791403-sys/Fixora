@@ -356,6 +356,19 @@ class ApiClient {
     throw new Error("Repair booking service is unavailable.");
   }
 
+  // Per-request chat between the customer and the assigned technician.
+  // Backend /api/requests/{id}/messages only allows the request owner, its
+  // technician, or the admin to read or write.
+  async getRequestMessages(reqId) {
+    const res = await this._adminRequest(`/requests/${encodeURIComponent(reqId)}/messages`, "GET", null);
+    return (res && res.messages) || [];
+  }
+
+  async sendRequestMessage(reqId, body) {
+    const res = await this._adminRequest(`/requests/${encodeURIComponent(reqId)}/messages`, "POST", null, { body });
+    return (res && res.message) || res;
+  }
+
   async updateRequestStatus(reqId, newStatus, updates = {}) {
     this.requireLogin();
     if (window.SupabaseBridge && window.SupabaseBridge.isReady()) {
