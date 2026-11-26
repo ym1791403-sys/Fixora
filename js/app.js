@@ -1292,7 +1292,11 @@ class ByteForceApp {
       const phoneVids = [0x05AC, 0x04E8, 0x18D1, 0x2717, 0x12D1, 0x22D9, 0x2A70, 0x22B8, 0x0FCE, 0x1004, 0x0421];
       const hasIface = (cls, sub, proto) => interfaces.some(i => i.interfaceClass === cls && (sub === undefined || i.interfaceSubclass === sub) && (proto === undefined || i.interfaceProtocol === proto));
       let detectedCat = "";
-      if (phoneVids.includes(dev.vendorId) || hasIface(255, 66, 1) || hasIface(255, 66, 3) || interfaces.some(i => i.interfaceClass === 6)) detectedCat = "Smartphone";
+      const prodLow = `${telemetry.manufacturerName || ""} ${telemetry.productName || ""}`.toLowerCase();
+      if (/ipad|\btab\b|matepad|mi pad|lenovo tab|tablet/.test(prodLow)) detectedCat = "Tablet";
+      else if (prodLow.includes("watch")) detectedCat = "Smartwatch";
+      else if (/\btv\b|bravia|television/.test(prodLow) || prodLow.endsWith("tv")) detectedCat = "Smart TV";
+      else if (phoneVids.includes(dev.vendorId) || hasIface(255, 66, 1) || hasIface(255, 66, 3) || interfaces.some(i => i.interfaceClass === 6)) detectedCat = "Smartphone";
       else if (interfaces.some(i => i.interfaceClass === 8)) detectedCat = "Storage";
       else if (interfaces.some(i => i.interfaceClass === 7)) detectedCat = "Printer";
       else if (interfaces.some(i => i.interfaceClass === 14)) detectedCat = "Camera";
