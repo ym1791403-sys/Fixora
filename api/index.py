@@ -16,6 +16,7 @@ from api.routers.prediction import router as prediction_router
 from api.routers.diagnosis import router as diagnosis_router
 from api.routers.admin import router as admin_router
 from api.routers.media import router as media_router
+from api.routers.messages import router as messages_router
 from api.services.db import DatabaseUnavailableError
 
 from urllib.parse import parse_qs
@@ -70,6 +71,7 @@ app.include_router(diagnosis_router)
 app.include_router(admin_router)
 app.include_router(marketplace_router)
 app.include_router(media_router)
+app.include_router(messages_router)
 
 def get_content_type(path: str) -> str:
     ext = os.path.splitext(path)[1].lower()
